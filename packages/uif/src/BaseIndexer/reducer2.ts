@@ -1,9 +1,11 @@
+import assert from 'assert'
+
 export interface State {
-  height: number
-  pendingHeight: number
+  height: number // current height
+  pendingHeight: number // desired height
   parents: {
-    safeHeight: number
-    isWaiting: boolean
+    safeHeight: number // min of current height and pending height of a given parent
+    isWaiting: boolean // parent waits for this indexer to be done with invalidation
     isInitialized: boolean
   }[]
   children: {
@@ -32,6 +34,7 @@ export type Action =
 
 export type Effect =
   | { type: 'Update'; from: number; to: number }
+  | { type: 'WaitToInvalidate'; height: number } // send ParentChanged action to all children
   | { type: 'Invalidate'; height: number }
   | { type: 'NotifyReady'; parentIndex: number }
   | { type: 'NotifyInitialized'; height: number }
@@ -45,12 +48,6 @@ export const INITIAL_STATE: State = {
   status: 'initializing',
 }
 
-export function assert(condition: boolean, message: string): asserts condition {
-  if (!condition) {
-    throw new Error(message)
-  }
-}
-
 export function reducer(state: State, action: Action): [State, Effect[]] {
   let effects: Effect[] = []
 
@@ -62,7 +59,7 @@ export function reducer(state: State, action: Action): [State, Effect[]] {
 
   if (action.type === 'Initialize') {
     assert(state.status === 'initializing', 'Already initialized')
-    assert(action.parentCount === 0, 'No parents')
+    assert(action.parentCount !== 0, 'No parents')
 
     state = {
       ...state,
@@ -121,6 +118,7 @@ export function reducer(state: State, action: Action): [State, Effect[]] {
     assert(state.parents.length > action.index, 'Invalid parent index')
 
     const parent = state.parents[action.index]
+    assert(!!parent, 'Parent not found')
     assert(parent.isInitialized, 'Parent is not initialized')
 
     const isWaiting = action.height < parent.safeHeight
@@ -146,9 +144,27 @@ export function reducer(state: State, action: Action): [State, Effect[]] {
 
       if (state.pendingHeight !== pendingHeight) {
         // need to invalidate but first wait for children
+        // TODO: clear status of all children?
+        effects.push({ type: 'WaitToInvalidate', height: pendingHeight })
       }
 
       state = { ...state, pendingHeight }
+    }
+  }
+
+  if (action.type === 'ChildReady') {
+    assert(state.children.length > action.index, 'Invalid child index')
+
+    state = {
+      ...state,
+      children: state.children.map((child, index) =>
+        index === action.index ? { ready: true } : child,
+      ),
+    }
+
+    const allChildrenReady = state.children.every((c) => c.ready)
+    if (allChildrenReady) {
+      effects.push({ type: 'Invalidate', height: state.pendingHeight })
     }
   }
 
