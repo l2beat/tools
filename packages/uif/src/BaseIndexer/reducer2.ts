@@ -62,7 +62,7 @@ export function reducer(state: State, action: Action): [State, Effect[]] {
 
   if (action.type === 'Initialize') {
     assert(state.status === 'initializing', 'Already initialized')
-    assert(action.parentCount !== 0, 'No parents')
+    assert(action.parentCount === 0, 'No parents')
 
     state = {
       ...state,
@@ -120,7 +120,7 @@ export function reducer(state: State, action: Action): [State, Effect[]] {
   if (action.type === 'ParentChanged') {
     assert(state.parents.length > action.index, 'Invalid parent index')
 
-    const parent = state.parents[action.index]!
+    const parent = state.parents[action.index]
     assert(parent.isInitialized, 'Parent is not initialized')
 
     const isWaiting = action.height < parent.safeHeight
