@@ -98,6 +98,7 @@ export function reducer(state: State, action: Action): [State, Effect[]] {
         ...parents.map((p) => p.safeHeight),
       )
 
+      effects.push({ type: 'Invalidate', height: pendingHeight }) // invalidate anything above last height
       effects.push({ type: 'NotifyInitialized', height: pendingHeight })
       let status: State['status'] = 'idle'
 

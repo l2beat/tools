@@ -35,6 +35,7 @@ describe.only(reducer.name, () => {
         waitingToInvalidate: false,
       })
       expect(effectsAfterInit).toEqual([
+        { type: 'Invalidate', height: 10 },
         { type: 'NotifyInitialized', height: 10 },
       ])
     })
