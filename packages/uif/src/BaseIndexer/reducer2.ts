@@ -1,6 +1,8 @@
 import assert from 'assert'
 
 export interface State {
+  status: 'initializing' | 'idle' | 'updating' | 'invalidating'
+  // updating is triggered by parentChanges and new parentHeight...
   height: number // current height
   pendingHeight: number // desired height
   parents: {
@@ -9,10 +11,9 @@ export interface State {
     isInitialized: boolean
   }[]
   children: {
-    ready: boolean
+    ready: boolean // only matters during invalidation
   }[]
-  waitingToInvalidate: boolean
-  status: 'initializing' | 'idle' | 'updating' | 'invalidating'
+  waitingToInvalidate: boolean // not part of status because it can happen during update and invalidating
   // TODO: error count + error status
 }
 
@@ -37,7 +38,7 @@ export type Effect =
   | { type: 'WaitToInvalidate'; height: number } // send ParentChanged action to all children
   | { type: 'Invalidate'; height: number }
   | { type: 'NotifyReady'; parentIndex: number }
-  | { type: 'NotifyInitialized'; height: number }
+  | { type: 'NotifyInitialized'; height: number } // send ParentInitialized action to all children
 
 export const INITIAL_STATE: State = {
   height: 0,
@@ -124,8 +125,8 @@ export function reducer(state: State, action: Action): [State, Effect[]] {
     const isWaiting = action.height < parent.safeHeight
     const parents = state.parents.map((parent, index) =>
       index === action.index
-        ? parent
-        : { ...parent, safeHeight: action.height, isWaiting },
+        ? { ...parent, safeHeight: action.height, isWaiting }
+        : parent,
     )
     state = { ...state, parents }
 
@@ -143,8 +144,12 @@ export function reducer(state: State, action: Action): [State, Effect[]] {
       )
 
       if (state.pendingHeight !== pendingHeight) {
-        // need to invalidate but first wait for children
-        // TODO: clear status of all children?
+        // invalidate!
+        state = {
+          ...state,
+          children: state.children.map(() => ({ ready: false })),
+          waitingToInvalidate: true,
+        }
         effects.push({ type: 'WaitToInvalidate', height: pendingHeight })
       }
 
@@ -163,7 +168,13 @@ export function reducer(state: State, action: Action): [State, Effect[]] {
     }
 
     const allChildrenReady = state.children.every((c) => c.ready)
-    if (allChildrenReady) {
+    if (allChildrenReady && state.pendingHeight < state.height) {
+      state = {
+        ...state,
+        children: state.children.map(() => ({ ready: false })),
+        waitingToInvalidate: false,
+        status: 'invalidating',
+      }
       effects.push({ type: 'Invalidate', height: state.pendingHeight })
     }
   }
