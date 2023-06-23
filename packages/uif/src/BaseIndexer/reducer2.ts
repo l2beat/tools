@@ -2,7 +2,6 @@ import assert from 'assert'
 
 export interface State {
   status: 'initializing' | 'idle' | 'updating' | 'invalidating'
-  // updating is triggered by parentChanges and new parentHeight...
   height: number // current height
   pendingHeight: number // desired height
   parents: {
@@ -122,29 +121,51 @@ export function reducer(state: State, action: Action): [State, Effect[]] {
     assert(!!parent, 'Parent not found')
     assert(parent.isInitialized, 'Parent is not initialized')
 
-    const isWaiting = action.height < parent.safeHeight
+    const isInvalidating = action.height < parent.safeHeight
     const parents = state.parents.map((parent, index) =>
       index === action.index
-        ? { ...parent, safeHeight: action.height, isWaiting }
+        ? { ...parent, safeHeight: action.height, isWaiting: isInvalidating }
         : parent,
     )
     state = { ...state, parents }
 
-    if (isWaiting) {
+    if (isInvalidating) {
       if (action.height >= state.pendingHeight) {
         effects.push({ type: 'NotifyReady', parentIndex: action.index })
       }
     }
 
-    if (state.status !== 'initializing') {
+    if (state.status !== 'initializing' && !isInvalidating) {
+      // TODO: do not do this while invalidating
+      const pendingHeight = Math.max(
+        state.height,
+        state.pendingHeight,
+        Math.min(...parents.map((p) => p.safeHeight)),
+      )
+
+      if (state.pendingHeight < pendingHeight) {
+        state = {
+          ...state,
+          status: 'updating',
+        }
+        effects.push({
+          type: 'Update',
+          from: state.pendingHeight,
+          to: pendingHeight,
+        })
+      }
+
+      state = { ...state, pendingHeight }
+    }
+
+    if (state.status !== 'initializing' && isInvalidating) {
       const pendingHeight = Math.min(
         state.height,
         state.pendingHeight,
         ...parents.map((p) => p.safeHeight),
       )
 
-      if (state.pendingHeight !== pendingHeight) {
-        // invalidate!
+      if (state.pendingHeight > pendingHeight) {
         state = {
           ...state,
           children: state.children.map(() => ({ ready: false })),
