@@ -24,4 +24,7 @@ export interface IndexerState {
   readonly children: {
     readonly ready: boolean
   }[]
+  readonly retryingUpdate: boolean
+  readonly retryingInvalidate: boolean
+  readonly retryingTick: boolean
 }

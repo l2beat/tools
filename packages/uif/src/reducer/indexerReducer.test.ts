@@ -838,6 +838,12 @@ describe(indexerReducer.name, () => {
         })
         expect(effects).toEqual([{ type: 'Tick' }])
       })
+
+      it.skip('update failed with timeout retry')
+      it.skip('invalidate failed with timeout retry')
+      it.skip('update failed then invalidate failed')
+      it.skip('update failed then invalidate failed then parent updated higher')
+      it.skip('update failed then invalidate failed then parent updated lower')
     })
   })
 })

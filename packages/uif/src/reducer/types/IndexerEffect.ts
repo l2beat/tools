@@ -4,6 +4,7 @@ export type IndexerEffect =
   | SetSafeHeightEffect
   | NotifyReadyEffect
   | TickEffect
+  | RetryUpdateEffect
 
 export interface UpdateEffect {
   type: 'Update'
@@ -27,4 +28,9 @@ export interface NotifyReadyEffect {
 
 export interface TickEffect {
   type: 'Tick'
+}
+
+export interface RetryUpdateEffect {
+  type: 'RetryUpdate'
+  retryTimeout: number
 }

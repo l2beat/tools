@@ -10,6 +10,7 @@ import { IndexerAction } from './reducer/types/IndexerAction'
 import {
   InvalidateEffect,
   NotifyReadyEffect,
+  RetryUpdateEffect,
   SetSafeHeightEffect,
   UpdateEffect,
 } from './reducer/types/IndexerEffect'
@@ -121,6 +122,8 @@ export abstract class BaseIndexer implements Indexer {
           return this.executeNotifyReady(effect)
         case 'Tick':
           return void this.executeTick()
+        case 'RetryUpdate':
+          return this.executeRetryUpdate(effect)
         default:
           return assertUnreachable(effect)
       }
@@ -148,6 +151,12 @@ export abstract class BaseIndexer implements Indexer {
       this.logger.error('Update failed', e)
       this.dispatch({ type: 'UpdateFailed' })
     }
+  }
+
+  private executeRetryUpdate(effect: RetryUpdateEffect): void {
+    setTimeout(() => {
+      this.dispatch({ type: 'RetryUpdate' })
+    }, effect.retryTimeout)
   }
 
   private executeNotifyReady(effect: NotifyReadyEffect): void {
