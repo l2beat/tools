@@ -30,18 +30,19 @@ export function indexerReducer(
     case 'ParentUpdated': {
       const newState: IndexerState = {
         ...state,
-        parents: state.parents.map((parent, index) =>
-          index === action.index
-            ? {
-                ...parent,
-                safeHeight: action.safeHeight,
-                initialized: true,
-                waiting: parent.initialized
-                  ? action.safeHeight < parent.safeHeight
-                  : false,
-              }
-            : parent,
-        ),
+        parents: state.parents.map((parent, index) => {
+          if (index === action.index) {
+            const waiting =
+              parent.waiting || action.safeHeight < parent.safeHeight
+            return {
+              ...parent,
+              safeHeight: action.safeHeight,
+              initialized: true,
+              waiting: parent.initialized ? waiting : false,
+            }
+          }
+          return parent
+        }),
       }
 
       const result = finishInitialization(newState)

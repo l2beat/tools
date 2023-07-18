@@ -373,6 +373,34 @@ describe(indexerReducer.name, () => {
         ])
       })
     })
+
+    describe('complex scenario', () => {
+      it('if parent is waiting, it keeps waiting until notifyReady', () => {
+        //1. grandparent ticks lower (to: x1) && parent updating (to: x2)-> parent sets (safeHeight: x1), but still updating (to:x2), child sets (safeHeight: x1) -> parennt finishes update (to: x2, waiting: true), child notifies ready
+        const initState = getAfterInit({
+          safeHeight: 100,
+          childCount: 1,
+          parentHeights: [100],
+        })
+
+        const [state, effects] = reduceWithIndexerReducer(initState, [
+          { type: 'ParentUpdated', index: 0, safeHeight: 50 },
+          { type: 'ParentUpdated', index: 0, safeHeight: 50 },
+        ])
+
+        expect(state).toEqual({
+          ...initState,
+          status: 'idle',
+          targetHeight: 50,
+          safeHeight: 50,
+          waiting: true,
+          parents: [{ safeHeight: 50, initialized: true, waiting: true }],
+          children: [{ ready: false }],
+        })
+
+        expect(effects).toEqual([])
+      })
+    })
   })
 })
 
