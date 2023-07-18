@@ -15,13 +15,14 @@ export class BlockNumberIndexer extends ChildIndexer {
   }
 
   override async update(from: number, to: number): Promise<number> {
-    this.logger.info('Update started')
     await setTimeout(3_000)
+    if (Math.random() < 0.5) {
+      throw new Error('Random error')
+    }
     return to
   }
 
-  override async invalidate(): Promise<void> {
-    this.logger.info('Invalidate started')
+  override async invalidate(to: number): Promise<void> {
     return Promise.resolve()
   }
 

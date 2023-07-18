@@ -90,6 +90,9 @@ export abstract class BaseIndexer implements Indexer {
   }
 
   notifyUpdate(parent: Indexer, to: number): void {
+    this.logger.debug('Someone has updated', {
+      parent: parent.constructor.name,
+    })
     const index = this.parents.indexOf(parent)
     assert(index !== -1, 'Received update from unknown parent')
     this.dispatch({ type: 'ParentUpdated', index, safeHeight: to })
@@ -129,6 +132,7 @@ export abstract class BaseIndexer implements Indexer {
   private async executeUpdate(effect: UpdateEffect): Promise<void> {
     // TODO: maybe from should be inclusive?
     const from = this.state.height
+    this.logger.info('Updating', { from, to: effect.targetHeight })
     try {
       const to = await this.update(from, effect.targetHeight)
       if (to > effect.targetHeight) {
@@ -136,21 +140,13 @@ export abstract class BaseIndexer implements Indexer {
           returned: to,
           max: effect.targetHeight,
         })
-        this.dispatch({
-          type: 'UpdateFailed',
-          from,
-          targetHeight: effect.targetHeight,
-        })
+        this.dispatch({ type: 'UpdateFailed' })
       } else {
         this.dispatch({ type: 'UpdateSucceeded', from, targetHeight: to })
       }
     } catch (e) {
       this.logger.error('Update failed', e)
-      this.dispatch({
-        type: 'UpdateFailed',
-        from,
-        targetHeight: effect.targetHeight,
-      })
+      this.dispatch({ type: 'UpdateFailed' })
     }
   }
 
@@ -166,6 +162,7 @@ export abstract class BaseIndexer implements Indexer {
   // #region Root methods
 
   private async executeTick(): Promise<void> {
+    this.logger.debug('Ticking')
     try {
       const safeHeight = await this.tick()
       this.dispatch({ type: 'TickSucceeded', safeHeight })
@@ -181,6 +178,7 @@ export abstract class BaseIndexer implements Indexer {
    * scheduled.
    */
   protected requestTick(): void {
+    this.logger.trace('Requesting tick')
     this.dispatch({ type: 'RequestTick' })
   }
 
@@ -188,6 +186,7 @@ export abstract class BaseIndexer implements Indexer {
   // #region Common methods
 
   private async executeInvalidate(effect: InvalidateEffect): Promise<void> {
+    this.logger.info('Invalidating', { to: effect.targetHeight })
     try {
       await this.invalidate(effect.targetHeight)
       this.dispatch({
@@ -206,6 +205,7 @@ export abstract class BaseIndexer implements Indexer {
   private async executeSetSafeHeight(
     effect: SetSafeHeightEffect,
   ): Promise<void> {
+    this.logger.info('Setting safe height', { safeHeight: effect.safeHeight })
     this.children.forEach((child) =>
       child.notifyUpdate(this, effect.safeHeight),
     )

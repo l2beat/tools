@@ -23,8 +23,7 @@ export interface UpdateSucceededAction {
 
 export interface UpdateFailedAction {
   type: 'UpdateFailed'
-  from: number
-  targetHeight: number
+  fatal?: boolean
 }
 
 export interface InvalidateSucceededAction {
@@ -34,7 +33,7 @@ export interface InvalidateSucceededAction {
 
 export interface InvalidateFailedAction {
   type: 'InvalidateFailed'
-  targetHeight: number
+  fatal?: boolean
 }
 
 export interface RequestTickAction {
@@ -48,6 +47,7 @@ export interface TickSucceededAction {
 
 export interface TickFailedAction {
   type: 'TickFailed'
+  fatal?: boolean
 }
 
 export type IndexerAction =

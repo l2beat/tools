@@ -8,5 +8,5 @@ export function handleTickFailed(
   _action: TickFailedAction,
 ): IndexerReducerResult {
   assertRoot(state)
-  return [{ ...state, status: 'errored' }, []]
+  return [{ ...state, status: 'errored', tickScheduled: false }, []]
 }

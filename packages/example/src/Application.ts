@@ -14,7 +14,7 @@ export class Application {
 
   constructor(config: Config) {
     const logger = new Logger({
-      logLevel: 'DEBUG',
+      logLevel: 'INFO',
       format: 'pretty',
       colors: true,
       utc: true,
@@ -35,11 +35,7 @@ export class Application {
       blockNumberIndexer,
       balanceRepository,
     )
-    const tvlIndexer = new TvlIndexer(
-      logger,
-      balanceIndexer,
-      tvlRepository,
-    )
+    const tvlIndexer = new TvlIndexer(logger, balanceIndexer, tvlRepository)
 
     this.start = async (): Promise<void> => {
       await Promise.resolve()

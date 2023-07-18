@@ -8,6 +8,11 @@ export function continueOperations(
   state: IndexerState,
   updateFinished?: boolean,
 ): IndexerReducerResult {
+  // Error state
+  // ParentUpdated
+  // RequestTick
+  //
+
   const initializedParents = state.parents.filter((x) => x.initialized)
   if (initializedParents.length > 0) {
     const parentHeight = Math.min(

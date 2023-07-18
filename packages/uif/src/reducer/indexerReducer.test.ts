@@ -508,6 +508,148 @@ describe(indexerReducer.name, () => {
         ])
       })
     })
+
+    describe('errored state', () => {
+      it('cannot tick', () => {
+        const initState = getInitialState(0)
+        const [state, effects] = reduceWithIndexerReducer(initState, [
+          { type: 'Initialized', safeHeight: 100, childCount: 0 },
+          { type: 'RequestTick' },
+          { type: 'TickFailed', fatal: true },
+          { type: 'RequestTick' },
+        ])
+
+        expect(state).toEqual({
+          ...initState,
+          status: 'errored',
+          tickScheduled: false,
+          height: 100,
+          safeHeight: 100,
+          targetHeight: 100,
+          initializedSelf: true,
+        })
+        expect(effects).toEqual([])
+      })
+
+      it('does not remember requested ticks', () => {
+        const initState = getInitialState(0)
+        const [state, effects] = reduceWithIndexerReducer(initState, [
+          { type: 'Initialized', safeHeight: 100, childCount: 0 },
+          { type: 'RequestTick' },
+          // Additional tick
+          { type: 'RequestTick' },
+          { type: 'TickFailed', fatal: true },
+          { type: 'RequestTick' },
+        ])
+
+        expect(state).toEqual({
+          ...initState,
+          status: 'errored',
+          tickScheduled: false,
+          height: 100,
+          safeHeight: 100,
+          targetHeight: 100,
+          initializedSelf: true,
+        })
+        expect(effects).toEqual([])
+      })
+
+      it('cannot update', () => {
+        const initState = getAfterInit({
+          safeHeight: 100,
+          childCount: 0,
+          parentHeights: [100],
+        })
+
+        const [state, effects] = reduceWithIndexerReducer(initState, [
+          { type: 'ParentUpdated', index: 0, safeHeight: 200 },
+          { type: 'UpdateFailed', fatal: true },
+          { type: 'ParentUpdated', index: 0, safeHeight: 300 },
+        ])
+
+        expect(state).toEqual({
+          ...initState,
+          status: 'errored',
+          targetHeight: 200, // doesn't matter
+          height: 100,
+          safeHeight: 100,
+          parents: [{ safeHeight: 300, initialized: true, waiting: false }],
+        })
+
+        expect(effects).toEqual([])
+      })
+
+      it('cannot invalidate', () => {
+        const initState = getAfterInit({
+          safeHeight: 100,
+          childCount: 0,
+          parentHeights: [100],
+        })
+
+        const [state, effects] = reduceWithIndexerReducer(initState, [
+          { type: 'ParentUpdated', index: 0, safeHeight: 50 },
+          { type: 'InvalidateFailed', fatal: true },
+          { type: 'ParentUpdated', index: 0, safeHeight: 20 },
+        ])
+
+        expect(state).toEqual({
+          ...initState,
+          status: 'errored',
+          targetHeight: 20, // doesn't matter
+          height: 100,
+          safeHeight: 20,
+          parents: [{ safeHeight: 20, initialized: true, waiting: false }],
+        })
+
+        expect(effects).toEqual([
+          { type: 'SetSafeHeight', safeHeight: 20 },
+          { type: 'NotifyReady', parentIndices: [0] },
+        ])
+      })
+
+      it('waits for children to notify ready', () => {
+        const initState = getAfterInit({
+          safeHeight: 100,
+          childCount: 2,
+          parentHeights: [100],
+        })
+
+        const [state1, effects1] = reduceWithIndexerReducer(initState, [
+          { type: 'ParentUpdated', index: 0, safeHeight: 200 },
+          { type: 'UpdateFailed', fatal: true },
+          { type: 'ParentUpdated', index: 0, safeHeight: 50 },
+        ])
+
+        expect(state1).toEqual({
+          ...initState,
+          status: 'errored',
+          targetHeight: 50, // doesn't matter
+          height: 100,
+          safeHeight: 50,
+          waiting: true,
+          parents: [{ safeHeight: 50, initialized: true, waiting: true }],
+          children: [{ ready: false }, { ready: false }],
+        })
+        expect(effects1).toEqual([{ type: 'SetSafeHeight', safeHeight: 50 }])
+
+        const [state2, effects2] = reduceWithIndexerReducer(state1, [
+          { type: 'ChildReady', index: 0 },
+          { type: 'ChildReady', index: 1 },
+        ])
+
+        expect(state2).toEqual({
+          ...initState,
+          status: 'errored',
+          targetHeight: 50, // doesn't matter
+          height: 100,
+          safeHeight: 50,
+          waiting: false,
+          parents: [{ safeHeight: 50, initialized: true, waiting: false }],
+          children: [{ ready: true }, { ready: true }],
+        })
+        expect(effects2).toEqual([{ type: 'NotifyReady', parentIndices: [0] }])
+      })
+    })
   })
 })
 
