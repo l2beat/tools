@@ -509,7 +509,7 @@ describe(indexerReducer.name, () => {
       })
     })
 
-    describe('errored state', () => {
+    describe('fatal errors', () => {
       it('cannot tick', () => {
         const initState = getInitialState(0)
         const [state, effects] = reduceWithIndexerReducer(initState, [
@@ -648,6 +648,89 @@ describe(indexerReducer.name, () => {
           children: [{ ready: true }, { ready: true }],
         })
         expect(effects2).toEqual([{ type: 'NotifyReady', parentIndices: [0] }])
+      })
+    })
+
+    describe('non-fatal errors', () => {
+      it('a failed update triggers invalidation to height', () => {
+        const initState = getAfterInit({
+          safeHeight: 100,
+          childCount: 0,
+          parentHeights: [100],
+        })
+        const [state1, effects1] = reduceWithIndexerReducer(initState, [
+          { type: 'ParentUpdated', index: 0, safeHeight: 200 },
+          { type: 'UpdateFailed' },
+        ])
+
+        expect(state1).toEqual({
+          ...initState,
+          status: 'invalidating',
+          targetHeight: 100,
+          parents: [{ safeHeight: 200, initialized: true, waiting: false }],
+        })
+        expect(effects1).toEqual([{ type: 'Invalidate', targetHeight: 100 }])
+
+        const [state2, effects2] = reduceWithIndexerReducer(state1, [
+          { type: 'InvalidateSucceeded', targetHeight: 100 },
+        ])
+
+        expect(state2).toEqual({
+          ...initState,
+          status: 'updating',
+          targetHeight: 200,
+          parents: [{ safeHeight: 200, initialized: true, waiting: false }],
+        })
+        expect(effects2).toEqual([{ type: 'Update', targetHeight: 200 }])
+      })
+
+      it('a failed update triggers deeper invalidation', () => {
+        const initState = getAfterInit({
+          safeHeight: 100,
+          childCount: 0,
+          parentHeights: [100],
+        })
+        const [state1, effects1] = reduceWithIndexerReducer(initState, [
+          { type: 'ParentUpdated', index: 0, safeHeight: 200 },
+          { type: 'ParentUpdated', index: 0, safeHeight: 50 },
+          { type: 'UpdateFailed' },
+        ])
+
+        expect(state1).toEqual({
+          ...initState,
+          status: 'invalidating',
+          targetHeight: 50,
+          safeHeight: 50,
+          parents: [{ safeHeight: 50, initialized: true, waiting: false }],
+        })
+        expect(effects1).toEqual([
+          { type: 'NotifyReady', parentIndices: [0] },
+          { type: 'Invalidate', targetHeight: 50 },
+        ])
+      })
+
+      it('a failed update triggers a shallow invalidation because children are not ready', () => {
+        const initState = getAfterInit({
+          safeHeight: 100,
+          childCount: 1,
+          parentHeights: [100],
+        })
+        const [state1, effects1] = reduceWithIndexerReducer(initState, [
+          { type: 'ParentUpdated', index: 0, safeHeight: 200 },
+          { type: 'ParentUpdated', index: 0, safeHeight: 50 },
+          { type: 'UpdateFailed' },
+        ])
+
+        expect(state1).toEqual({
+          ...initState,
+          status: 'invalidating',
+          targetHeight: 100,
+          safeHeight: 50,
+          waiting: true,
+          parents: [{ safeHeight: 50, initialized: true, waiting: true }],
+          children: [{ ready: false }],
+        })
+        expect(effects1).toEqual([{ type: 'Invalidate', targetHeight: 100 }])
       })
     })
   })
