@@ -588,7 +588,7 @@ describe(indexerReducer.name, () => {
 
         const [state, effects] = reduceWithIndexerReducer(initState, [
           { type: 'ParentUpdated', index: 0, safeHeight: 50 },
-          { type: 'InvalidateFailed', fatal: true },
+          { type: 'InvalidateFailed', targetHeight: 50, fatal: true },
           { type: 'ParentUpdated', index: 0, safeHeight: 20 },
         ])
 
@@ -731,6 +731,112 @@ describe(indexerReducer.name, () => {
           children: [{ ready: false }],
         })
         expect(effects1).toEqual([{ type: 'Invalidate', targetHeight: 100 }])
+      })
+
+      it('a failed invalidate repeats', () => {
+        const initState = getAfterInit({
+          safeHeight: 100,
+          childCount: 0,
+          parentHeights: [100],
+        })
+        const [state, effects] = reduceWithIndexerReducer(initState, [
+          { type: 'ParentUpdated', index: 0, safeHeight: 50 },
+          { type: 'InvalidateFailed', targetHeight: 50 },
+        ])
+        expect(state).toEqual({
+          ...initState,
+          status: 'invalidating',
+          targetHeight: 50,
+          safeHeight: 50,
+          parents: [{ safeHeight: 50, initialized: true, waiting: false }],
+        })
+        expect(effects).toEqual([{ type: 'Invalidate', targetHeight: 50 }])
+      })
+
+      it('a failed invalidate repeats deeper', () => {
+        const initState = getAfterInit({
+          safeHeight: 100,
+          childCount: 0,
+          parentHeights: [100],
+        })
+        const [state, effects] = reduceWithIndexerReducer(initState, [
+          { type: 'ParentUpdated', index: 0, safeHeight: 50 },
+          { type: 'ParentUpdated', index: 0, safeHeight: 20 },
+          { type: 'InvalidateFailed', targetHeight: 50 },
+        ])
+        expect(state).toEqual({
+          ...initState,
+          status: 'invalidating',
+          targetHeight: 20,
+          safeHeight: 20,
+          parents: [{ safeHeight: 20, initialized: true, waiting: false }],
+        })
+        expect(effects).toEqual([{ type: 'Invalidate', targetHeight: 20 }])
+      })
+
+      it('a failed invalidate repeats shallower because children are not ready', () => {
+        const initState = getAfterInit({
+          safeHeight: 100,
+          childCount: 1,
+          parentHeights: [100],
+        })
+        const [state, effects] = reduceWithIndexerReducer(initState, [
+          { type: 'ParentUpdated', index: 0, safeHeight: 50 },
+          { type: 'ChildReady', index: 0 },
+          // Invalidate is triggered
+          { type: 'ParentUpdated', index: 0, safeHeight: 20 },
+          { type: 'InvalidateFailed', targetHeight: 50 },
+        ])
+        expect(state).toEqual({
+          ...initState,
+          status: 'invalidating',
+          targetHeight: 50,
+          safeHeight: 20,
+          waiting: true,
+          parents: [{ safeHeight: 20, initialized: true, waiting: true }],
+          children: [{ ready: false }],
+        })
+        expect(effects).toEqual([{ type: 'Invalidate', targetHeight: 50 }])
+      })
+
+      it('a failed tick triggers another tick', () => {
+        const initState = getInitialState(0)
+        const [state, effects] = reduceWithIndexerReducer(initState, [
+          { type: 'Initialized', safeHeight: 100, childCount: 0 },
+          { type: 'RequestTick' },
+          { type: 'TickFailed' },
+        ])
+
+        expect(state).toEqual({
+          ...initState,
+          height: 100,
+          targetHeight: 100,
+          safeHeight: 100,
+          status: 'ticking',
+          initializedSelf: true,
+        })
+        expect(effects).toEqual([{ type: 'Tick' }])
+      })
+
+      it('a failed tick resets scheduled ticks', () => {
+        const initState = getInitialState(0)
+        const [state, effects] = reduceWithIndexerReducer(initState, [
+          { type: 'Initialized', safeHeight: 100, childCount: 0 },
+          { type: 'RequestTick' },
+          { type: 'RequestTick' },
+          { type: 'TickFailed' },
+        ])
+
+        expect(state).toEqual({
+          ...initState,
+          height: 100,
+          targetHeight: 100,
+          safeHeight: 100,
+          status: 'ticking',
+          tickScheduled: false,
+          initializedSelf: true,
+        })
+        expect(effects).toEqual([{ type: 'Tick' }])
       })
     })
   })

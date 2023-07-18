@@ -33,6 +33,7 @@ export interface InvalidateSucceededAction {
 
 export interface InvalidateFailedAction {
   type: 'InvalidateFailed'
+  targetHeight: number
   fatal?: boolean
 }
 
