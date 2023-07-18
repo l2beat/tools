@@ -17,9 +17,9 @@ export function formatTimePretty(
   const ms = (utc ? now.getUTCMilliseconds() : now.getMilliseconds())
     .toString()
     .padStart(3, '0')
-    
+
   let result = `${h}:${m}:${s}.${ms}`
-  if(utc){
+  if (utc) {
     result += 'Z'
   }
 
