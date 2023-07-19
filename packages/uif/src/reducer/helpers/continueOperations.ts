@@ -10,9 +10,11 @@ export function continueOperations(
     updateFinished?: boolean
     forceInvalidate?: boolean
     updateFailed?: boolean
+    invalidateFailed?: boolean
   } = {},
 ): IndexerReducerResult {
-  const forceInvalidate = options.forceInvalidate ?? options.updateFailed
+  const forceInvalidate =
+    options.updateFailed ?? options.invalidateFailed ?? options.forceInvalidate
 
   const initializedParents = state.parents.filter((x) => x.initialized)
   if (initializedParents.length > 0 && !forceInvalidate) {
@@ -91,6 +93,10 @@ export function continueOperations(
     ]
   }
 
+  if (options.invalidateFailed) {
+    effects.push({ type: 'ScheduleRetryInvalidate' })
+  }
+
   if (
     state.retryingInvalidate ||
     (!forceInvalidate &&
@@ -103,7 +109,7 @@ export function continueOperations(
   }
 
   if (options.updateFailed) {
-    effects.push({ type: 'RetryUpdate' })
+    effects.push({ type: 'ScheduleRetryUpdate' })
   }
 
   return [

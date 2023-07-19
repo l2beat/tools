@@ -7,5 +7,11 @@ export function handleRetryInvalidate(
   state: IndexerState,
   _action: RetryInvalidateAction,
 ): IndexerReducerResult {
-  return continueOperations({ ...state, retryingInvalidate: false })
+  const targetHeight = state.waiting
+    ? Math.min(state.height, state.targetHeight)
+    : state.safeHeight
+  return continueOperations(
+    { ...state, retryingInvalidate: false, targetHeight },
+    { forceInvalidate: true },
+  )
 }

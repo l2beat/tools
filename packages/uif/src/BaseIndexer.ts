@@ -122,8 +122,11 @@ export abstract class BaseIndexer implements Indexer {
           return this.executeNotifyReady(effect)
         case 'Tick':
           return void this.executeTick()
-        case 'RetryUpdate':
-          return this.executeRetryUpdate()
+        case 'ScheduleRetryUpdate':
+          return this.executeScheduleRetryUpdate()
+        case 'ScheduleRetryInvalidate':
+          return this.executeScheduleRetryInvalidate()
+
         default:
           return assertUnreachable(effect)
       }
@@ -153,7 +156,7 @@ export abstract class BaseIndexer implements Indexer {
     }
   }
 
-  private executeRetryUpdate(): void {
+  private executeScheduleRetryUpdate(): void {
     setTimeout(() => {
       this.dispatch({ type: 'RetryUpdate' })
     }, this.retryTimeout)
@@ -209,6 +212,12 @@ export abstract class BaseIndexer implements Indexer {
         targetHeight: effect.targetHeight,
       })
     }
+  }
+
+  private executeScheduleRetryInvalidate(): void {
+    setTimeout(() => {
+      this.dispatch({ type: 'RetryInvalidate' })
+    }, this.retryTimeout)
   }
 
   private async executeSetSafeHeight(

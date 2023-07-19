@@ -671,7 +671,7 @@ describe(indexerReducer.name, () => {
           parents: [{ safeHeight: 200, initialized: true, waiting: false }],
         })
         expect(effects1).toEqual([
-          { type: 'RetryUpdate' },
+          { type: 'ScheduleRetryUpdate' },
           { type: 'Invalidate', targetHeight: 100 },
         ])
       })
@@ -771,7 +771,7 @@ describe(indexerReducer.name, () => {
           { type: 'RetryUpdate' },
           // TODO: we need the 'RetryUpdate' action to arrive to set retryingUpdate to false,
           // but actually, because we invalidated further down, we could just start updating straight away I guess
-          // proposed solution: remember the targetHeight in the action adn effect so we know what's happening
+          // proposed solution: remember the targetHeight in the action and effect so we know what's happening
         ])
 
         expect(state2).toEqual({
@@ -806,7 +806,7 @@ describe(indexerReducer.name, () => {
         })
         expect(effects1).toEqual([
           { type: 'NotifyReady', parentIndices: [0] },
-          { type: 'RetryUpdate' },
+          { type: 'ScheduleRetryUpdate' },
           { type: 'Invalidate', targetHeight: 50 },
         ])
       })
@@ -834,7 +834,7 @@ describe(indexerReducer.name, () => {
           children: [{ ready: false }],
         })
         expect(effects1).toEqual([
-          { type: 'RetryUpdate' },
+          { type: 'ScheduleRetryUpdate' },
           { type: 'Invalidate', targetHeight: 100 },
         ])
       })
@@ -856,11 +856,11 @@ describe(indexerReducer.name, () => {
           ...initState,
           status: 'invalidating',
           retryingUpdate: true,
-          targetHeight: 100, // doesn't matter
+          targetHeight: 100, // TODO: doesn't matter?
           safeHeight: 100,
           parents: [{ safeHeight: 200, initialized: true, waiting: false }],
         })
-        expect(effects1).toEqual([{ type: 'RetryUpdate' }])
+        expect(effects1).toEqual([{ type: 'ScheduleRetryUpdate' }])
 
         const [state2, effects2] = reduceWithIndexerReducer(state1, [
           { type: 'InvalidateSucceeded', targetHeight: 100 },
@@ -893,18 +893,31 @@ describe(indexerReducer.name, () => {
           childCount: 0,
           parentHeights: [100],
         })
-        const [state, effects] = reduceWithIndexerReducer(initState, [
+        const [state1, effects1] = reduceWithIndexerReducer(initState, [
           { type: 'ParentUpdated', index: 0, safeHeight: 50 },
           { type: 'InvalidateFailed', targetHeight: 50 },
         ])
-        expect(state).toEqual({
+        expect(state1).toEqual({
           ...initState,
-          status: 'invalidating',
+          status: 'idle',
+          retryingInvalidate: true,
           targetHeight: 50,
           safeHeight: 50,
           parents: [{ safeHeight: 50, initialized: true, waiting: false }],
         })
-        expect(effects).toEqual([{ type: 'Invalidate', targetHeight: 50 }])
+        expect(effects1).toEqual([{ type: 'ScheduleRetryInvalidate' }])
+
+        const [state2, effects2] = reduceWithIndexerReducer(state1, [
+          { type: 'RetryInvalidate' },
+        ])
+
+        expect(state2).toEqual({
+          ...state1,
+          status: 'invalidating',
+          retryingInvalidate: false,
+        })
+
+        expect(effects2).toEqual([{ type: 'Invalidate', targetHeight: 50 }])
       })
 
       it('a failed invalidate repeats deeper', () => {
@@ -920,12 +933,13 @@ describe(indexerReducer.name, () => {
         ])
         expect(state).toEqual({
           ...initState,
-          status: 'invalidating',
+          status: 'idle',
+          retryingInvalidate: true,
           targetHeight: 20,
           safeHeight: 20,
           parents: [{ safeHeight: 20, initialized: true, waiting: false }],
         })
-        expect(effects).toEqual([{ type: 'Invalidate', targetHeight: 20 }])
+        expect(effects).toEqual([{ type: 'ScheduleRetryInvalidate' }])
       })
 
       it('a failed invalidate repeats shallower because children are not ready', () => {
@@ -934,23 +948,38 @@ describe(indexerReducer.name, () => {
           childCount: 1,
           parentHeights: [100],
         })
-        const [state, effects] = reduceWithIndexerReducer(initState, [
+        const [state1, effects1] = reduceWithIndexerReducer(initState, [
           { type: 'ParentUpdated', index: 0, safeHeight: 50 },
           { type: 'ChildReady', index: 0 },
           // Invalidate is triggered
           { type: 'ParentUpdated', index: 0, safeHeight: 20 },
           { type: 'InvalidateFailed', targetHeight: 50 },
         ])
-        expect(state).toEqual({
+        expect(state1).toEqual({
           ...initState,
-          status: 'invalidating',
+          status: 'idle',
+          retryingInvalidate: true,
           targetHeight: 50,
           safeHeight: 20,
           waiting: true,
           parents: [{ safeHeight: 20, initialized: true, waiting: true }],
           children: [{ ready: false }],
         })
-        expect(effects).toEqual([{ type: 'Invalidate', targetHeight: 50 }])
+        expect(effects1).toEqual([{ type: 'ScheduleRetryInvalidate' }])
+
+        const [state2, effects2] = reduceWithIndexerReducer(state1, [
+          { type: 'RetryInvalidate' },
+        ])
+
+        expect(state2).toEqual({
+          ...state1,
+          targetHeight: 50,
+          status: 'invalidating',
+          children: [{ ready: false }],
+          retryingInvalidate: false,
+        })
+
+        expect(effects2).toEqual([{ type: 'Invalidate', targetHeight: 50 }])
       })
 
       it('a failed tick triggers another tick', () => {
@@ -993,9 +1022,126 @@ describe(indexerReducer.name, () => {
         expect(effects).toEqual([{ type: 'Tick' }])
       })
 
-      it.skip('update failed then invalidate failed')
-      it.skip('update failed then invalidate failed then parent updated higher')
-      it.skip('update failed then invalidate failed then parent updated lower')
+      it('update failed then invalidate failed', () => {
+        const inisState = getAfterInit({
+          safeHeight: 100,
+          childCount: 0,
+          parentHeights: [100],
+        })
+
+        const [state1, effects1] = reduceWithIndexerReducer(inisState, [
+          { type: 'ParentUpdated', index: 0, safeHeight: 200 },
+          { type: 'UpdateFailed' },
+          { type: 'InvalidateFailed', targetHeight: 100 },
+        ])
+
+        expect(state1).toEqual({
+          ...inisState,
+          status: 'idle',
+          retryingUpdate: true,
+          retryingInvalidate: true,
+          targetHeight: 100,
+          safeHeight: 100,
+          parents: [{ safeHeight: 200, initialized: true, waiting: false }],
+        })
+
+        expect(effects1).toEqual([{ type: 'ScheduleRetryInvalidate' }])
+      })
+
+      it('update failed then invalidate failed then parent updated higher', () => {
+        const inisState = getAfterInit({
+          safeHeight: 100,
+          childCount: 0,
+          parentHeights: [100],
+        })
+
+        const [state1, effects1] = reduceWithIndexerReducer(inisState, [
+          { type: 'ParentUpdated', index: 0, safeHeight: 200 },
+          { type: 'UpdateFailed' },
+          { type: 'InvalidateFailed', targetHeight: 100 },
+          { type: 'ParentUpdated', index: 0, safeHeight: 300 },
+        ])
+
+        expect(state1).toEqual({
+          ...inisState,
+          status: 'idle',
+          retryingUpdate: true,
+          retryingInvalidate: true,
+          targetHeight: 300,
+          // TODO: maybe targetHeight should stay 100, because we want to invalidate after
+          parents: [{ safeHeight: 300, initialized: true, waiting: false }],
+        })
+
+        expect(effects1).toEqual([])
+
+        const [state2, effects2] = reduceWithIndexerReducer(state1, [
+          { type: 'RetryUpdate' },
+        ])
+
+        expect(state2).toEqual(state1)
+        expect(effects2).toEqual([{ type: 'ScheduleRetryUpdate' }])
+
+        const [state3, effects3] = reduceWithIndexerReducer(state1, [
+          { type: 'RetryInvalidate' },
+        ])
+
+        expect(state3).toEqual({
+          ...state2,
+          targetHeight: 100,
+          retryingInvalidate: false,
+          status: 'invalidating',
+        })
+        expect(effects3).toEqual([{ type: 'Invalidate', targetHeight: 100 }])
+      })
+
+      it('update failed then invalidate failed then parent updated lower', () => {
+        // TODO: same but waits for children
+        const inisState = getAfterInit({
+          safeHeight: 100,
+          childCount: 0,
+          parentHeights: [100],
+        })
+
+        const [state1, effects1] = reduceWithIndexerReducer(inisState, [
+          { type: 'ParentUpdated', index: 0, safeHeight: 200 },
+          { type: 'UpdateFailed' },
+          { type: 'InvalidateFailed', targetHeight: 100 },
+          { type: 'ParentUpdated', index: 0, safeHeight: 50 },
+        ])
+
+        expect(state1).toEqual({
+          ...inisState,
+          retryingInvalidate: true,
+          retryingUpdate: true,
+          safeHeight: 50,
+          targetHeight: 50,
+          status: 'idle',
+          parents: [{ safeHeight: 50, initialized: true, waiting: false }],
+        })
+
+        expect(effects1).toEqual([
+          { type: 'SetSafeHeight', safeHeight: 50 },
+          { type: 'NotifyReady', parentIndices: [0] },
+        ])
+
+        const [state2, effects2] = reduceWithIndexerReducer(state1, [
+          { type: 'RetryUpdate' },
+        ])
+
+        expect(state2).toEqual(state1)
+        expect(effects2).toEqual([{ type: 'ScheduleRetryUpdate' }])
+
+        const [state3, effects3] = reduceWithIndexerReducer(state2, [
+          { type: 'RetryInvalidate' },
+        ])
+
+        expect(state3).toEqual({
+          ...state2,
+          status: 'invalidating',
+          retryingInvalidate: false,
+        })
+        expect(effects3).toEqual([{ type: 'Invalidate', targetHeight: 50 }])
+      })
     })
   })
 })

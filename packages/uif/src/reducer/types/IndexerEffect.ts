@@ -4,7 +4,8 @@ export type IndexerEffect =
   | SetSafeHeightEffect
   | NotifyReadyEffect
   | TickEffect
-  | RetryUpdateEffect
+  | ScheduleRetryUpdateEffect
+  | ScheduleRetryInvalidateEffect
 
 export interface UpdateEffect {
   type: 'Update'
@@ -30,6 +31,10 @@ export interface TickEffect {
   type: 'Tick'
 }
 
-export interface RetryUpdateEffect {
-  type: 'RetryUpdate'
+export interface ScheduleRetryUpdateEffect {
+  type: 'ScheduleRetryUpdate'
+}
+
+export interface ScheduleRetryInvalidateEffect {
+  type: 'ScheduleRetryInvalidate'
 }

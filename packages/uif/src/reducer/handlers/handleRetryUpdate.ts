@@ -11,8 +11,8 @@ export function handleRetryUpdate(
 ): IndexerReducerResult {
   assert(state.retryingUpdate, 'should be retrying update')
 
-  if (state.status === 'invalidating') {
-    return [state, [{ type: 'RetryUpdate' }]]
+  if (state.status === 'invalidating' || state.retryingInvalidate) {
+    return [state, [{ type: 'ScheduleRetryUpdate' }]]
   }
 
   return continueOperations({
