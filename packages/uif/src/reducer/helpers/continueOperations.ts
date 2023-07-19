@@ -6,10 +6,16 @@ import { IndexerState } from '../types/IndexerState'
 
 export function continueOperations(
   state: IndexerState,
-  options: { updateFinished?: boolean; forceInvalidate?: boolean } = {},
+  options: {
+    updateFinished?: boolean
+    forceInvalidate?: boolean
+    updateFailed?: boolean
+  } = {},
 ): IndexerReducerResult {
+  const forceInvalidate = options.forceInvalidate ?? options.updateFailed
+
   const initializedParents = state.parents.filter((x) => x.initialized)
-  if (initializedParents.length > 0 && !options.forceInvalidate) {
+  if (initializedParents.length > 0 && !forceInvalidate) {
     const parentHeight = Math.min(
       ...initializedParents.map((x) => x.safeHeight),
     )
@@ -71,7 +77,7 @@ export function continueOperations(
   }
 
   if (
-    !options.forceInvalidate &&
+    !forceInvalidate &&
     state.targetHeight > state.height &&
     state.status === 'idle' &&
     !state.retryingUpdate &&
@@ -87,12 +93,17 @@ export function continueOperations(
 
   if (
     state.retryingInvalidate ||
-    (!options.forceInvalidate &&
+    (!forceInvalidate &&
       (state.status !== 'idle' ||
         state.targetHeight === state.height ||
-        state.waiting))
+        state.waiting ||
+        (state.retryingUpdate && state.targetHeight >= state.height)))
   ) {
     return [state, effects]
+  }
+
+  if (options.updateFailed) {
+    effects.push({ type: 'RetryUpdate' })
   }
 
   return [

@@ -23,7 +23,6 @@ export interface UpdateSucceededAction {
 
 export interface UpdateFailedAction {
   type: 'UpdateFailed'
-  retryTimeout?: number
   fatal?: boolean
 }
 

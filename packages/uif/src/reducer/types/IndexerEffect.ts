@@ -32,5 +32,4 @@ export interface TickEffect {
 
 export interface RetryUpdateEffect {
   type: 'RetryUpdate'
-  retryTimeout: number
 }

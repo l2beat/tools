@@ -15,7 +15,7 @@ export class BlockNumberIndexer extends ChildIndexer {
   }
 
   override async update(from: number, to: number): Promise<number> {
-    await setTimeout(3_000)
+    await setTimeout(2_000)
     if (Math.random() < 0.5) {
       throw new Error('Random error')
     }

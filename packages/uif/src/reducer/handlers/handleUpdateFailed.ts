@@ -12,12 +12,13 @@ export function handleUpdateFailed(
   if (action.fatal) {
     return [{ ...state, status: 'errored' }, []]
   }
+
   const targetHeight =
     state.height < state.targetHeight || state.waiting
       ? state.height
       : state.targetHeight
   return continueOperations(
-    { ...state, status: 'idle', targetHeight },
-    { forceInvalidate: true },
+    { ...state, status: 'idle', targetHeight, retryingUpdate: true },
+    { updateFailed: true },
   )
 }

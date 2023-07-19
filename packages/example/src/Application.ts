@@ -14,7 +14,7 @@ export class Application {
 
   constructor(config: Config) {
     const logger = new Logger({
-      logLevel: 'INFO',
+      logLevel: 'DEBUG',
       format: 'pretty',
       colors: true,
       utc: true,
