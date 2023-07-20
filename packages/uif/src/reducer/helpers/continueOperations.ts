@@ -82,8 +82,8 @@ export function continueOperations(
     !forceInvalidate &&
     state.targetHeight > state.height &&
     state.status === 'idle' &&
-    !state.retryingUpdate &&
-    !state.retryingInvalidate
+    !state.updateBlocked &&
+    !state.invalidateBlocked
   ) {
     assert(state.parents.length > 0, 'Root indexer cannot update')
 
@@ -98,12 +98,12 @@ export function continueOperations(
   }
 
   if (
-    state.retryingInvalidate ||
+    state.invalidateBlocked ||
     (!forceInvalidate &&
       (state.status !== 'idle' ||
         state.targetHeight === state.height ||
         state.waiting ||
-        (state.retryingUpdate && state.targetHeight >= state.height)))
+        (state.updateBlocked && state.targetHeight >= state.height)))
   ) {
     return [state, effects]
   }

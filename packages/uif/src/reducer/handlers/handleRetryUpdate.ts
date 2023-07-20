@@ -9,14 +9,14 @@ export function handleRetryUpdate(
   state: IndexerState,
   _action: RetryUpdateAction,
 ): IndexerReducerResult {
-  assert(state.retryingUpdate, 'should be retrying update')
+  assert(state.updateBlocked, 'should be retrying update')
 
-  if (state.status === 'invalidating' || state.retryingInvalidate) {
+  if (state.status === 'invalidating' || state.invalidateBlocked) {
     return [state, [{ type: 'ScheduleRetryUpdate' }]]
   }
 
   return continueOperations({
     ...state,
-    retryingUpdate: false,
+    updateBlocked: false,
   })
 }

@@ -10,7 +10,7 @@ export function handleRequestTick(
 ): IndexerReducerResult {
   assertRoot(state)
 
-  if (state.status === 'errored' || state.retryingTick) {
+  if (state.status === 'errored' || state.tickBlocked) {
     return [state, []]
   }
 

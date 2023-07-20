@@ -18,7 +18,7 @@ export function handleInvalidateFailed(
     ? action.targetHeight
     : Math.min(action.targetHeight, state.targetHeight)
   return continueOperations(
-    { ...state, status: 'idle', targetHeight, retryingInvalidate: true },
+    { ...state, status: 'idle', targetHeight, invalidateBlocked: true },
     { invalidateFailed: true },
   )
 }

@@ -18,7 +18,7 @@ export function handleUpdateFailed(
       ? state.height
       : state.targetHeight
   return continueOperations(
-    { ...state, status: 'idle', targetHeight, retryingUpdate: true },
+    { ...state, status: 'idle', targetHeight, updateBlocked: true },
     { updateFailed: true },
   )
 }

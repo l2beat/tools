@@ -667,7 +667,7 @@ describe(indexerReducer.name, () => {
           ...initState,
           status: 'invalidating',
           targetHeight: 100,
-          retryingUpdate: true,
+          updateBlocked: true,
           parents: [{ safeHeight: 200, initialized: true, waiting: false }],
         })
         expect(effects1).toEqual([
@@ -693,7 +693,7 @@ describe(indexerReducer.name, () => {
           ...initState,
           status: 'idle',
           targetHeight: 200,
-          retryingUpdate: true,
+          updateBlocked: true,
           parents: [{ safeHeight: 200, initialized: true, waiting: false }],
         })
         expect(effects1).toEqual([])
@@ -717,7 +717,7 @@ describe(indexerReducer.name, () => {
           ...state2,
           status: 'updating',
           targetHeight: 200, // not 300 because we do not save the targetHeight when retrying Update
-          retryingUpdate: false,
+          updateBlocked: false,
         })
 
         expect(effects3).toEqual([{ type: 'Update', targetHeight: 200 }])
@@ -778,7 +778,7 @@ describe(indexerReducer.name, () => {
           ...state2,
           status: 'idle',
           targetHeight: 50,
-          retryingUpdate: false,
+          updateBlocked: false,
         })
 
         expect(effects2).toEqual([])
@@ -799,7 +799,7 @@ describe(indexerReducer.name, () => {
         expect(state1).toEqual({
           ...initState,
           status: 'invalidating',
-          retryingUpdate: true,
+          updateBlocked: true,
           targetHeight: 50,
           safeHeight: 50,
           parents: [{ safeHeight: 50, initialized: true, waiting: false }],
@@ -826,7 +826,7 @@ describe(indexerReducer.name, () => {
         expect(state1).toEqual({
           ...initState,
           status: 'invalidating',
-          retryingUpdate: true,
+          updateBlocked: true,
           targetHeight: 100,
           safeHeight: 50,
           waiting: true,
@@ -855,7 +855,7 @@ describe(indexerReducer.name, () => {
         expect(state1).toEqual({
           ...initState,
           status: 'invalidating',
-          retryingUpdate: true,
+          updateBlocked: true,
           targetHeight: 100, // TODO: doesn't matter?
           safeHeight: 100,
           parents: [{ safeHeight: 200, initialized: true, waiting: false }],
@@ -869,7 +869,7 @@ describe(indexerReducer.name, () => {
         expect(state2).toEqual({
           ...state1,
           status: 'idle',
-          retryingUpdate: true,
+          updateBlocked: true,
           targetHeight: 200,
         })
 
@@ -882,7 +882,7 @@ describe(indexerReducer.name, () => {
         expect(state3).toEqual({
           ...state2,
           status: 'updating',
-          retryingUpdate: false,
+          updateBlocked: false,
         })
         expect(effects3).toEqual([{ type: 'Update', targetHeight: 200 }])
       })
@@ -900,7 +900,7 @@ describe(indexerReducer.name, () => {
         expect(state1).toEqual({
           ...initState,
           status: 'idle',
-          retryingInvalidate: true,
+          invalidateBlocked: true,
           targetHeight: 50,
           safeHeight: 50,
           parents: [{ safeHeight: 50, initialized: true, waiting: false }],
@@ -914,7 +914,7 @@ describe(indexerReducer.name, () => {
         expect(state2).toEqual({
           ...state1,
           status: 'invalidating',
-          retryingInvalidate: false,
+          invalidateBlocked: false,
         })
 
         expect(effects2).toEqual([{ type: 'Invalidate', targetHeight: 50 }])
@@ -934,7 +934,7 @@ describe(indexerReducer.name, () => {
         expect(state).toEqual({
           ...initState,
           status: 'idle',
-          retryingInvalidate: true,
+          invalidateBlocked: true,
           targetHeight: 20,
           safeHeight: 20,
           parents: [{ safeHeight: 20, initialized: true, waiting: false }],
@@ -958,7 +958,7 @@ describe(indexerReducer.name, () => {
         expect(state1).toEqual({
           ...initState,
           status: 'idle',
-          retryingInvalidate: true,
+          invalidateBlocked: true,
           targetHeight: 50,
           safeHeight: 20,
           waiting: true,
@@ -976,7 +976,7 @@ describe(indexerReducer.name, () => {
           targetHeight: 50,
           status: 'invalidating',
           children: [{ ready: false }],
-          retryingInvalidate: false,
+          invalidateBlocked: false,
         })
 
         expect(effects2).toEqual([{ type: 'Invalidate', targetHeight: 50 }])
@@ -997,7 +997,7 @@ describe(indexerReducer.name, () => {
           safeHeight: 100,
           status: 'idle',
           initializedSelf: true,
-          retryingTick: true,
+          tickBlocked: true,
         })
         expect(effects1).toEqual([{ type: 'ScheduleRetryTick' }])
 
@@ -1029,7 +1029,7 @@ describe(indexerReducer.name, () => {
           safeHeight: 100,
           status: 'idle',
           tickScheduled: false,
-          retryingTick: true,
+          tickBlocked: true,
           initializedSelf: true,
         })
         expect(effects).toEqual([{ type: 'ScheduleRetryTick' }])
@@ -1067,8 +1067,8 @@ describe(indexerReducer.name, () => {
         expect(state1).toEqual({
           ...inisState,
           status: 'idle',
-          retryingUpdate: true,
-          retryingInvalidate: true,
+          updateBlocked: true,
+          invalidateBlocked: true,
           targetHeight: 100,
           safeHeight: 100,
           parents: [{ safeHeight: 200, initialized: true, waiting: false }],
@@ -1094,8 +1094,8 @@ describe(indexerReducer.name, () => {
         expect(state1).toEqual({
           ...inisState,
           status: 'idle',
-          retryingUpdate: true,
-          retryingInvalidate: true,
+          updateBlocked: true,
+          invalidateBlocked: true,
           targetHeight: 300,
           // TODO: maybe targetHeight should stay 100, because we want to invalidate after
           parents: [{ safeHeight: 300, initialized: true, waiting: false }],
@@ -1117,7 +1117,7 @@ describe(indexerReducer.name, () => {
         expect(state3).toEqual({
           ...state2,
           targetHeight: 100,
-          retryingInvalidate: false,
+          invalidateBlocked: false,
           status: 'invalidating',
         })
         expect(effects3).toEqual([{ type: 'Invalidate', targetHeight: 100 }])
@@ -1140,8 +1140,8 @@ describe(indexerReducer.name, () => {
 
         expect(state1).toEqual({
           ...inisState,
-          retryingInvalidate: true,
-          retryingUpdate: true,
+          invalidateBlocked: true,
+          updateBlocked: true,
           safeHeight: 50,
           targetHeight: 50,
           status: 'idle',
@@ -1167,7 +1167,7 @@ describe(indexerReducer.name, () => {
         expect(state3).toEqual({
           ...state2,
           status: 'invalidating',
-          retryingInvalidate: false,
+          invalidateBlocked: false,
         })
         expect(effects3).toEqual([{ type: 'Invalidate', targetHeight: 50 }])
       })

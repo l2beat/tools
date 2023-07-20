@@ -11,7 +11,7 @@ export function handleRetryInvalidate(
     ? Math.min(state.height, state.targetHeight)
     : state.safeHeight
   return continueOperations(
-    { ...state, retryingInvalidate: false, targetHeight },
+    { ...state, invalidateBlocked: false, targetHeight },
     { forceInvalidate: true },
   )
 }

@@ -8,7 +8,7 @@ export function handleRetryTick(
   state: IndexerState,
   _action: RetryTickAction,
 ): IndexerReducerResult {
-  assert(state.retryingTick, 'should be retrying tick')
+  assert(state.tickBlocked, 'should be retrying tick')
 
   return [
     { ...state, status: 'ticking', tickScheduled: false },
