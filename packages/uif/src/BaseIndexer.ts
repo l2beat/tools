@@ -126,7 +126,8 @@ export abstract class BaseIndexer implements Indexer {
           return this.executeScheduleRetryUpdate()
         case 'ScheduleRetryInvalidate':
           return this.executeScheduleRetryInvalidate()
-
+        case 'ScheduleRetryTick':
+          return this.executeScheduleRetryTick()
         default:
           return assertUnreachable(effect)
       }
@@ -182,6 +183,12 @@ export abstract class BaseIndexer implements Indexer {
       this.logger.error('Tick failed', e)
       this.dispatch({ type: 'TickFailed' })
     }
+  }
+
+  private executeScheduleRetryTick(): void {
+    setTimeout(() => {
+      this.dispatch({ type: 'RetryTick' })
+    }, this.retryTimeout)
   }
 
   /**

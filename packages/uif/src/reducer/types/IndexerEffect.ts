@@ -6,6 +6,7 @@ export type IndexerEffect =
   | TickEffect
   | ScheduleRetryUpdateEffect
   | ScheduleRetryInvalidateEffect
+  | ScheduleRetryTickEffect
 
 export interface UpdateEffect {
   type: 'Update'
@@ -37,4 +38,8 @@ export interface ScheduleRetryUpdateEffect {
 
 export interface ScheduleRetryInvalidateEffect {
   type: 'ScheduleRetryInvalidate'
+}
+
+export interface ScheduleRetryTickEffect {
+  type: 'ScheduleRetryTick'
 }

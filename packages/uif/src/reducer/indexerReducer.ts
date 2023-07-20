@@ -6,6 +6,7 @@ import { handleInvalidateSucceeded } from './handlers/handleInvalidateSucceeded'
 import { handleParentUpdated } from './handlers/handleParentUpdated'
 import { handleRequestTick } from './handlers/handleRequestTick'
 import { handleRetryInvalidate } from './handlers/handleRetryInvalidate'
+import { handleRetryTick } from './handlers/handleRetryTick'
 import { handleRetryUpdate } from './handlers/handleRetryUpdate'
 import { handleTickFailed } from './handlers/handleTickFailed'
 import { handleTickSucceeded } from './handlers/handleTickSucceeded'
@@ -48,7 +49,7 @@ export function indexerReducer(
     case 'TickFailed':
       return handleTickFailed(state, action)
     case 'RetryTick':
-      throw new Error('Not implemented!')
+      return handleRetryTick(state, action)
 
     default:
       assertUnreachable(action)

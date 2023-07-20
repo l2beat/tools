@@ -17,12 +17,15 @@ export class BlockNumberIndexer extends ChildIndexer {
   override async update(from: number, to: number): Promise<number> {
     await setTimeout(2_000)
     if (Math.random() < 0.5) {
-      throw new Error('Random error')
+      throw new Error('Random error while updating')
     }
     return to
   }
 
   override async invalidate(to: number): Promise<void> {
+    if (Math.random() < 0.5) {
+      throw new Error('Random error while invalidating')
+    }
     return Promise.resolve()
   }
 

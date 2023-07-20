@@ -984,21 +984,33 @@ describe(indexerReducer.name, () => {
 
       it('a failed tick triggers another tick', () => {
         const initState = getInitialState(0)
-        const [state, effects] = reduceWithIndexerReducer(initState, [
+        const [state1, effects1] = reduceWithIndexerReducer(initState, [
           { type: 'Initialized', safeHeight: 100, childCount: 0 },
           { type: 'RequestTick' },
           { type: 'TickFailed' },
         ])
 
-        expect(state).toEqual({
+        expect(state1).toEqual({
           ...initState,
           height: 100,
           targetHeight: 100,
           safeHeight: 100,
-          status: 'ticking',
+          status: 'idle',
           initializedSelf: true,
+          retryingTick: true,
         })
-        expect(effects).toEqual([{ type: 'Tick' }])
+        expect(effects1).toEqual([{ type: 'ScheduleRetryTick' }])
+
+        const [state2, effects2] = reduceWithIndexerReducer(state1, [
+          { type: 'RetryTick' },
+        ])
+
+        expect(state2).toEqual({
+          ...state1,
+          status: 'ticking',
+        })
+
+        expect(effects2).toEqual([{ type: 'Tick' }])
       })
 
       it('a failed tick resets scheduled ticks', () => {
@@ -1015,11 +1027,28 @@ describe(indexerReducer.name, () => {
           height: 100,
           targetHeight: 100,
           safeHeight: 100,
-          status: 'ticking',
+          status: 'idle',
           tickScheduled: false,
+          retryingTick: true,
           initializedSelf: true,
         })
-        expect(effects).toEqual([{ type: 'Tick' }])
+        expect(effects).toEqual([{ type: 'ScheduleRetryTick' }])
+      })
+
+      it('when retrying tick, tick request does nothing', () => {
+        const initState = getInitialState(0)
+        const [state1] = reduceWithIndexerReducer(initState, [
+          { type: 'Initialized', safeHeight: 100, childCount: 0 },
+          { type: 'RequestTick' },
+          { type: 'TickFailed' },
+        ])
+
+        const [state2, effects2] = reduceWithIndexerReducer(state1, [
+          { type: 'RequestTick' },
+        ])
+
+        expect(state2).toEqual(state1)
+        expect(effects2).toEqual([])
       })
 
       it('update failed then invalidate failed', () => {

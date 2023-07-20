@@ -13,5 +13,8 @@ export function handleTickFailed(
     return [{ ...state, status: 'errored', tickScheduled: false }, []]
   }
 
-  return [{ ...state, tickScheduled: false }, [{ type: 'Tick' }]]
+  return [
+    { ...state, status: 'idle', tickScheduled: false, retryingTick: true },
+    [{ type: 'ScheduleRetryTick' }],
+  ]
 }
