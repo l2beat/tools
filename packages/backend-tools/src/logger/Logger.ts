@@ -3,10 +3,11 @@ import { join } from 'path'
 
 import { formatLevelPretty } from './formatLevelPretty'
 import { formatParametersPretty } from './formatParametersPretty'
-import { formatServicePretty, tagService } from './formatServicePretty'
+import { formatServicePretty } from './formatServicePretty'
 import { formatTimePretty } from './formatTimePretty'
 import { LEVEL, LogLevel } from './LogLevel'
 import { resolveLog } from './resolveLog'
+import { tagService } from './tagService'
 
 export interface LoggerBackend {
   debug(message: string): void
@@ -146,10 +147,17 @@ export class Logger {
   }
 
   private print(level: LogLevel, parameters: {}): void {
+    const service = tagService(this.options.service, this.options.tag)
+    let message: string | undefined
+    if ('message' in parameters && typeof parameters.message === 'string') {
+      message = parameters.message
+      delete parameters.message
+    }
+
     const output =
       this.options.format === 'json'
-        ? this.formatJson(level, parameters)
-        : this.formatPretty(level, parameters)
+        ? this.formatJson(level, service, message, parameters)
+        : this.formatPretty(level, service, message, parameters)
 
     if (level === 'CRITICAL' || level === 'ERROR') {
       this.options.backend.error(output)
@@ -162,17 +170,16 @@ export class Logger {
     }
   }
 
-  private formatJson(level: LogLevel, parameters: {}): string {
-    const time = this.options.getTime().toISOString()
-    const message =
-      'message' in parameters && typeof parameters.message === 'string'
-        ? parameters.message
-        : undefined
-
+  private formatJson(
+    level: LogLevel,
+    service: string | undefined,
+    message: string | undefined,
+    parameters: {},
+  ): string {
     const core = {
-      time,
+      time: this.options.getTime().toISOString(),
       level,
-      service: tagService(this.options.service, this.options.tag),
+      service,
       message,
     }
     try {
@@ -183,31 +190,26 @@ export class Logger {
     }
   }
 
-  private formatPretty(level: LogLevel, parameters: {}): string {
-    const time = formatTimePretty(
+  private formatPretty(
+    level: LogLevel,
+    service: string | undefined,
+    message: string | undefined,
+    parameters: {},
+  ): string {
+    const timeOut = formatTimePretty(
       this.options.getTime(),
       this.options.utc,
       this.options.colors,
     )
-
     const levelOut = formatLevelPretty(level, this.options.colors)
-    const service = formatServicePretty(
-      this.options.service,
-      this.options.tag,
-      this.options.colors,
-    )
-
-    let messageOut = ''
-    if ('message' in parameters && typeof parameters.message === 'string') {
-      messageOut = ` ${parameters.message}`
-      delete parameters.message
-    }
-
-    const params = formatParametersPretty(
+    const serviceOut = formatServicePretty(service, this.options.colors)
+    const messageOut = message ? ` ${message}` : ''
+    const paramsOut = formatParametersPretty(
       sanitize(parameters),
       this.options.colors,
     )
-    return `${time} ${levelOut}${service}${messageOut}${params}\n`
+
+    return `${timeOut} ${levelOut}${serviceOut}${messageOut}${paramsOut}\n`
   }
 }
 
