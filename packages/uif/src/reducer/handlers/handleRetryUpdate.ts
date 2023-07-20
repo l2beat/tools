@@ -11,10 +11,6 @@ export function handleRetryUpdate(
 ): IndexerReducerResult {
   assert(state.updateBlocked, 'update should be blocked')
 
-  if (state.status === 'invalidating' || state.invalidateBlocked) {
-    return [state, [{ type: 'ScheduleRetryUpdate' }]]
-  }
-
   return continueOperations({
     ...state,
     updateBlocked: false,
