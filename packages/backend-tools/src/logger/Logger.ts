@@ -6,6 +6,7 @@ import { formatParametersPretty } from './formatParametersPretty'
 import { formatServicePretty } from './formatServicePretty'
 import { formatTimePretty } from './formatTimePretty'
 import { LEVEL, LogLevel } from './LogLevel'
+import { LogThrottle, LogThrottleOptions } from './LogThrottle'
 import { resolveLog } from './resolveLog'
 import { tagService } from './tagService'
 
@@ -33,6 +34,7 @@ export class Logger {
   private readonly options: LoggerOptions
   private readonly logLevel: number
   private readonly cwd: string
+  private throttle?: LogThrottle
 
   constructor(options: Partial<LoggerOptions>) {
     this.options = {
@@ -76,7 +78,9 @@ export class Logger {
   })
 
   configure(options: Partial<LoggerOptions>): Logger {
-    return new Logger({ ...this.options, ...options })
+    const logger = new Logger({ ...this.options, ...options })
+    logger.throttle = this.throttle
+    return logger
   }
 
   for(object: {} | string): Logger {
@@ -88,6 +92,15 @@ export class Logger {
 
   tag(tag: string | undefined): Logger {
     return this.configure({ tag })
+  }
+
+  withThrottling(options: LogThrottleOptions): Logger {
+    const logger = new Logger(this.options)
+    logger.throttle = new LogThrottle(
+      { print: (...args) => logger.printExactly(...args) },
+      options,
+    )
+    return logger
   }
 
   critical(message: string, parameters?: unknown): void
@@ -154,6 +167,19 @@ export class Logger {
       delete parameters.message
     }
 
+    if (this.throttle?.throttle(level, service, message)) {
+      return
+    }
+
+    this.printExactly(level, service, message, parameters)
+  }
+
+  private printExactly(
+    level: LogLevel,
+    service: string | undefined,
+    message: string | undefined,
+    parameters: {},
+  ): void {
     const output =
       this.options.format === 'json'
         ? this.formatJson(level, service, message, parameters)
