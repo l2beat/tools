@@ -94,6 +94,7 @@ export function continueOperations(
   }
 
   if (options.invalidateFailed) {
+    assert(state.invalidateBlocked, 'Invalidate should be blocked')
     effects.push({ type: 'ScheduleRetryInvalidate' })
   }
 
@@ -109,6 +110,7 @@ export function continueOperations(
   }
 
   if (options.updateFailed) {
+    assert(state.updateBlocked, 'Update should be blocked')
     effects.push({ type: 'ScheduleRetryUpdate' })
   }
 
