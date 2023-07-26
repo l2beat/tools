@@ -15,6 +15,7 @@ describe(BaseIndexer.name, () => {
 
       await child.finishInvalidate()
       await parent.doTick(1)
+      await parent.finishTick(1)
 
       await child.finishUpdate(1)
 
@@ -29,6 +30,7 @@ describe(BaseIndexer.name, () => {
       await child.start()
 
       await parent.doTick(1)
+      await parent.finishTick(1)
       await child.finishInvalidate()
 
       await child.finishUpdate(1)
@@ -42,7 +44,7 @@ describe(BaseIndexer.name, () => {
     // Pi - parent indexer
     // Mi - middle indexer
     // Ci - child indexer
-    it('When Mi updating, passes correcty safeHeight', async () => {
+    it('When Mi updating, passes correctly safeHeight', async () => {
       const parent = new TestRootIndexer(0)
       const middle = new TestChildIndexer([parent], 0, 'Middle')
       const child = new TestChildIndexer([middle], 0, 'Child')
@@ -55,11 +57,13 @@ describe(BaseIndexer.name, () => {
       await child.finishInvalidate()
 
       await parent.doTick(10)
+      await parent.finishTick(10)
       await middle.finishUpdate(10)
 
       expect(child.getState().status).toEqual('updating')
 
       await parent.doTick(5)
+      await parent.finishTick(5)
 
       expect(middle.getState().waiting).toEqual(true)
     })
@@ -78,10 +82,14 @@ async function waitUntil(predicate: () => boolean): Promise<void> {
 }
 
 class TestRootIndexer extends RootIndexer {
+  public resolveTick: (height: number) => void = () => {}
+  public rejectTick: (error: unknown) => void = () => {}
+
   dispatchCounter = 0
+  ticking = false
 
   constructor(private safeHeight: number, name?: string) {
-    super(Logger.SILENT.tag(name))
+    super(Logger.SILENT.tag(name), {})
 
     const oldDispatch = Reflect.get(this, 'dispatch')
     Reflect.set(this, 'dispatch', (action: IndexerAction) => {
@@ -98,8 +106,33 @@ class TestRootIndexer extends RootIndexer {
     await waitUntil(() => this.dispatchCounter > counter)
   }
 
+  async finishTick(result: number | Error): Promise<void> {
+    await waitUntil(() => this.ticking)
+    const counter = this.dispatchCounter
+    if (typeof result === 'number') {
+      this.resolveTick(result)
+    } else {
+      this.rejectTick(result)
+    }
+    await waitUntil(() => this.dispatchCounter > counter)
+  }
+
   override tick(): Promise<number> {
-    return Promise.resolve(this.safeHeight)
+    this.ticking = true
+
+    return new Promise<number>((resolve, reject) => {
+      this.resolveTick = resolve
+      this.rejectTick = reject
+    }).finally(() => {
+      this.ticking = false
+    })
+  }
+
+  override async getSafeHeight(): Promise<number> {
+    const promise = this.tick()
+    this.resolveTick(this.safeHeight)
+    await promise
+    return this.safeHeight
   }
 }
 
@@ -145,7 +178,7 @@ class TestChildIndexer extends ChildIndexer {
     private safeHeight: number,
     name?: string,
   ) {
-    super(Logger.SILENT.tag(name), parents)
+    super(Logger.SILENT.tag(name), parents, {})
 
     const oldDispatch = Reflect.get(this, 'dispatch')
     Reflect.set(this, 'dispatch', (action: IndexerAction) => {
