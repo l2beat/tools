@@ -1,8 +1,10 @@
 import { Logger } from '@l2beat/backend-tools'
-import { expect } from 'earl'
+import { MockFunction, expect } from 'earl'
 
 import { BaseIndexer, ChildIndexer, RootIndexer } from './BaseIndexer'
 import { IndexerAction } from './reducer/types/IndexerAction'
+import { install, InstalledClock } from '@sinonjs/fake-timers'
+
 
 describe(BaseIndexer.name, () => {
   describe('correctly informs about updates', () => {
@@ -15,6 +17,7 @@ describe(BaseIndexer.name, () => {
 
       await child.finishInvalidate()
       await parent.doTick(1)
+      await parent.finishTick(1)
 
       await child.finishUpdate(1)
 
@@ -64,6 +67,28 @@ describe(BaseIndexer.name, () => {
       expect(middle.getState().waiting).toEqual(true)
     })
   })
+
+  // describe('retries on error', () => {
+  //   it('retries update', async () => {
+  //     const parent = new TestRootIndexer(0)
+  //     const child = new TestChildIndexer([parent], 0)
+
+  //     await parent.start()
+  //     await child.start()
+
+  //     await child.finishInvalidate()
+  //     await parent.doTick(1)
+
+  //     await child.finishUpdate(new Error('test error'))
+  //     await child.finishUpdate(1)
+
+  //     waitForErrorReport()
+
+  //     expect(await child.getSafeHeight()).toEqual(1)
+  //   })
+  // })
+
+  // TODO: test retries for all [tick, update, invalidate]
 })
 
 async function waitUntil(predicate: () => boolean): Promise<void> {
@@ -77,11 +102,28 @@ async function waitUntil(predicate: () => boolean): Promise<void> {
   })
 }
 
+// async function waitForErrorReport(
+//   time: InstalledClock,
+//   reportErrorMock: MockFunction<any, any>,
+// ) {
+//   const currentCalls = reportErrorMock.calls.length
+//   let errorReported = false
+
+//   while (!errorReported) {
+//     await time.tickAsync(1)
+//     errorReported = reportErrorMock.calls.length > currentCalls
+//   }
+// }
+
 class TestRootIndexer extends RootIndexer {
+  public resolveTick: (height: number) => void = () => {}
+  public rejectTick: (error: unknown) => void = () => {}
+
   dispatchCounter = 0
+  ticking = false
 
   constructor(private safeHeight: number, name?: string) {
-    super(Logger.SILENT.tag(name))
+    super(Logger.DEBUG.tag(name), {})
 
     const oldDispatch = Reflect.get(this, 'dispatch')
     Reflect.set(this, 'dispatch', (action: IndexerAction) => {
@@ -98,8 +140,26 @@ class TestRootIndexer extends RootIndexer {
     await waitUntil(() => this.dispatchCounter > counter)
   }
 
+  async finishTick(result: number | Error): Promise<void> {
+    await waitUntil(() => this.ticking)
+    const counter = this.dispatchCounter
+    if (typeof result === 'number') {
+      this.resolveTick(result)
+    } else {
+      this.rejectTick(result)
+    }
+    await waitUntil(() => this.dispatchCounter > counter)
+  }
+
   override tick(): Promise<number> {
-    return Promise.resolve(this.safeHeight)
+    this.ticking = true
+  
+    return new Promise<number>((resolve, reject) => {
+      this.resolveTick = resolve
+      this.rejectTick = reject
+    }).finally(() => {
+      this.ticking = false
+    })
   }
 }
 
@@ -145,7 +205,7 @@ class TestChildIndexer extends ChildIndexer {
     private safeHeight: number,
     name?: string,
   ) {
-    super(Logger.SILENT.tag(name), parents)
+    super(Logger.DEBUG.tag(name), parents, {})
 
     const oldDispatch = Reflect.get(this, 'dispatch')
     Reflect.set(this, 'dispatch', (action: IndexerAction) => {
