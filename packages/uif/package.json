@@ -7,10 +7,6 @@
   "bugs": {
     "url": "https://github.com/l2beat/tools/issues"
   },
-  "engines": {
-    "node": "^16.0.0",
-    "yarn": ">=1.22.0 <2"
-  },
   "author": "Piotr Szlachciak <szlachciak.piotr@gmail.com>",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -36,5 +32,9 @@
   "dependencies": {
     "@l2beat/backend-tools": "*"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "@sinonjs/fake-timers": "^10.2.0",
+    "@types/sinonjs__fake-timers": "^8.1.2",
+    "wait-for-expect": "^3.0.2"
+  }
 }
