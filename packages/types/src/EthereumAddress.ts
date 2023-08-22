@@ -1,10 +1,12 @@
 import { getAddress } from 'viem'
 
+import { randomHexDigit } from './utils/randomHexDigit'
+
 export interface EthereumAddress extends String {
   _EthereumAddressBrand: string
 }
 
-export function EthereumAddress(value: string) {
+export function EthereumAddress(value: string): EthereumAddress {
   try {
     return getAddress(value) as unknown as EthereumAddress
   } catch {
@@ -14,7 +16,7 @@ export function EthereumAddress(value: string) {
 
 EthereumAddress.ZERO = EthereumAddress('0x' + '0'.repeat(40))
 
-EthereumAddress.check = function check(value: string) {
+EthereumAddress.check = function check(value: string): boolean {
   try {
     return EthereumAddress(value).toString() === value
   } catch {
@@ -25,7 +27,7 @@ EthereumAddress.check = function check(value: string) {
 EthereumAddress.isBefore = function isBefore(
   a: EthereumAddress,
   b: EthereumAddress,
-) {
+): boolean {
   return a.toLowerCase() < b.toLowerCase()
 }
 
@@ -36,11 +38,12 @@ EthereumAddress.inOrder = function inOrder(
   return EthereumAddress.isBefore(a, b) ? [a, b] : [b, a]
 }
 
-EthereumAddress.random = function random() {
-  const digit = () => '0123456789abcdef'[Math.floor(Math.random() * 16)]
-  return EthereumAddress('0x' + Array.from({ length: 40 }).map(digit).join(''))
+EthereumAddress.random = function random(): EthereumAddress {
+  return EthereumAddress(
+    '0x' + Array.from({ length: 40 }).map(randomHexDigit).join(''),
+  )
 }
 
-EthereumAddress.unsafe = function unsafe(address: string) {
+EthereumAddress.unsafe = function unsafe(address: string): EthereumAddress {
   return address as unknown as EthereumAddress
 }

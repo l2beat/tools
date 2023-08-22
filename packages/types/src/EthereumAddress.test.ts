@@ -18,7 +18,6 @@ describe(EthereumAddress.name, () => {
   })
 
   it('accepts addresses with mixed case that is not a checksum', () => {
-    const address = '0xAbCdABCd12345678abcDabCd12345678ABcdaBcD'
     expect(
       EthereumAddress('0xAbCdABCd12345678abcDabCd12345678ABcdaBcD'),
     ).toEqual(
