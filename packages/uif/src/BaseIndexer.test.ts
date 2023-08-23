@@ -72,6 +72,8 @@ describe(BaseIndexer.name, () => {
   })
 
   describe('retries on error', () => {
+    // Those tests are quite slow (around 500ms total)
+    // This is not a problem rn, but can be improved in the future
     it('invalidates and retries update', async () => {
       const clock = install({ shouldAdvanceTime: true })
       const parent = new TestRootIndexer(0)

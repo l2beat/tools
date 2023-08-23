@@ -67,7 +67,7 @@ export abstract class BaseIndexer implements Indexer {
   constructor(
     protected logger: Logger,
     public readonly parents: Indexer[],
-    opts: {
+    opts?: {
       tickRetryStrategy?: RetryStrategy
       updateRetryStrategy?: RetryStrategy
       invalidateRetryStrategy?: RetryStrategy
@@ -82,11 +82,11 @@ export abstract class BaseIndexer implements Indexer {
       parent.subscribe(this)
     })
 
-    this.tickRetryStrategy = opts.tickRetryStrategy ?? DEFAULT_RETRY_STRATEGY
+    this.tickRetryStrategy = opts?.tickRetryStrategy ?? DEFAULT_RETRY_STRATEGY
     this.updateRetryStrategy =
-      opts.updateRetryStrategy ?? DEFAULT_RETRY_STRATEGY
+      opts?.updateRetryStrategy ?? DEFAULT_RETRY_STRATEGY
     this.invalidateRetryStrategy =
-      opts.invalidateRetryStrategy ?? DEFAULT_RETRY_STRATEGY
+      opts?.invalidateRetryStrategy ?? DEFAULT_RETRY_STRATEGY
   }
 
   async start(): Promise<void> {
@@ -279,7 +279,7 @@ export abstract class BaseIndexer implements Indexer {
 }
 
 export abstract class RootIndexer extends BaseIndexer {
-  constructor(logger: Logger, opts: { tickRetryStrategy?: RetryStrategy }) {
+  constructor(logger: Logger, opts?: { tickRetryStrategy?: RetryStrategy }) {
     super(logger, [], opts)
   }
 
@@ -307,7 +307,7 @@ export abstract class ChildIndexer extends BaseIndexer {
   constructor(
     logger: Logger,
     parents: Indexer[],
-    opts: {
+    opts?: {
       updateRetryStrategy?: RetryStrategy
       invalidateRetryStrategy?: RetryStrategy
     },
