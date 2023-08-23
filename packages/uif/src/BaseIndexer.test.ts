@@ -1,8 +1,10 @@
 import { Logger } from '@l2beat/backend-tools'
+import { install } from '@sinonjs/fake-timers'
 import { expect } from 'earl'
 
 import { BaseIndexer, ChildIndexer, RootIndexer } from './BaseIndexer'
 import { IndexerAction } from './reducer/types/IndexerAction'
+import { RetryStrategy } from './Retries'
 
 describe(BaseIndexer.name, () => {
   describe('correctly informs about updates', () => {
@@ -68,6 +70,93 @@ describe(BaseIndexer.name, () => {
       expect(middle.getState().waiting).toEqual(true)
     })
   })
+
+  describe('retries on error', () => {
+    it('invalidates and retries update', async () => {
+      const clock = install({ shouldAdvanceTime: true })
+      const parent = new TestRootIndexer(0)
+      const updateRetryStrategy: RetryStrategy = {
+        shouldRetry: () => true,
+        timeoutMs: () => 1000,
+        clear: () => {},
+      }
+
+      const child = new TestChildIndexer([parent], 0, '', {
+        updateRetryStrategy,
+      })
+
+      await parent.start()
+      await child.start()
+
+      await child.finishInvalidate()
+
+      await parent.doTick(1)
+      await parent.finishTick(1)
+
+      await child.finishUpdate(new Error('test error'))
+      expect(child.updating).toBeFalsy()
+      expect(child.getState().status).toEqual('invalidating')
+
+      await child.finishInvalidate()
+      await clock.tickAsync(1000)
+      expect(child.getState().status).toEqual('updating')
+
+      clock.uninstall()
+    })
+
+    it('retries invalidate', async () => {
+      const clock = install({ shouldAdvanceTime: true })
+      const parent = new TestRootIndexer(0)
+      const invalidateRetryStrategy: RetryStrategy = {
+        shouldRetry: () => true,
+        timeoutMs: () => 1000,
+        clear: () => {},
+      }
+
+      const child = new TestChildIndexer([parent], 0, '', {
+        invalidateRetryStrategy,
+      })
+
+      await parent.start()
+      await child.start()
+
+      await child.finishInvalidate()
+
+      await parent.doTick(1)
+      await parent.finishTick(1)
+
+      await child.finishUpdate(new Error('test error'))
+      await child.finishInvalidate(new Error('test error'))
+      expect(child.getState().status).toEqual('idle')
+      expect(child.invalidating).toBeFalsy()
+
+      await clock.tickAsync(1000)
+      expect(child.getState().status).toEqual('invalidating')
+
+      clock.uninstall()
+    })
+
+    it('invalidates and retries tick', async () => {
+      const clock = install({ shouldAdvanceTime: true })
+      const tickRetryStrategy: RetryStrategy = {
+        shouldRetry: () => true,
+        timeoutMs: () => 1000,
+        clear: () => {},
+      }
+      const root = new TestRootIndexer(0, '', { tickRetryStrategy })
+
+      await root.start()
+
+      await root.doTick(1)
+      await root.finishTick(new Error('test error'))
+
+      expect(root.getState().status).toEqual('idle')
+      await clock.tickAsync(1000)
+      expect(root.getState().status).toEqual('ticking')
+
+      clock.uninstall()
+    })
+  })
 })
 
 async function waitUntil(predicate: () => boolean): Promise<void> {
@@ -88,8 +177,12 @@ class TestRootIndexer extends RootIndexer {
   dispatchCounter = 0
   ticking = false
 
-  constructor(private safeHeight: number, name?: string) {
-    super(Logger.SILENT.tag(name), {})
+  constructor(
+    private safeHeight: number,
+    name?: string,
+    retryStrategy?: { tickRetryStrategy?: RetryStrategy },
+  ) {
+    super(Logger.SILENT.tag(name), retryStrategy ?? {})
 
     const oldDispatch = Reflect.get(this, 'dispatch')
     Reflect.set(this, 'dispatch', (action: IndexerAction) => {
@@ -177,8 +270,12 @@ class TestChildIndexer extends ChildIndexer {
     parents: BaseIndexer[],
     private safeHeight: number,
     name?: string,
+    retryStrategy?: {
+      invalidateRetryStrategy?: RetryStrategy
+      updateRetryStrategy?: RetryStrategy
+    },
   ) {
-    super(Logger.SILENT.tag(name), parents, {})
+    super(Logger.SILENT.tag(name), parents, retryStrategy ?? {})
 
     const oldDispatch = Reflect.get(this, 'dispatch')
     Reflect.set(this, 'dispatch', (action: IndexerAction) => {
