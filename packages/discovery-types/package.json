@@ -1,6 +1,6 @@
 {
-  "name": "@l2beat/types",
-  "description": "Common types for L2BEAT projects.",
+  "name": "@l2beat/discovery-types",
+  "description": "Common types for @l2beat/discovery.",
   "version": "0.1.0",
   "license": "MIT",
   "repository": "https://github.com/l2beat/tools",
@@ -19,7 +19,6 @@
     "!dist/test"
   ],
   "scripts": {
-    "test": "mocha",
     "clean": "rm -rf dist",
     "build": "tsc",
     "start": "node -r esbuild-register src/",
@@ -30,7 +29,6 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "viem": "^1.6.7",
     "zod": "^3.22.2"
   },
   "devDependencies": {}
