@@ -12,8 +12,8 @@ export class BlockNumberIndexer extends ChildIndexer {
     private readonly blockNumberRepository: BlockNumberRepository,
   ) {
     super(logger, [fakeClockIndexer], {
-      updateRetryStrategy: Retries.exponentialBackoff({
-        stepMs: 100,
+      updateRetryStrategy: Retries.exponentialBackOff({
+        initialTimeoutMs: 100,
         maxAttempts: 10,
       }),
     })

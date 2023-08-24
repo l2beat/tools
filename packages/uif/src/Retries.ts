@@ -1,37 +1,44 @@
 import assert from 'node:assert'
 
 export interface RetryStrategy {
+  /** Returns true if the operation should be retried */
   shouldRetry: () => boolean
+  /** Increments the number of attempts */
+  markAttempt: () => void
+  /** Returns the timeout in milliseconds */
   timeoutMs: () => number
+  /** Resets the number of attempts */
   clear: () => void
 }
 
 interface ExponentialBackOffOpts {
-  stepMs: number
+  initialTimeoutMs: number
   maxAttempts: number
-  maxDistanceMs?: number
+  maxTimeoutMs?: number
 }
 
 /**
- *
  * @param opts.maxAttempts - use Infinity for indefinite retries
- * @returns
+ * @param opts.initialTimeoutMs - initial timeout by 2**attempts gives the timeout
+ * @param opts.maxTimeoutMs - maximum timeout between retries (default: Infinity)
  */
-function exponentialBackoff(opts: ExponentialBackOffOpts): RetryStrategy {
+function exponentialBackOff(opts: ExponentialBackOffOpts): RetryStrategy {
   let attempts = 0
   const maxAttempts = opts.maxAttempts
   assert(maxAttempts > 0)
-  const maxDistanceMs = opts.maxDistanceMs ?? Infinity
-  assert(maxDistanceMs > 0)
+  const maxTimeoutMs = opts.maxTimeoutMs ?? Infinity
+  assert(maxTimeoutMs > 0)
 
   return {
     shouldRetry: () => {
-      attempts++
       return attempts <= maxAttempts
     },
+    markAttempt: () => {
+      attempts++
+    },
     timeoutMs: () => {
-      const distance = Math.pow(2, attempts) * opts.stepMs
-      return Math.min(distance, maxDistanceMs)
+      const timeout = Math.pow(2, attempts - 1) * opts.initialTimeoutMs
+      return Math.min(timeout, maxTimeoutMs)
     },
     clear: () => {
       attempts = 0
@@ -40,5 +47,5 @@ function exponentialBackoff(opts: ExponentialBackOffOpts): RetryStrategy {
 }
 
 export const Retries = {
-  exponentialBackoff,
+  exponentialBackOff,
 }

@@ -16,14 +16,14 @@ import {
 import { IndexerState } from './reducer/types/IndexerState'
 import { Retries, RetryStrategy } from './Retries'
 
-const DEFAULT_RETRY_STRATEGY = Retries.exponentialBackoff({
-  stepMs: 1000,
-  maxAttempts: 10,
-  maxDistanceMs: 60 * 1000,
-})
-
 export abstract class BaseIndexer implements Indexer {
   private readonly children: Indexer[] = []
+
+  static DEFAULT_RETRY_STRATEGY = Retries.exponentialBackOff({
+    initialTimeoutMs: 1000,
+    maxAttempts: 10,
+    maxTimeoutMs: 60 * 1000,
+  })
 
   /**
    * Should read the height from the database. It must return a height, so
@@ -82,11 +82,12 @@ export abstract class BaseIndexer implements Indexer {
       parent.subscribe(this)
     })
 
-    this.tickRetryStrategy = opts?.tickRetryStrategy ?? DEFAULT_RETRY_STRATEGY
+    this.tickRetryStrategy =
+      opts?.tickRetryStrategy ?? BaseIndexer.DEFAULT_RETRY_STRATEGY
     this.updateRetryStrategy =
-      opts?.updateRetryStrategy ?? DEFAULT_RETRY_STRATEGY
+      opts?.updateRetryStrategy ?? BaseIndexer.DEFAULT_RETRY_STRATEGY
     this.invalidateRetryStrategy =
-      opts?.invalidateRetryStrategy ?? DEFAULT_RETRY_STRATEGY
+      opts?.invalidateRetryStrategy ?? BaseIndexer.DEFAULT_RETRY_STRATEGY
   }
 
   async start(): Promise<void> {
@@ -176,6 +177,7 @@ export abstract class BaseIndexer implements Indexer {
         this.updateRetryStrategy.clear()
       }
     } catch (e) {
+      this.updateRetryStrategy.markAttempt()
       const fatal = !this.updateRetryStrategy.shouldRetry()
       if (fatal) {
         this.logger.critical('Update failed', e)
@@ -202,6 +204,7 @@ export abstract class BaseIndexer implements Indexer {
       })
       this.invalidateRetryStrategy.clear()
     } catch (e) {
+      this.invalidateRetryStrategy.markAttempt()
       const fatal = !this.invalidateRetryStrategy.shouldRetry()
       if (fatal) {
         this.logger.critical('Invalidate failed', e)
@@ -236,6 +239,7 @@ export abstract class BaseIndexer implements Indexer {
       this.dispatch({ type: 'TickSucceeded', safeHeight })
       this.tickRetryStrategy.clear()
     } catch (e) {
+      this.tickRetryStrategy.markAttempt()
       const fatal = !this.tickRetryStrategy.shouldRetry()
       if (fatal) {
         this.logger.critical('Tick failed', e)

@@ -79,6 +79,7 @@ describe(BaseIndexer.name, () => {
       const parent = new TestRootIndexer(0)
       const updateRetryStrategy: RetryStrategy = {
         shouldRetry: () => true,
+        markAttempt: () => {},
         timeoutMs: () => 1000,
         clear: () => {},
       }
@@ -111,6 +112,7 @@ describe(BaseIndexer.name, () => {
       const parent = new TestRootIndexer(0)
       const invalidateRetryStrategy: RetryStrategy = {
         shouldRetry: () => true,
+        markAttempt: () => {},
         timeoutMs: () => 1000,
         clear: () => {},
       }
@@ -142,6 +144,7 @@ describe(BaseIndexer.name, () => {
       const clock = install({ shouldAdvanceTime: true })
       const tickRetryStrategy: RetryStrategy = {
         shouldRetry: () => true,
+        markAttempt: () => {},
         timeoutMs: () => 1000,
         clear: () => {},
       }
