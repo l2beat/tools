@@ -1,4 +1,9 @@
 import { Logger } from '@l2beat/backend-tools'
+import {
+  createClock,
+  FakeTimerInstallOpts,
+  install,
+} from '@sinonjs/fake-timers'
 import { expect, mockFn } from 'earl'
 
 import { BaseIndexer, ChildIndexer, RootIndexer } from './BaseIndexer'
@@ -72,22 +77,20 @@ describe(BaseIndexer.name, () => {
 
   describe('retries on error', () => {
     it('invalidates and retries update', async () => {
+      const clock = install({ shouldAdvanceTime: true, advanceTimeDelta: 1 })
+
       const parent = new TestRootIndexer(0)
 
       const shouldRetry = mockFn(() => true)
       const updateRetryStrategy: RetryStrategy = {
         shouldRetry,
         markAttempt: () => {},
-        timeoutMs: () => 0,
+        timeoutMs: () => 1000,
         clear: () => {},
       }
 
       const child = new TestChildIndexer([parent], 0, '', {
         updateRetryStrategy,
-      })
-
-      Reflect.set(child, 'executeScheduleRetryUpdate', () => {
-        Reflect.get(child, 'dispatch').call(this, { type: 'RetryUpdate' })
       })
 
       await parent.start()
@@ -104,16 +107,23 @@ describe(BaseIndexer.name, () => {
       expect(shouldRetry).toHaveBeenCalledTimes(1)
 
       await child.finishInvalidate()
+      expect(child.getState().status).toEqual('idle')
+
+      await clock.tickAsync(1000)
+
       expect(child.getState().status).toEqual('updating')
+
+      clock.uninstall()
     })
 
     it('retries invalidate', async () => {
+      const clock = install({ shouldAdvanceTime: true, advanceTimeDelta: 1 })
       const parent = new TestRootIndexer(0)
       const invalidateShouldRetry = mockFn(() => true)
       const invalidateRetryStrategy: RetryStrategy = {
         shouldRetry: invalidateShouldRetry,
         markAttempt: () => {},
-        timeoutMs: () => 0,
+        timeoutMs: () => 1000,
         clear: () => {},
       }
 
@@ -121,27 +131,13 @@ describe(BaseIndexer.name, () => {
       const updateRetryStrategy: RetryStrategy = {
         shouldRetry: updateShouldRetry,
         markAttempt: () => {},
-        timeoutMs: () => 0,
+        timeoutMs: () => 1000,
         clear: () => {},
       }
 
       const child = new TestChildIndexer([parent], 0, '', {
         invalidateRetryStrategy,
         updateRetryStrategy,
-      })
-
-      Reflect.set(child, 'executeScheduleRetryUpdate', () => {
-        if (child.getState().status !== 'invalidating') {
-          throw new Error('not invalidating')
-        }
-        Reflect.get(child, 'dispatch').call(this, { type: 'RetryUpdate' })
-      })
-
-      Reflect.set(child, 'executeScheduleRetryInvalidate', () => {
-        if (child.getState().status !== 'idle') {
-          throw new Error('not idle')
-        }
-        Reflect.get(child, 'dispatch').call(this, { type: 'RetryInvalidate' })
       })
 
       await parent.start()
@@ -157,6 +153,9 @@ describe(BaseIndexer.name, () => {
 
       await child.finishInvalidate(new Error('test error'))
       expect(invalidateShouldRetry).toHaveBeenCalledTimes(1)
+      expect(child.getState().status).toEqual('idle')
+
+      await clock.tickAsync(1000)
 
       expect(child.getState().status).toEqual('invalidating')
       expect(child.invalidating).toBeTruthy()
@@ -169,24 +168,19 @@ describe(BaseIndexer.name, () => {
       await child.finishUpdate(1)
 
       expect(child.getState().status).toEqual('idle')
+      clock.uninstall()
     })
 
     it('invalidates and retries tick', async () => {
+      const clock = install({ shouldAdvanceTime: true, advanceTimeDelta: 1 })
       const shouldRetry = mockFn(() => true)
       const tickRetryStrategy: RetryStrategy = {
         shouldRetry,
         markAttempt: () => {},
-        timeoutMs: () => 0,
+        timeoutMs: () => 1000,
         clear: () => {},
       }
       const root = new TestRootIndexer(0, '', { tickRetryStrategy })
-
-      Reflect.set(root, 'executeScheduleRetryTick', () => {
-        if (root.getState().status !== 'idle') {
-          throw new Error('not idle')
-        }
-        Reflect.get(root, 'dispatch').call(this, { type: 'RetryTick' })
-      })
 
       await root.start()
 
@@ -194,10 +188,16 @@ describe(BaseIndexer.name, () => {
       await root.finishTick(new Error('test error'))
 
       expect(shouldRetry).toHaveBeenCalledTimes(1)
+      expect(root.getState().status).toEqual('idle')
+
+      await clock.tickAsync(1000)
+
       expect(root.getState().status).toEqual('ticking')
 
       await root.finishTick(1)
       expect(root.getState().status).toEqual('idle')
+
+      clock.uninstall()
     })
   })
 })
