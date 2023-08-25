@@ -27,11 +27,12 @@ export class BlockNumberIndexer extends ChildIndexer {
     return to
   }
 
-  override async invalidate(to: number): Promise<void> {
+  override async invalidate(to: number): Promise<number> {
     if (Math.random() < 0.5) {
       throw new Error('Random error while invalidating')
     }
-    return Promise.resolve()
+    await Promise.resolve()
+    return to
   }
 
   override async getSafeHeight(): Promise<number> {

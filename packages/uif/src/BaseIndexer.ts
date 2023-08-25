@@ -56,7 +56,7 @@ export abstract class BaseIndexer implements Indexer {
    * @param targetHeight - every value > `targetHeight` is invalid, but `targetHeight` itself is valid
    */
   // TODO: This function can return Promise<number>
-  abstract invalidate(targetHeight: number): Promise<void>
+  abstract invalidate(targetHeight: number): Promise<number>
 
   private state: IndexerState
   private started = false
@@ -194,13 +194,22 @@ export abstract class BaseIndexer implements Indexer {
     }, this.updateRetryStrategy.timeoutMs())
   }
 
+  // Partial invalidation scenario:
+
+  // 1. ParentIndexer parent is at height 100
+  // 2. ChildIndexer child is at height 100
+  // 3. parent invalidates to 90
+  // 4. child invalidates to 95
+  // 5. child invalidates to 90
+
   private async executeInvalidate(effect: InvalidateEffect): Promise<void> {
     this.logger.info('Invalidating', { to: effect.targetHeight })
     try {
-      await this.invalidate(effect.targetHeight)
+      const to = await this.invalidate(effect.targetHeight)
       this.dispatch({
         type: 'InvalidateSucceeded',
         targetHeight: effect.targetHeight,
+        to: to,
       })
       this.invalidateRetryStrategy.clear()
     } catch (e) {
@@ -293,7 +302,7 @@ export abstract class RootIndexer extends BaseIndexer {
   }
 
   // eslint-disable-next-line @typescript-eslint/require-await
-  override async invalidate(): Promise<void> {
+  override async invalidate(): Promise<number> {
     throw new Error('RootIndexer cannot invalidate')
   }
 

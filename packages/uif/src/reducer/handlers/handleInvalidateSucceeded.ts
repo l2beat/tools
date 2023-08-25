@@ -12,7 +12,7 @@ export function handleInvalidateSucceeded(
   return continueOperations({
     ...state,
     status: 'idle',
-    height: action.targetHeight,
+    height: action.to,
     forceInvalidate: false,
   })
 }
