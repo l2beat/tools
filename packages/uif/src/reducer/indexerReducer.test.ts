@@ -478,6 +478,42 @@ describe(indexerReducer.name, () => {
           { type: 'Invalidate', targetHeight: 140 },
         ])
       })
+      it('if partially invalidating, does not update until done invalidating fully', () => {
+        const initState = getAfterInit({
+          safeHeight: 100,
+          childCount: 0,
+          parentHeights: [100],
+        })
+
+        const [state1, effects1] = reduceWithIndexerReducer(initState, [
+          { type: 'ParentUpdated', index: 0, safeHeight: 50 },
+          { type: 'InvalidateSucceeded', targetHeight: 50, to: 75 },
+          { type: 'ParentUpdated', index: 0, safeHeight: 100 },
+        ])
+
+        expect(state1).toEqual({
+          ...initState,
+          status: 'invalidating',
+          height: 75,
+          invalidateToHeight: 50,
+          safeHeight: 50,
+          parents: [{ safeHeight: 100, initialized: true, waiting: false }],
+        })
+
+        expect(effects1).toEqual([])
+
+        const [state2, effects2] = reduceWithIndexerReducer(state1, [
+          { type: 'InvalidateSucceeded', targetHeight: 50, to: 50 },
+        ])
+
+        expect(state2).toEqual({
+          ...state1,
+          status: 'updating',
+          height: 50,
+        })
+
+        expect(effects2).toEqual([{ type: 'Update', targetHeight: 100 }])
+      })
     })
 
     describe('root indexer', () => {
