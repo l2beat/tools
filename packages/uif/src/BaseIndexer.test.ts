@@ -1,9 +1,5 @@
 import { Logger } from '@l2beat/backend-tools'
-import {
-  createClock,
-  FakeTimerInstallOpts,
-  install,
-} from '@sinonjs/fake-timers'
+import { install } from '@sinonjs/fake-timers'
 import { expect, mockFn } from 'earl'
 
 import { BaseIndexer, ChildIndexer, RootIndexer } from './BaseIndexer'
