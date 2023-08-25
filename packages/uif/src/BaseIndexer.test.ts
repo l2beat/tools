@@ -82,15 +82,16 @@ describe(BaseIndexer.name, () => {
       const parent = new TestRootIndexer(0)
 
       const shouldRetry = mockFn(() => true)
-      const updateRetryStrategy: RetryStrategy = {
-        shouldRetry,
-        markAttempt: () => {},
-        timeoutMs: () => 1000,
-        clear: () => {},
-      }
+      const markAttempt = mockFn(() => {})
+      const clear = mockFn(() => {})
 
       const child = new TestChildIndexer([parent], 0, '', {
-        updateRetryStrategy,
+        updateRetryStrategy: {
+          shouldRetry,
+          markAttempt,
+          timeoutMs: () => 1000,
+          clear,
+        },
       })
 
       await parent.start()
@@ -105,6 +106,7 @@ describe(BaseIndexer.name, () => {
       expect(child.updating).toBeFalsy()
       expect(child.invalidating).toBeTruthy()
       expect(shouldRetry).toHaveBeenCalledTimes(1)
+      expect(markAttempt).toHaveBeenCalledTimes(1)
 
       await child.finishInvalidate()
       expect(child.getState().status).toEqual('idle')
@@ -112,6 +114,10 @@ describe(BaseIndexer.name, () => {
       await clock.tickAsync(1000)
 
       expect(child.getState().status).toEqual('updating')
+      await child.finishUpdate(1)
+
+      expect(clear).toHaveBeenCalledTimes(1)
+      expect(child.getState().status).toEqual('idle')
 
       clock.uninstall()
     })
@@ -120,38 +126,43 @@ describe(BaseIndexer.name, () => {
       const clock = install({ shouldAdvanceTime: true, advanceTimeDelta: 1 })
       const parent = new TestRootIndexer(0)
       const invalidateShouldRetry = mockFn(() => true)
-      const invalidateRetryStrategy: RetryStrategy = {
-        shouldRetry: invalidateShouldRetry,
-        markAttempt: () => {},
-        timeoutMs: () => 1000,
-        clear: () => {},
-      }
+      const invalidateMarkAttempt = mockFn(() => {})
+      const invalidateClear = mockFn(() => {})
 
       const updateShouldRetry = mockFn(() => true)
-      const updateRetryStrategy: RetryStrategy = {
-        shouldRetry: updateShouldRetry,
-        markAttempt: () => {},
-        timeoutMs: () => 1000,
-        clear: () => {},
-      }
+      const updateMarkAttempt = mockFn(() => {})
+      const updateClear = mockFn(() => {})
 
       const child = new TestChildIndexer([parent], 0, '', {
-        invalidateRetryStrategy,
-        updateRetryStrategy,
+        invalidateRetryStrategy: {
+          shouldRetry: invalidateShouldRetry,
+          markAttempt: invalidateMarkAttempt,
+          timeoutMs: () => 1000,
+          clear: invalidateClear,
+        },
+        updateRetryStrategy: {
+          shouldRetry: updateShouldRetry,
+          markAttempt: updateMarkAttempt,
+          timeoutMs: () => 1000,
+          clear: updateClear,
+        },
       })
 
       await parent.start()
       await child.start()
 
       await child.finishInvalidate()
+      expect(invalidateClear).toHaveBeenCalledTimes(1)
 
       await parent.doTick(1)
       await parent.finishTick(1)
 
       await child.finishUpdate(new Error('test error'))
       expect(updateShouldRetry).toHaveBeenCalledTimes(1)
+      expect(updateMarkAttempt).toHaveBeenCalledTimes(1)
 
       await child.finishInvalidate(new Error('test error'))
+      expect(invalidateMarkAttempt).toHaveBeenCalledTimes(1)
       expect(invalidateShouldRetry).toHaveBeenCalledTimes(1)
       expect(child.getState().status).toEqual('idle')
 
@@ -161,12 +172,12 @@ describe(BaseIndexer.name, () => {
       expect(child.invalidating).toBeTruthy()
 
       await child.finishInvalidate()
-
+      expect(invalidateClear).toHaveBeenCalledTimes(2)
       expect(child.getState().status).toEqual('updating')
       expect(child.updating).toBeTruthy()
 
       await child.finishUpdate(1)
-
+      expect(updateClear).toHaveBeenCalledTimes(1)
       expect(child.getState().status).toEqual('idle')
       clock.uninstall()
     })
@@ -174,19 +185,23 @@ describe(BaseIndexer.name, () => {
     it('invalidates and retries tick', async () => {
       const clock = install({ shouldAdvanceTime: true, advanceTimeDelta: 1 })
       const shouldRetry = mockFn(() => true)
-      const tickRetryStrategy: RetryStrategy = {
-        shouldRetry,
-        markAttempt: () => {},
-        timeoutMs: () => 1000,
-        clear: () => {},
-      }
-      const root = new TestRootIndexer(0, '', { tickRetryStrategy })
+      const markAttempt = mockFn(() => {})
+      const clear = mockFn(() => {})
+
+      const root = new TestRootIndexer(0, '', {
+        tickRetryStrategy: {
+          shouldRetry,
+          markAttempt,
+          timeoutMs: () => 1000,
+          clear,
+        },
+      })
 
       await root.start()
 
       await root.doTick(1)
       await root.finishTick(new Error('test error'))
-
+      expect(markAttempt).toHaveBeenCalledTimes(1)
       expect(shouldRetry).toHaveBeenCalledTimes(1)
       expect(root.getState().status).toEqual('idle')
 
@@ -195,6 +210,7 @@ describe(BaseIndexer.name, () => {
       expect(root.getState().status).toEqual('ticking')
 
       await root.finishTick(1)
+      expect(clear).toHaveBeenCalledTimes(1)
       expect(root.getState().status).toEqual('idle')
 
       clock.uninstall()
