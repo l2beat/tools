@@ -194,22 +194,13 @@ export abstract class BaseIndexer implements Indexer {
     }, this.updateRetryStrategy.timeoutMs())
   }
 
-  // Partial invalidation scenario:
-
-  // 1. ParentIndexer parent is at height 100
-  // 2. ChildIndexer child is at height 100
-  // 3. parent invalidates to 90
-  // 4. child invalidates to 95
-  // 5. child invalidates to 90
-
   private async executeInvalidate(effect: InvalidateEffect): Promise<void> {
     this.logger.info('Invalidating', { to: effect.targetHeight })
     try {
       const to = await this.invalidate(effect.targetHeight)
       this.dispatch({
         type: 'InvalidateSucceeded',
-        targetHeight: effect.targetHeight,
-        to: to,
+        to,
       })
       this.invalidateRetryStrategy.clear()
     } catch (e) {

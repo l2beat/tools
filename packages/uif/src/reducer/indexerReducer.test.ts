@@ -13,7 +13,7 @@ describe(indexerReducer.name, () => {
       const [state, effects] = reduceWithIndexerReducer(initState, [
         { type: 'Initialized', safeHeight: 0, childCount: 0 },
         { type: 'ParentUpdated', index: 0, safeHeight: 0 },
-        { type: 'InvalidateSucceeded', targetHeight: 0, to: 0 },
+        { type: 'InvalidateSucceeded', to: 0 },
       ])
 
       expect(state).toEqual({
@@ -175,7 +175,7 @@ describe(indexerReducer.name, () => {
           { type: 'Initialized', safeHeight: 50, childCount: 0 },
           { type: 'ParentUpdated', index: 0, safeHeight: 100 },
           { type: 'ParentUpdated', index: 1, safeHeight: 150 },
-          { type: 'InvalidateSucceeded', targetHeight: 50, to: 50 },
+          { type: 'InvalidateSucceeded', to: 50 },
         ])
 
         expect(state).toEqual({
@@ -283,7 +283,7 @@ describe(indexerReducer.name, () => {
         ])
 
         const [state2, effects2] = reduceWithIndexerReducer(state1, [
-          { type: 'InvalidateSucceeded', targetHeight: 50, to: 50 },
+          { type: 'InvalidateSucceeded', to: 50 },
         ])
 
         expect(state2).toEqual({
@@ -323,7 +323,7 @@ describe(indexerReducer.name, () => {
         ])
 
         const [state2, effects2] = reduceWithIndexerReducer(state1, [
-          { type: 'InvalidateSucceeded', targetHeight: 50, to: 75 },
+          { type: 'InvalidateSucceeded', to: 75 },
         ])
 
         expect(state2).toEqual({
@@ -487,7 +487,7 @@ describe(indexerReducer.name, () => {
 
         const [state1, effects1] = reduceWithIndexerReducer(initState, [
           { type: 'ParentUpdated', index: 0, safeHeight: 50 },
-          { type: 'InvalidateSucceeded', targetHeight: 50, to: 75 },
+          { type: 'InvalidateSucceeded', to: 75 },
           { type: 'ParentUpdated', index: 0, safeHeight: 100 },
         ])
 
@@ -503,7 +503,7 @@ describe(indexerReducer.name, () => {
         expect(effects1).toEqual([])
 
         const [state2, effects2] = reduceWithIndexerReducer(state1, [
-          { type: 'InvalidateSucceeded', targetHeight: 50, to: 50 },
+          { type: 'InvalidateSucceeded', to: 50 },
         ])
 
         expect(state2).toEqual({
@@ -789,7 +789,7 @@ describe(indexerReducer.name, () => {
         const [state1, effects1] = reduceWithIndexerReducer(initState, [
           { type: 'ParentUpdated', index: 0, safeHeight: 200 },
           { type: 'UpdateFailed' },
-          { type: 'InvalidateSucceeded', targetHeight: 100, to: 100 },
+          { type: 'InvalidateSucceeded', to: 100 },
         ])
 
         expect(state1).toEqual({
@@ -851,7 +851,7 @@ describe(indexerReducer.name, () => {
         const [state1, effects1] = reduceWithIndexerReducer(initState, [
           { type: 'ParentUpdated', index: 0, safeHeight: 200 },
           { type: 'UpdateFailed' },
-          { type: 'InvalidateSucceeded', targetHeight: 100, to: 100 },
+          { type: 'InvalidateSucceeded', to: 100 },
           { type: 'ParentUpdated', index: 0, safeHeight: 50 },
         ])
 
@@ -867,7 +867,7 @@ describe(indexerReducer.name, () => {
         ])
 
         const [state2, effects2] = reduceWithIndexerReducer(state1, [
-          { type: 'InvalidateSucceeded', targetHeight: 50, to: 50 },
+          { type: 'InvalidateSucceeded', to: 50 },
           { type: 'RetryUpdate' },
           // TODO: we need the 'RetryUpdate' action to arrive to set retryingUpdate to false,
           // but actually, because we invalidated further down, we could just start updating straight away I guess
@@ -964,7 +964,7 @@ describe(indexerReducer.name, () => {
         expect(effects1).toEqual([])
 
         const [state2, effects2] = reduceWithIndexerReducer(state1, [
-          { type: 'InvalidateSucceeded', targetHeight: 100, to: 100 },
+          { type: 'InvalidateSucceeded', to: 100 },
         ])
 
         expect(state2).toEqual({
@@ -1309,7 +1309,6 @@ function getAfterInit({
     })),
     {
       type: 'InvalidateSucceeded',
-      targetHeight: Math.min(safeHeight, ...parentHeights),
       to: Math.min(safeHeight, ...parentHeights),
     },
   ])
