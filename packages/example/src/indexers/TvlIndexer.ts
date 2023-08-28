@@ -22,11 +22,10 @@ export class TvlIndexer extends ChildIndexer {
     return to
   }
 
-  override async invalidate(to: number): Promise<number> {
-    await Promise.resolve()
-    const newHeight = Math.max(this.height - 5, to)
+  override async invalidate(targetHeight: number): Promise<number> {
+    const newHeight = Math.max(this.height - 5, targetHeight)
     this.height = newHeight
-    return newHeight
+    return await Promise.resolve(newHeight)
   }
 
   override async getSafeHeight() {

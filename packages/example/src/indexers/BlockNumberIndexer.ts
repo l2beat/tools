@@ -19,20 +19,19 @@ export class BlockNumberIndexer extends ChildIndexer {
     })
   }
 
-  override async update(from: number, to: number): Promise<number> {
+  override async update(from: number, targetHeight: number): Promise<number> {
     await setTimeout(2_000)
     if (Math.random() < 0.5) {
       throw new Error('Random error while updating')
     }
-    return to
+    return targetHeight
   }
 
-  override async invalidate(to: number): Promise<number> {
+  override async invalidate(targetHeight: number): Promise<number> {
     if (Math.random() < 0.5) {
       throw new Error('Random error while invalidating')
     }
-    await Promise.resolve()
-    return to
+    return Promise.resolve(targetHeight)
   }
 
   override async getSafeHeight(): Promise<number> {

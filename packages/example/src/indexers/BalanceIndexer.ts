@@ -26,8 +26,7 @@ export class BalanceIndexer extends ChildIndexer {
   }
 
   override async invalidate(targetHeight: number): Promise<number> {
-    await Promise.resolve()
-    return targetHeight
+    return Promise.resolve(targetHeight)
   }
 
   override async getSafeHeight(): Promise<number> {
