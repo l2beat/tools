@@ -200,7 +200,7 @@ export abstract class BaseIndexer implements Indexer {
       const to = await this.invalidate(effect.targetHeight)
       this.dispatch({
         type: 'InvalidateSucceeded',
-        to,
+        targetHeight: to,
       })
       this.invalidateRetryStrategy.clear()
     } catch (e) {

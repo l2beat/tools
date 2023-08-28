@@ -32,7 +32,7 @@ export interface RetryUpdateAction {
 
 export interface InvalidateSucceededAction {
   type: 'InvalidateSucceeded'
-  to: number
+  targetHeight: number
 }
 
 export interface InvalidateFailedAction {
