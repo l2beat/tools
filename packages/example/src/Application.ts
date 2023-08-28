@@ -1,6 +1,6 @@
 import { Logger } from '@l2beat/backend-tools'
-
 import { BaseIndexer, Retries } from '@l2beat/uif'
+
 import { Config } from './Config'
 import { BalanceIndexer } from './indexers/BalanceIndexer'
 import { BlockNumberIndexer } from './indexers/BlockNumberIndexer'
