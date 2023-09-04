@@ -27,7 +27,7 @@ export class AB_BC_Indexer extends SliceIndexer {
     return [...this.slices.keys()]
   }
 
-  override async getSliceState(): Promise<SliceState[]> {
+  override async getSliceStates(): Promise<SliceState[]> {
     const sliceHeights = await this.ab_bc_repository.getSliceHeights()
     const states = [...sliceHeights.entries()].map(
       ([sliceHash, height]): SliceState => ({ sliceHash, height }),

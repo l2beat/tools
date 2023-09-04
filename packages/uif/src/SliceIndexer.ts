@@ -15,10 +15,10 @@ export interface SliceUpdate {
 
 export abstract class SliceIndexer extends ChildIndexer {
   override async update(from: number, to: number): Promise<number> {
-    const slices = await this.getSliceState()
+    const sliceStates = await this.getSliceStates()
     const { toUpdate, toRemove } = diffSlices(
       this.getExpectedSlices(),
-      slices,
+      sliceStates,
       from,
       to,
     )
@@ -40,9 +40,9 @@ export abstract class SliceIndexer extends ChildIndexer {
   }
 
   override async getSafeHeight(): Promise<number> {
-    const slicesState = await this.getSliceState()
+    const sliceStates = await this.getSliceStates()
     const mainSafeHeight = await this.getMainSafeHeight()
-    return Math.min(...slicesState.map((s) => s.height), mainSafeHeight)
+    return Math.min(...sliceStates.map((s) => s.height), mainSafeHeight)
   }
 
   override async setSafeHeight(height: number): Promise<void> {
@@ -67,7 +67,7 @@ export abstract class SliceIndexer extends ChildIndexer {
   /**
    * @returns State for Slices stored in the database
    */
-  abstract getSliceState(): Promise<SliceState[]>
+  abstract getSliceStates(): Promise<SliceState[]>
 
   /**
    * @param hashes Slices that are no longer part of config

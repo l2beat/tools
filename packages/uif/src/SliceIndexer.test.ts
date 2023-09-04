@@ -308,7 +308,7 @@ class TestSliceIndexer extends SliceIndexer {
     return this.slices
   }
 
-  getSliceState(): Promise<SliceState[]> {
+  getSliceStates(): Promise<SliceState[]> {
     const sliceHeights = this.repository.getSliceHeights()
     const states = [...sliceHeights.entries()].map(
       ([slice, height]): SliceState => ({

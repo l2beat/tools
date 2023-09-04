@@ -17,7 +17,7 @@ export class ABC_Indexer extends SliceIndexer {
     return this.tokens
   }
 
-  override async getSliceState(): Promise<SliceState[]> {
+  override async getSliceStates(): Promise<SliceState[]> {
     const tokenHeights = await this.abc_repository.getSliceHeights()
     const states = [...tokenHeights.entries()].map(
       ([token, height]): SliceState => ({
