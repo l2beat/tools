@@ -23,16 +23,21 @@ export abstract class SliceIndexer extends ChildIndexer {
       to,
     )
 
-    this.logger.info('Update', { toUpdate, toRemove })
+    this.logger.info('Update', {
+      amountToUpdate: toUpdate.length,
+      amountToRemove: toRemove.length,
+    })
 
     if (toRemove.length > 0) {
+      this.logger.debug('Removing slices', { toRemove })
       await this.removeSlices(toRemove)
-      this.logger.debug('Removed slices', { toRemove })
+      this.logger.debug('Removed slices')
     }
 
     if (toUpdate.length > 0) {
+      this.logger.debug('Updating slices', { toUpdate })
       const newHeight = await this.updateSlices(toUpdate)
-      this.logger.debug('Updated slices', { newHeight, toUpdate })
+      this.logger.debug('Updated slices', { newHeight })
       return newHeight
     }
 
@@ -75,6 +80,7 @@ export abstract class SliceIndexer extends ChildIndexer {
   abstract removeSlices(hashes: SliceHash[]): Promise<void>
 
   /**
+   *
    * @param slices Slices that are part of config and need to be updated
    * @returns Minimum of the heights of updated slices
    */
