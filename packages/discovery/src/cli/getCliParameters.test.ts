@@ -1,6 +1,6 @@
 import { expect } from 'earl'
 
-import { ChainId } from '../utils/chainId'
+import { ChainId } from '../utils/ChainId'
 import { getCliParameters } from './getCliParameters'
 
 describe(getCliParameters.name, () => {

@@ -3,7 +3,7 @@ import { EthereumAddress } from '@l2beat/discovery-types'
 import { config as dotenv } from 'dotenv'
 
 import { CliParameters } from '../cli/getCliParameters'
-import { ChainId } from '../utils/chainId'
+import { ChainId } from '../utils/ChainId'
 
 export function getDiscoveryCliConfig(cli: CliParameters): DiscoveryCliConfig {
   dotenv()

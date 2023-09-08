@@ -1,4 +1,4 @@
-import { ChainId } from '../../utils/chainId'
+import { ChainId } from '../../utils/ChainId'
 import { EthereumAddress } from '../../utils/EthereumAddress'
 import { Hash256 } from '../../utils/Hash256'
 import { hashJson } from '../../utils/HashJson'

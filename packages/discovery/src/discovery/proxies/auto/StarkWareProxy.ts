@@ -1,7 +1,7 @@
 import { ProxyDetails } from '@l2beat/discovery-types'
 import { BigNumber, utils } from 'ethers'
 
-import { Bytes } from '../../../utils/bytes'
+import { Bytes } from '../../../utils/Bytes'
 import { EthereumAddress } from '../../../utils/EthereumAddress'
 import { Hash256 } from '../../../utils/Hash256'
 import { DiscoveryProvider } from '../../provider/DiscoveryProvider'

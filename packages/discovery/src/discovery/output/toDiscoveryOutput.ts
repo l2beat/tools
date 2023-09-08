@@ -1,6 +1,6 @@
 import { DiscoveryOutput } from '@l2beat/discovery-types'
 
-import { ChainId } from '../../utils/chainId'
+import { ChainId } from '../../utils/ChainId'
 import { Hash256 } from '../../utils/Hash256'
 import { Analysis, AnalyzedContract } from '../analysis/AddressAnalyzer'
 import { DISCOVERY_LOGIC_VERSION } from '../engine/DiscoveryEngine'

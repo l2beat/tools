@@ -3,7 +3,7 @@ import { mkdirp } from 'mkdirp'
 import { dirname } from 'path'
 import { rimraf } from 'rimraf'
 
-import { ChainId } from '../../utils/chainId'
+import { ChainId } from '../../utils/ChainId'
 import { Hash256 } from '../../utils/Hash256'
 import { Analysis } from '../analysis/AddressAnalyzer'
 import { DiscoveryConfig } from '../config/DiscoveryConfig'

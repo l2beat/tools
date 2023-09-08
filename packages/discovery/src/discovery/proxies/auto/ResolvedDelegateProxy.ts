@@ -12,7 +12,7 @@ import { assert } from '@l2beat/backend-tools'
 import { ProxyDetails } from '@l2beat/discovery-types'
 import { utils } from 'ethers'
 
-import { Bytes } from '../../../utils/bytes'
+import { Bytes } from '../../../utils/Bytes'
 import { EthereumAddress } from '../../../utils/EthereumAddress'
 import { DiscoveryProvider } from '../../provider/DiscoveryProvider'
 import { bytes32ToAddress } from '../../utils/address'

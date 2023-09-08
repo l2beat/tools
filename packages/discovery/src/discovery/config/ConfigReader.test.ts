@@ -1,7 +1,7 @@
 import { expect } from 'earl'
 import path from 'path'
 
-import { ChainId } from '../../utils/chainId'
+import { ChainId } from '../../utils/ChainId'
 import { ConfigReader } from './ConfigReader'
 
 describe(ConfigReader.name, () => {

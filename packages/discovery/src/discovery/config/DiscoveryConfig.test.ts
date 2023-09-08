@@ -1,6 +1,6 @@
 import { expect } from 'earl'
 
-import { ChainId } from '../../utils/chainId'
+import { ChainId } from '../../utils/ChainId'
 import { EthereumAddress } from '../../utils/EthereumAddress'
 import { hashJson } from '../../utils/HashJson'
 import { DiscoveryConfig } from './DiscoveryConfig'

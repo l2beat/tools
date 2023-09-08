@@ -1,7 +1,7 @@
 import { expect, mockObject } from 'earl'
 import { utils } from 'ethers'
 
-import { Bytes } from '../../../utils/bytes'
+import { Bytes } from '../../../utils/Bytes'
 import { EthereumAddress } from '../../../utils/EthereumAddress'
 import { DiscoveryLogger } from '../../DiscoveryLogger'
 import { DiscoveryProvider } from '../../provider/DiscoveryProvider'

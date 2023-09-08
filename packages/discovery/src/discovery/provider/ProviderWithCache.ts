@@ -1,9 +1,9 @@
 import { providers } from 'ethers'
 
-import { Bytes } from '../../utils/bytes'
-import { ChainId } from '../../utils/chainId'
+import { Bytes } from '../../utils/Bytes'
+import { ChainId } from '../../utils/ChainId'
 import { EthereumAddress } from '../../utils/EthereumAddress'
-import { EtherscanLikeClient } from '../../utils/etherscanlike'
+import { EtherscanLikeClient } from '../../utils/EtherscanLikeClient'
 import { Hash256 } from '../../utils/Hash256'
 import { isRevert } from '../utils/isRevert'
 import { ContractMetadata, DiscoveryProvider } from './DiscoveryProvider'

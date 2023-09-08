@@ -3,7 +3,7 @@ import { debounce } from 'lodash'
 import { mkdirpSync } from 'mkdirp'
 import path from 'path'
 
-import { ChainId } from '../../utils/chainId'
+import { ChainId } from '../../utils/ChainId'
 
 const DIR = 'cache/discovery'
 

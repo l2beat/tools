@@ -4,7 +4,7 @@ import { readdirSync } from 'fs'
 import { readFile } from 'fs/promises'
 import { parse, ParseError } from 'jsonc-parser'
 
-import { ChainId } from '../../utils/chainId'
+import { ChainId } from '../../utils/ChainId'
 import { DiscoveryConfig } from './DiscoveryConfig'
 import { RawDiscoveryConfig } from './RawDiscoveryConfig'
 

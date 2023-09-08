@@ -1,8 +1,8 @@
 import { ManualProxyType } from '@l2beat/discovery-types'
 import * as z from 'zod'
 
-import { stringAs } from '../../utils/branded'
-import { ChainId } from '../../utils/chainId'
+import { stringAs } from '../../utils/Branded'
+import { ChainId } from '../../utils/ChainId'
 import { EthereumAddress } from '../../utils/EthereumAddress'
 import { UserHandlerDefinition } from '../handlers/user'
 

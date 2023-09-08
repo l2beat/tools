@@ -12,8 +12,8 @@ import { DiscoveryLogger } from './discovery/DiscoveryLogger'
 import { getSourceName } from './discovery/output/saveDiscoveryResult'
 import { toDiscoveryOutput } from './discovery/output/toDiscoveryOutput'
 import { discover as discovery } from './discovery/runDiscovery'
-import { EtherscanLikeClient } from './utils/etherscanlike'
-import { HttpClient } from './utils/httpclient'
+import { EtherscanLikeClient } from './utils/EtherscanLikeClient'
+import { HttpClient } from './utils/HttpClient'
 
 export async function singleDiscovery(
   config: DiscoveryCliConfig,

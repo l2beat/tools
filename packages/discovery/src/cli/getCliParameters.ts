@@ -1,6 +1,6 @@
 import { assert } from '@l2beat/backend-tools'
 
-import { ChainId } from '../utils/chainId'
+import { ChainId } from '../utils/ChainId'
 import { EthereumAddress } from '../utils/EthereumAddress'
 
 export type CliParameters =

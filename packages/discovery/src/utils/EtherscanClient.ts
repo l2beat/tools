@@ -1,8 +1,8 @@
 import { Logger } from '@l2beat/backend-tools'
 
-import { ChainId } from './chainId'
-import { EtherscanLikeClient } from './etherscanlike'
-import { HttpClient } from './httpclient'
+import { ChainId } from './ChainId'
+import { EtherscanLikeClient } from './EtherscanLikeClient'
+import { HttpClient } from './HttpClient'
 import { UnixTime } from './UnixTime'
 
 export class EtherscanError extends Error {}

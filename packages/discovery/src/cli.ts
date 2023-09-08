@@ -10,9 +10,9 @@ import { ConfigReader } from './discovery/config/ConfigReader'
 import { dryRunDiscovery, runDiscovery } from './discovery/runDiscovery'
 import { runInversion } from './inversion/runInversion'
 import { singleDiscovery } from './singleDiscovery'
-import { ChainId } from './utils/chainId'
-import { EtherscanLikeClient } from './utils/etherscanlike'
-import { HttpClient } from './utils/httpclient'
+import { ChainId } from './utils/ChainId'
+import { EtherscanLikeClient } from './utils/EtherscanLikeClient'
+import { HttpClient } from './utils/HttpClient'
 
 main().catch((e) => {
   console.error(e)

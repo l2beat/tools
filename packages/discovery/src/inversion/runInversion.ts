@@ -5,7 +5,7 @@ import { constants, utils } from 'ethers'
 import { mkdir, writeFile } from 'fs/promises'
 
 import { ConfigReader } from '../discovery/config/ConfigReader'
-import { ChainId } from '../utils/chainId'
+import { ChainId } from '../utils/ChainId'
 import { EthereumAddress } from '../utils/EthereumAddress'
 
 interface AddressDetails {

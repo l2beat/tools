@@ -1,7 +1,7 @@
 import { ContractParameters } from '@l2beat/discovery-types'
 import { expect } from 'earl'
 
-import { ChainId } from '../../utils/chainId'
+import { ChainId } from '../../utils/ChainId'
 import { EthereumAddress } from '../../utils/EthereumAddress'
 import { DiscoveryConfig } from '../config/DiscoveryConfig'
 import { diffDiscovery } from './diffDiscovery'

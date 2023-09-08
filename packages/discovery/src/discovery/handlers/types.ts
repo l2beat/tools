@@ -1,6 +1,6 @@
 import * as z from 'zod'
 
-import { Bytes, HEX_REGEX } from '../../utils/bytes'
+import { Bytes, HEX_REGEX } from '../../utils/Bytes'
 
 export const BytesFromString = z
   .string()

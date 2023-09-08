@@ -1,7 +1,7 @@
 import { utils } from 'ethers'
 import * as z from 'zod'
 
-import { Bytes } from '../../../utils/bytes'
+import { Bytes } from '../../../utils/Bytes'
 import { EthereumAddress } from '../../../utils/EthereumAddress'
 import { getErrorMessage } from '../../../utils/getErrorMessage'
 import { DiscoveryLogger } from '../../DiscoveryLogger'
