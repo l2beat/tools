@@ -6,7 +6,7 @@ import { EthereumAddress } from './EthereumAddress'
 import { EtherscanResponse, parseEtherscanResponse } from './EtherscanModels'
 import { getErrorMessage } from './getErrorMessage'
 import { Hash256 } from './Hash256'
-import { HttpClient, IHttpClient } from './HttpClient'
+import { HttpClient } from './HttpClient'
 import { UnixTime } from './UnixTime'
 
 class EtherscanError extends Error {}
@@ -18,7 +18,7 @@ export class EtherscanLikeClient {
   private readonly timeoutMs = 20_000
 
   constructor(
-    private readonly httpClient: IHttpClient,
+    private readonly httpClient: HttpClient,
     private readonly url: string,
     private readonly apiKey: string,
     readonly minTimestamp: UnixTime,

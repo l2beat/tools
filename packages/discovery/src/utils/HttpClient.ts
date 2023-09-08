@@ -1,14 +1,7 @@
 import fetch, { RequestInit, Response } from 'node-fetch'
 
-export interface IHttpClient {
-  fetch(url: string, init?: RequestInit): Promise<Response>
-}
-
-export class HttpClient implements IHttpClient {
-  defaultTimeoutMs: number
-  constructor(defaultTimeoutMs = 10_000) {
-    this.defaultTimeoutMs = defaultTimeoutMs
-  }
+export class HttpClient {
+  constructor(private readonly defaultTimeoutMs = 10_000) {}
 
   fetch(url: string, init?: RequestInit): Promise<Response> {
     return fetch(url, {
