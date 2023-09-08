@@ -1,3 +1,4 @@
+import { assert } from '@l2beat/backend-tools'
 import path from 'path'
 
 import { sanitizePath } from './sanitizePath'
@@ -20,16 +21,22 @@ export function removeSharedNesting(
     content,
   ])
 
-  let commonPrefix = path.dirname(sanitized[0]![0]!)
+  assert(sanitized[0]?.[0], 'cannot derive common prefix')
+
+  let commonPrefix = path.dirname(sanitized[0][0])
   for (const [fileName] of sanitized) {
-    while (!fileName!.startsWith(commonPrefix)) {
+    while (fileName && !fileName.startsWith(commonPrefix)) {
       commonPrefix = path.dirname(commonPrefix)
     }
   }
 
   const length = commonPrefix === '/' ? 1 : commonPrefix.length + 1
-  return sanitized.map(([fileName, content]) => [
-    fileName!.slice(length),
-    content,
-  ])
+
+  function hasFileAndContent(group: string[]): group is [string, string] {
+    return group.length === 2
+  }
+
+  return sanitized
+    .filter(hasFileAndContent)
+    .map(([fileName, content]) => [fileName.slice(length), content])
 }

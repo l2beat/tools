@@ -8,6 +8,7 @@ Implementation address is resolved by calling the libAddressManager.getAddress(i
 It does not have an owner
 
 */
+import { assert } from '@l2beat/backend-tools'
 import { ProxyDetails } from '@l2beat/discovery-types'
 import { utils } from 'ethers'
 
@@ -67,6 +68,9 @@ async function getImplementation(
     [implementationName],
     blockNumber,
   )
+
+  assert(implementation, 'missing implementation')
+
   return EthereumAddress(implementation)
 }
 
