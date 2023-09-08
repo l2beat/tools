@@ -5,7 +5,10 @@ export class ErrorHandler implements Handler {
   readonly dependencies = []
   private readonly errorMessage: string
 
-  constructor(readonly field: string, error: unknown) {
+  constructor(
+    readonly field: string,
+    error: unknown,
+  ) {
     this.errorMessage = getErrorMessage(error)
   }
 

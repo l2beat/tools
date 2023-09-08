@@ -7,7 +7,7 @@ export {
   DiscoveryEngine,
 } from './discovery/engine/DiscoveryEngine'
 export { HandlerExecutor } from './discovery/handlers/HandlerExecutor'
-export { diffContracts,type FieldDiff } from './discovery/output/diffContracts'
+export { diffContracts, type FieldDiff } from './discovery/output/diffContracts'
 export {
   diffDiscovery,
   type DiscoveryDiff,
