@@ -1,3 +1,5 @@
+import { assert } from '@l2beat/backend-tools'
+
 import { ChainId } from '../utils/chainId'
 import { EthereumAddress } from '../utils/EthereumAddress'
 
@@ -71,18 +73,21 @@ export function getCliParameters(args = process.argv.slice(2)): CliParameters {
 
     if (remaining.length === 0) {
       return { mode: 'help', error: 'Not enough arguments' }
-    } else if (remaining.length > 2) {
-      return { mode: 'help', error: 'Too many arguments' }
-    } else {
-      const result: DiscoverCliParameters = {
-        mode: 'discover',
-        chain: ChainId.fromName(remaining[0]!),
-        project: remaining[1]!,
-        dryRun,
-        dev,
-      }
-      return result
     }
+    if (remaining.length > 2) {
+      return { mode: 'help', error: 'Too many arguments' }
+    }
+
+    assert(remaining[0] && remaining[1], 'Not enough arguments despite length')
+
+    const result: DiscoverCliParameters = {
+      mode: 'discover',
+      chain: ChainId.fromName(remaining[0]),
+      project: remaining[1],
+      dryRun,
+      dev,
+    }
+    return result
   }
 
   if (args[0] === 'invert') {
@@ -97,17 +102,20 @@ export function getCliParameters(args = process.argv.slice(2)): CliParameters {
 
     if (remaining.length === 0) {
       return { mode: 'help', error: 'Not enough arguments' }
-    } else if (remaining.length > 2) {
-      return { mode: 'help', error: 'Too many arguments' }
-    } else {
-      const result: InvertCliParameters = {
-        mode: 'invert',
-        chain: ChainId.fromName(remaining[0]!),
-        project: remaining[1]!,
-        useMermaidMarkup,
-      }
-      return result
     }
+    if (remaining.length > 2) {
+      return { mode: 'help', error: 'Too many arguments' }
+    }
+
+    assert(remaining[0] && remaining[1], 'Not enough arguments despite length')
+
+    const result: InvertCliParameters = {
+      mode: 'invert',
+      chain: ChainId.fromName(remaining[0]),
+      project: remaining[1],
+      useMermaidMarkup,
+    }
+    return result
   }
 
   if (args[0] === 'single-discovery') {
@@ -115,17 +123,21 @@ export function getCliParameters(args = process.argv.slice(2)): CliParameters {
 
     if (remaining.length === 0) {
       return { mode: 'help', error: 'Not enough arguments' }
-    } else if (remaining.length > 2) {
-      return { mode: 'help', error: 'Too many arguments' }
-    } else {
-      const result: SingleDiscoveryCliParameters = {
-        mode: 'single-discovery',
-        chain: ChainId.fromName(remaining[0]!),
-        address: EthereumAddress(remaining[1]!),
-      }
-      return result
     }
+    if (remaining.length > 2) {
+      return { mode: 'help', error: 'Too many arguments' }
+    }
+    assert(remaining[0] && remaining[1], 'Not enough arguments despite length')
+
+    const result: SingleDiscoveryCliParameters = {
+      mode: 'single-discovery',
+      chain: ChainId.fromName(remaining[0]),
+      address: EthereumAddress(remaining[1]),
+    }
+    return result
   }
 
-  return { mode: 'help', error: `Unknown mode: ${args[0]!}` }
+  const mode = args[0] ?? '<unknown mode>'
+
+  return { mode: 'help', error: `Unknown mode: ${mode}` }
 }

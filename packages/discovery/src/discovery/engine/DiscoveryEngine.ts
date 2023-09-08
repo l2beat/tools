@@ -44,7 +44,7 @@ export class DiscoveryEngine {
       this.logger.logRelatives(newRelatives)
     }
 
-    this.logger.flush(config.name!)
+    this.logger.flush(config.name)
 
     this.checkErrors(resolved)
 

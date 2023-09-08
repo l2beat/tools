@@ -51,7 +51,7 @@ export async function singleDiscovery(
   )
 
   const discoveryOutput = toDiscoveryOutput(
-    projectConfig.name!,
+    projectConfig.name,
     projectConfig.chainId,
     projectConfig.hash,
     blockNumber,

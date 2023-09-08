@@ -37,9 +37,8 @@ EthereumAddress.inOrder = function inOrder(
 }
 
 EthereumAddress.random = function random() {
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const digit = (): string =>
-    '0123456789abcdef'[Math.floor(Math.random() * 16)]!
+  const digit = (): string | undefined =>
+    '0123456789abcdef'[Math.floor(Math.random() * 16)]
   return EthereumAddress('0x' + Array.from({ length: 40 }).map(digit).join(''))
 }
 

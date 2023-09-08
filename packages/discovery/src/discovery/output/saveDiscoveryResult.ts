@@ -17,14 +17,8 @@ export async function saveDiscoveryResult(
   configHash: Hash256,
   chain: ChainId,
 ): Promise<void> {
-  const { name } = config
-
-  if (!name) {
-    throw new Error('name is required')
-  }
-
   const project = toDiscoveryOutput(
-    name,
+    config.name,
     config.chainId,
     configHash,
     blockNumber,
@@ -34,7 +28,7 @@ export async function saveDiscoveryResult(
 
   const chainName = ChainId.getName(chain).toString()
 
-  const root = `discovery/${name}/${chainName}`
+  const root = `discovery/${config.name}/${chainName}`
 
   await writeFile(`${root}/discovered.json`, json)
 

@@ -1,4 +1,3 @@
-import { ContractValue } from '@l2beat/discovery-types'
 import { utils } from 'ethers'
 
 import { Bytes } from '../../../utils/bytes'
@@ -10,22 +9,14 @@ import { toContractValue } from './toContractValue'
 
 export const EXEC_REVERT_MSG = 'Execution reverted'
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export async function callMethod(
   provider: DiscoveryProvider,
   address: EthereumAddress,
   fragment: utils.FunctionFragment,
   parameters: unknown[],
   blockNumber: number,
-): Promise<
-  | {
-      value: ContractValue | undefined
-      error?: undefined
-    }
-  | {
-      error: any
-      value?: undefined
-    }
-> {
+) {
   const abi = new utils.Interface([fragment])
   try {
     const callData = Bytes.fromHex(abi.encodeFunctionData(fragment, parameters))

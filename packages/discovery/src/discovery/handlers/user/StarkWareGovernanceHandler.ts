@@ -41,9 +41,9 @@ export class StarkWareGovernanceHandler implements Handler {
       (x) =>
         x.constant &&
         x.inputs.length === 1 &&
-        x.inputs[0]!.type === 'address' &&
+        x.inputs[0]?.type === 'address' &&
         x.outputs?.length === 1 &&
-        x.outputs[0]!.type === 'bool',
+        x.outputs[0]?.type === 'bool',
     )
   }
 
@@ -71,13 +71,11 @@ export class StarkWareGovernanceHandler implements Handler {
         callMethod(provider, address, this.filterBy, [governor], blockNumber),
       ),
     )
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const error = governorStatuses.find((x) => x.error)?.error
     if (error) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       return { field: this.field, error }
     }
-    const filtered = unfiltered.filter((_, i) => governorStatuses[i]!.value)
+    const filtered = unfiltered.filter((_, i) => governorStatuses[i]?.value)
     return { field: this.field, value: filtered }
   }
 }

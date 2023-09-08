@@ -10,7 +10,7 @@ export function Hash256(value: string): Hash256 {
 }
 
 Hash256.random = function random() {
-  const digit = (): string =>
-    '0123456789abcdef'[Math.floor(Math.random() * 16)]!
+  const digit = (): string | undefined =>
+    '0123456789abcdef'[Math.floor(Math.random() * 16)]
   return Hash256('0x' + Array.from({ length: 64 }).map(digit).join(''))
 }

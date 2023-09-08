@@ -19,7 +19,7 @@ export class DiscoveryConfig {
     return this.config
   }
 
-  get name(): string | undefined {
+  get name(): string {
     return this.config.name
   }
 

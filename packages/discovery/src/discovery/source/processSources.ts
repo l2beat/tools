@@ -1,3 +1,4 @@
+import { assert } from '@l2beat/backend-tools'
 import path from 'path'
 
 import { EthereumAddress } from '../../utils/EthereumAddress'
@@ -28,7 +29,8 @@ function parseSource(name: string, source: string): Record<string, string> {
   const entries = sourceToEntries(name, source)
 
   if (entries.length === 1) {
-    return parseSingleFile(...entries[0]!)
+    assert(entries[0], 'cannot parse source to single file')
+    return parseSingleFile(...entries[0])
   }
 
   const simplified = removeSharedNesting(entries)
@@ -53,7 +55,7 @@ function parseSingleFile(
     return singleFile
   }
 
-  let preamble = lines.slice(0, boundaries[0]!.i).join('\n')
+  let preamble = lines.slice(0, boundaries[0]?.i).join('\n')
   if (preamble !== '') {
     preamble += '\n'
   }
@@ -61,9 +63,13 @@ function parseSingleFile(
   // Try to split the files based on likely output from truffle-flattener
   const entries: [string, string][] = []
   for (let i = 0; i < boundaries.length; i++) {
-    const start = boundaries[i]!.i
+    const start = boundaries[i]?.i
     const end = boundaries[i + 1]?.i ?? lines.length
-    const file = boundaries[i]!.line.slice('// File: '.length).trim()
+    const file = boundaries[i]?.line.slice('// File: '.length).trim()
+
+    assert(start !== undefined, 'cannot obtain boundaries')
+    assert(file !== undefined, 'cannot obtain file contents')
+
     const content = preamble + lines.slice(start + 1, end).join('\n')
     entries.push([file, content])
   }

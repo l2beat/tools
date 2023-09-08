@@ -38,11 +38,13 @@ export class ProviderCache {
 
   get(filename: string, key: string): unknown {
     this.load(filename)
-    return this.cache[filename]![key]
+    return this.cache[filename]?.[key]
   }
 
   set(filename: string, key: string, value: unknown): void {
     this.load(filename)
+
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     this.cache[filename]![key] = value
     this.flush(filename)
   }

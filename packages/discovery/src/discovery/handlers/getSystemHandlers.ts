@@ -25,7 +25,7 @@ export function getSystemHandlers(
       continue
     } else if (fn.inputs.length === 0) {
       methodHandlers.push(new SimpleMethodHandler(fn, logger))
-    } else if (fn.inputs.length === 1 && fn.inputs[0]!.type === 'uint256') {
+    } else if (fn.inputs.length === 1 && fn.inputs[0]?.type === 'uint256') {
       arrayHandlers.push(new LimitedArrayHandler(fn, 5, logger))
     }
   }
