@@ -1,6 +1,6 @@
-import { EthereumAddress } from '@l2beat/discovery-types'
 import { utils } from 'ethers'
 
+import { EthereumAddress } from '../../../utils/EthereumAddress'
 import { DiscoveryLogger } from '../../DiscoveryLogger'
 import { DiscoveryProvider } from '../../provider/DiscoveryProvider'
 import { Handler, HandlerResult } from '../Handler'
