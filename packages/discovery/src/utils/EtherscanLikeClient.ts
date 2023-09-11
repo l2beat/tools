@@ -100,20 +100,19 @@ export class EtherscanLikeClient {
   }
 
   async getFirstTxTimestamp(address: EthereumAddress): Promise<UnixTime> {
-      const response = await this.call('account', 'txlist', {
-          address: address.toString(),
-          startblock: '0',
-          endblock: '999999999',
-          page: '1',
-          offset: '1',
-          sort: 'asc',
-      })
+    const response = await this.call('account', 'txlist', {
+      address: address.toString(),
+      startblock: '0',
+      endblock: '999999999',
+      page: '1',
+      offset: '1',
+      sort: 'asc',
+    })
 
-      return new UnixTime(
-          parseInt(TransactionListResult.parse(response)[0]?.timeStamp ?? "-1", 10),
-      )
+    return new UnixTime(
+      parseInt(TransactionListResult.parse(response)[0]?.timeStamp ?? '-1', 10),
+    )
   }
-
 
   async call(
     module: string,

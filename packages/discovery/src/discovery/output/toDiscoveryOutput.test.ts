@@ -2,9 +2,9 @@ import { UpgradeabilityParameters } from '@l2beat/discovery-types'
 import { expect } from 'earl'
 
 import { EthereumAddress } from '../../utils/EthereumAddress'
+import { UnixTime } from '../../utils/UnixTime'
 import { AnalyzedContract } from '../analysis/AddressAnalyzer'
 import { processAnalysis } from './toDiscoveryOutput'
-import { UnixTime } from '../../utils/UnixTime'
 
 describe(processAnalysis.name, () => {
   const base = {

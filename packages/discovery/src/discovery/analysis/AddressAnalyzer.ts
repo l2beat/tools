@@ -4,6 +4,7 @@ import {
 } from '@l2beat/discovery-types'
 
 import { EthereumAddress } from '../../utils/EthereumAddress'
+import { UnixTime } from '../../utils/UnixTime'
 import { ContractOverrides } from '../config/DiscoveryOverrides'
 import { DiscoveryLogger } from '../DiscoveryLogger'
 import { HandlerExecutor } from '../handlers/HandlerExecutor'
@@ -11,7 +12,6 @@ import { DiscoveryProvider } from '../provider/DiscoveryProvider'
 import { ProxyDetector } from '../proxies/ProxyDetector'
 import { SourceCodeService } from '../source/SourceCodeService'
 import { getRelatives } from './getRelatives'
-import { UnixTime } from '../../utils/UnixTime'
 
 export type Analysis = AnalyzedContract | AnalyzedEOA
 
@@ -55,9 +55,8 @@ export class AddressAnalyzer {
       return { analysis: { type: 'EOA', address }, relatives: [] }
     }
 
-    const deploymentTimestamp = await this.provider.getDeploymentTimestamp(
-        address,
-    )
+    const deploymentTimestamp =
+      await this.provider.getDeploymentTimestamp(address)
 
     const proxy = await this.proxyDetector.detectProxy(
       address,

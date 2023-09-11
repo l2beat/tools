@@ -2,13 +2,13 @@ import { expect, mockObject } from 'earl'
 
 import { Bytes } from '../../utils/Bytes'
 import { EthereumAddress } from '../../utils/EthereumAddress'
+import { UnixTime } from '../../utils/UnixTime'
 import { DiscoveryLogger } from '../DiscoveryLogger'
 import { HandlerExecutor } from '../handlers/HandlerExecutor'
 import { DiscoveryProvider } from '../provider/DiscoveryProvider'
 import { ProxyDetector } from '../proxies/ProxyDetector'
 import { ContractSources, SourceCodeService } from '../source/SourceCodeService'
 import { AddressAnalyzer } from './AddressAnalyzer'
-import { UnixTime } from '../../utils/UnixTime'
 
 describe(AddressAnalyzer.name, () => {
   const BLOCK_NUMBER = 1234
@@ -130,7 +130,7 @@ describe(AddressAnalyzer.name, () => {
     const addressAnalyzer = new AddressAnalyzer(
       mockObject<DiscoveryProvider>({
         getCode: async () => Bytes.fromHex('0x1234'),
-            getDeploymentTimestamp: async () => new UnixTime(1234),
+        getDeploymentTimestamp: async () => new UnixTime(1234),
       }),
       mockObject<ProxyDetector>({
         detectProxy: async () => ({
