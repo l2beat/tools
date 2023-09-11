@@ -1,6 +1,6 @@
 {
   "name": "@l2beat/discovery",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "private": true,
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -18,7 +18,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@l2beat/backend-tools": "^0.3.0",
+    "@l2beat/backend-tools": "*",
     "@l2beat/discovery-types": "^0.1.0",
     "chalk": "^4.1.2",
     "deep-diff": "^1.0.2",
