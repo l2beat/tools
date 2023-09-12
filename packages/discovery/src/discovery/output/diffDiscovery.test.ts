@@ -104,6 +104,7 @@ describe(diffDiscovery.name, () => {
       {
         name: 'E',
         address: ADDRESS_E,
+        unverified: true,
         upgradeability: {
           type: 'EIP1967 proxy',
           admin: ADMIN,
