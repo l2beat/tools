@@ -58,8 +58,12 @@ export class ClockIndexer extends RootIndexer {
   }
 
   async tick(): Promise<number> {
-    return Promise.resolve(new Date().getTime())
+    return Promise.resolve(getTimeSeconds())
   }
+}
+
+function getTimeSeconds(): number {
+  return Math.floor(Date.now() / 1000)
 }
 
 export class BlockDownloader extends ChildIndexer {
