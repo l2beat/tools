@@ -41,7 +41,7 @@ export class ConfigurableIndexer extends ChildIndexer {
   }
 
   override async update(from: number, to: number): Promise<number> {
-    const data = []
+    const data: number[] = []
     for (let i = from + 1; i <= to; i++) {
       data.push(i)
     }

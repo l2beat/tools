@@ -148,6 +148,7 @@ export class BlockDownloader extends ChildIndexer {
       timestamp: block.timestamp,
     }
     await this.blockRepository.addMany([record])
+    this.lastKnownNumber = block.number
     return block.timestamp
   }
 
