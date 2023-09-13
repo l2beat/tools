@@ -1,4 +1,5 @@
 import { Logger } from '@l2beat/backend-tools'
+
 import { ChildIndexer, RootIndexer } from '../src'
 
 interface Hash256 extends String {
@@ -51,29 +52,25 @@ interface IndexerRepository {
 }
 
 export class ClockIndexer extends RootIndexer {
-  constructor(logger: Logger) {
-    super(logger)
-  }
-
   override async start(): Promise<void> {
     await super.start()
     setInterval(() => this.requestTick(), 4 * 1000)
   }
 
   async tick(): Promise<number> {
-    return new Date().getTime()
+    return Promise.resolve(new Date().getTime())
   }
 }
 
 export class BlockDownloader extends ChildIndexer {
   private lastKnownNumber = 0
   private reorgedBlocks = [] as BlockRecord[]
-  private id: string
+  private readonly id: string
 
   constructor(
-    private ethereumClient: EthereumClient,
-    private blockRepository: BlockRepository,
-    private indexerRepository: IndexerRepository,
+    private readonly ethereumClient: EthereumClient,
+    private readonly blockRepository: BlockRepository,
+    private readonly indexerRepository: IndexerRepository,
     clockIndexer: ClockIndexer,
     logger: Logger,
   ) {
@@ -81,17 +78,21 @@ export class BlockDownloader extends ChildIndexer {
     this.id = 'BlockDownloader' // this should be unique across all indexers
   }
 
-  override async start() {
+  override async start(): Promise<void> {
     await super.start()
     this.lastKnownNumber = (await this.blockRepository.findLast())?.number ?? 0
   }
 
-  protected async update(_fromTimestamp: number, toTimestamp: number) {
+  protected async update(
+    _fromTimestamp: number,
+    toTimestamp: number,
+  ): Promise<number> {
     if (this.reorgedBlocks.length > 0) {
       // we do not need to check if lastKnown < to because we are sure that
       // those blocks are from the past
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       this.lastKnownNumber = this.reorgedBlocks.at(-1)!.number
-      this.blockRepository.addMany(this.reorgedBlocks)
+      await this.blockRepository.addMany(this.reorgedBlocks)
       this.reorgedBlocks = []
     }
 
@@ -105,12 +106,12 @@ export class BlockDownloader extends ChildIndexer {
     return await this.advanceChain(this.lastKnownNumber + 1)
   }
 
-  protected async invalidate(to: number) {
+  protected async invalidate(to: number): Promise<number> {
     await this.blockRepository.deleteAfter(to)
     return to
   }
 
-  private async advanceChain(blockNumber: number) {
+  private async advanceChain(blockNumber: number): Promise<number> {
     let [block, parent] = await Promise.all([
       this.ethereumClient.getBlock(blockNumber),
       this.getKnownBlock(blockNumber - 1),
@@ -146,7 +147,7 @@ export class BlockDownloader extends ChildIndexer {
     return block.timestamp
   }
 
-  protected async setSafeHeight(height: number) {
+  protected async setSafeHeight(height: number): Promise<void> {
     await this.indexerRepository.setSafeHeight(this.id, height)
   }
 
