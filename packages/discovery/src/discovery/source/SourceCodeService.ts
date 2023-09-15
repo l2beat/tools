@@ -1,4 +1,3 @@
-import { assert } from '@l2beat/backend-tools'
 import { zip } from 'lodash'
 
 import { EthereumAddress } from '../../utils/EthereumAddress'
