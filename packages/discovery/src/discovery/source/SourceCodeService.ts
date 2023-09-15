@@ -43,7 +43,6 @@ export class SourceCodeService {
     }
 
     const isVerified = metadata.every((x) => x.isVerified)
-    assert(name)
 
     return { name, isVerified, abi, abis, files }
   }
