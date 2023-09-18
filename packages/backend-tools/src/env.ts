@@ -70,4 +70,23 @@ export class Env {
       throw new Error(`Environment variable ${key} is not a boolean value!`)
     }
   }
+
+  stringArray(name: string, fallback?: string[]): string[] {
+    const value = this.optionalStringArray(name)
+    if (value !== undefined) {
+      return value
+    }
+
+    if (fallback !== undefined) {
+      return fallback
+    }
+    throw new Error(`Missing environment variable ${name}!`)
+  }
+
+  optionalStringArray(name: string): string[] | undefined {
+    const value = this.env[name]
+    if (value !== undefined) {
+      return value.split(' ').filter((x) => x.length > 0)
+    }
+  }
 }

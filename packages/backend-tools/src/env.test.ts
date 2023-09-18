@@ -69,4 +69,23 @@ describe(Env.name, () => {
       expect(() => env.boolean('TEST_A')).toThrow()
     })
   })
+
+  describe(Env.prototype.stringArray.name, () => {
+    it('returns the environment variable as string array', () => {
+      const env = new Env({ TEST_A: 'foo bar' })
+      const result = env.stringArray('TEST_A')
+      expect(result).toEqual(['foo', 'bar'])
+    })
+
+    it('returns the fallback if the variable is not present', () => {
+      const env = new Env({})
+      const result = env.stringArray('TEST_A', ['foo', 'bar'])
+      expect(result).toEqual(['foo', 'bar'])
+    })
+
+    it('throws if variable is not present and there is no fallback', () => {
+      const env = new Env({})
+      expect(() => env.stringArray('TEST_A')).toThrow()
+    })
+  })
 })
