@@ -52,6 +52,7 @@ export async function getOpticsBeaconProxy(
     relatives: [upgradeBeacon],
   }
 }
+
 async function getAddressFromConstructor(
   provider: DiscoveryProvider,
   address: EthereumAddress,
