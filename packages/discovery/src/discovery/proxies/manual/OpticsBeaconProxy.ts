@@ -4,10 +4,7 @@ import { ethers } from 'ethers'
 
 import { Bytes } from '../../../utils/Bytes'
 import { EthereumAddress } from '../../../utils/EthereumAddress'
-import {
-  decodeConstructorArgs,
-  serializeResult,
-} from '../../handlers/user/ConstructorArgsHandler'
+import { serializeResult } from '../../handlers/user/ConstructorArgsHandler'
 import { DiscoveryProvider } from '../../provider/DiscoveryProvider'
 import { bytes32ToAddress } from '../../utils/address'
 
@@ -23,20 +20,18 @@ export async function getOpticsBeaconProxy(
     provider,
     address,
     proxyConstructorFragment,
-    '_upgradeBeacon',
+    0,
   )
 
-  // const beaconConstructorFragment = ethers.utils.Fragment.from(
-  //   'constructor(address _initialImplementation, address _controller)',
-  // )
-  // const beaconController = await getAddressFromConstructor(
-  //   provider,
-  //   address,
-  //   beaconConstructorFragment,
-  //   '_controller',
-  // )
-
-  const beaconController = EthereumAddress.ZERO
+  const beaconConstructorFragment = ethers.utils.Fragment.from(
+    'constructor(address _initialImplementation, address _controller)',
+  )
+  const beaconController = await getAddressFromConstructor(
+    provider,
+    upgradeBeacon,
+    beaconConstructorFragment,
+    1,
+  )
 
   const implementationCallResult = await provider.call(
     upgradeBeacon,
@@ -61,23 +56,23 @@ async function getAddressFromConstructor(
   provider: DiscoveryProvider,
   address: EthereumAddress,
   constructorFragment: ethers.utils.Fragment,
-  path: string,
+  index: number,
 ): Promise<EthereumAddress> {
-  const txHash = await provider.getContractDeploymentTx(address)
-  const tx = await provider.getTransaction(txHash)
-  const result = decodeConstructorArgs(constructorFragment, tx.data)
-  assert(typeof result === 'object', 'Could not decode constructor')
-  const args = Object.fromEntries(
-    Object.entries(result).map(([key, value]) => [
-      key,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-      serializeResult(value),
-    ]),
+  const result = await provider.getConstructorArgs(address)
+  const decodedArgs = ethers.utils.defaultAbiCoder.decode(
+    constructorFragment.inputs,
+    '0x' + result,
   )
 
-  const arg = args[path]
-  assert(arg !== undefined, 'Argument not found: ' + path)
-  assert(typeof arg === 'string', 'Argument is not a string: ' + path)
+  const args = serializeResult(decodedArgs)
+  assert(Array.isArray(args), 'Constructor args are not an array')
+
+  const arg = args[index]
+  assert(arg !== undefined, 'Argument not found: ' + index.toString())
+  assert(
+    typeof arg === 'string',
+    'Argument is not a string: ' + index.toString(),
+  )
 
   return EthereumAddress(arg)
 }
