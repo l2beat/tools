@@ -109,9 +109,10 @@ export class EtherscanLikeClient {
       sort: 'asc',
     })
 
-    return new UnixTime(
-      parseInt(TransactionListResult.parse(response)[0]?.timeStamp ?? '-1', 10),
-    )
+    const resp = TransactionListResult.parse(response)[0]
+    assert(resp)
+
+    return new UnixTime(parseInt(resp.timeStamp, 10))
   }
 
   async call(
