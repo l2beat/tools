@@ -45,7 +45,7 @@ export class ConstructorArgsHandler implements Handler {
 
     const decodedConstructorArguments = ethers.utils.defaultAbiCoder.decode(
       this.constructorFragment.inputs,
-      encodedConstructorArguments,
+      '0x' + encodedConstructorArguments,
     )
 
     return {
