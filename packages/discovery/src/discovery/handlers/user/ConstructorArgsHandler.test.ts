@@ -57,7 +57,7 @@ describe(ConstructorArgsHandler.name, () => {
       expect(provider.getTransaction).toHaveBeenOnlyCalledWith(txHash)
     })
 
-    it('fallsback to extraction with block explorer if heuristic fails', async () => {
+    it('falls back to extraction with block explorer if heuristic fails', async () => {
       /**
        * You can achive the same result using:
        * @example
