@@ -40,6 +40,49 @@ export class ConstructorArgsHandler implements Handler {
     provider: DiscoveryProvider,
     address: EthereumAddress,
   ): Promise<HandlerResult> {
+    try {
+      const decodedConstructorArguments =
+        await this.getWithDeploymentTransaction(provider, address)
+
+      return {
+        field: 'constructorArgs',
+        value: serializeResult(decodedConstructorArguments),
+      }
+    } catch (error) {
+      this.logger.log(
+        'Could not get constructor arguments with heuristic approach. Trying with block explorer.',
+      )
+      const decodedConstructorArguments = await this.getWithBlockExplorer(
+        provider,
+        address,
+      )
+
+      return {
+        field: 'constructorArgs',
+        value: serializeResult(decodedConstructorArguments),
+      }
+    }
+  }
+
+  async getWithDeploymentTransaction(
+    provider: DiscoveryProvider,
+    address: EthereumAddress,
+  ): Promise<ethers.utils.Result> {
+    const deploymentTxHash = await provider.getContractDeploymentTx(address)
+    const deploymentTx = await provider.getTransaction(deploymentTxHash)
+
+    const decodedConstructorArguments = decodeConstructorArgs(
+      this.constructorFragment,
+      deploymentTx.data,
+    )
+
+    return decodedConstructorArguments
+  }
+
+  async getWithBlockExplorer(
+    provider: DiscoveryProvider,
+    address: EthereumAddress,
+  ): Promise<ethers.utils.Result> {
     const encodedConstructorArguments =
       await provider.getConstructorArgs(address)
 
@@ -48,10 +91,7 @@ export class ConstructorArgsHandler implements Handler {
       '0x' + encodedConstructorArguments,
     )
 
-    return {
-      field: 'constructorArgs',
-      value: serializeResult(decodedConstructorArguments),
-    }
+    return decodedConstructorArguments
   }
 }
 
@@ -85,4 +125,48 @@ export function serializeResult(result: ethers.utils.Result): ContractValue {
   }
 
   throw new Error(`Don't know how to serialize: ${typeof result}`)
+}
+
+/** @internal */
+/**
+ * Constructor args are ABI encoded and appended to init bytecode. Read more: https://ethereum.stackexchange.com/questions/13008/how-are-the-arguments-of-the-constructor-encoded-in-the-contract-creation-transa?rq=1
+ * After this is done, there is no easy way to split constructor args from init bytecode.
+ *
+ * We use the following heuristic to decode constructor args:
+ * 1. Iterate over the bytecode in reverse order in 32 byte chunks.
+ * 2. Each chunk starting location should be encoded in the bytecode as a hex string because args have to be loaded from the bytecode into memory by init code.
+ *    So if the index does not exist in the bytecode, for sure it is not a starting point of a constructor args.
+ * 3. Try to decode the chunk as constructor args. Unfortunately, shorter chunks that actual args can be decoded as well (with some zero values).
+ *    So we just pick the longest decoded chunk that works.
+ *  */
+export function decodeConstructorArgs(
+  constructor: ethers.utils.Fragment,
+  txData: string,
+): ethers.utils.Result {
+  assert(constructor, 'Constructor does not exist in abi')
+
+  let longestDecodedArgs: ethers.utils.Result | undefined = undefined
+  const offset = 64
+  for (let i = txData.length - offset; i >= 0; i -= offset) {
+    const slice = txData.slice(i)
+
+    try {
+      const offsetEncoded = ((i - 2) / 2).toString(16)
+      if (!txData.includes(offsetEncoded)) {
+        continue
+      }
+
+      longestDecodedArgs = ethers.utils.defaultAbiCoder.decode(
+        constructor.inputs,
+        '0x' + slice,
+      )
+    } catch (error) {
+      continue
+    }
+  }
+
+  if (!longestDecodedArgs) {
+    throw new Error('Could not decode constructor args')
+  }
+  return longestDecodedArgs
 }
