@@ -7,6 +7,10 @@ export interface FieldDiff {
   after?: string
 }
 
+const PREIGNORED: string[] = [
+    "sinceTimestamp"
+]
+
 export function diffContracts(
   before: ContractParameters,
   after: ContractParameters,
@@ -68,6 +72,10 @@ export function diffContracts(
     if (r.key === undefined) {
       return true
     }
+    if (PREIGNORED.includes(r.key)) {
+        return false
+    }
+
     if (r.key.includes('values.')) {
       for (const i of ignoreInWatchMode) {
         if (r.key.includes(`values.${i}`)) {
