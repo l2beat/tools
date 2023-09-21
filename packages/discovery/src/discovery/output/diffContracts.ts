@@ -7,9 +7,7 @@ export interface FieldDiff {
   after?: string
 }
 
-const PREIGNORED: string[] = [
-    "sinceTimestamp"
-]
+const PREIGNORED: string[] = ['sinceTimestamp']
 
 export function diffContracts(
   before: ContractParameters,
@@ -73,7 +71,7 @@ export function diffContracts(
       return true
     }
     if (PREIGNORED.includes(r.key)) {
-        return false
+      return false
     }
 
     if (r.key.includes('values.')) {
