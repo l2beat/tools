@@ -30,6 +30,10 @@ import {
 } from './EventCountHandler'
 import { HardCodedDefinition, HardCodedHandler } from './HardcodedHandler'
 import {
+  LayerZeroMultisigHandler,
+  LayerZeroMultisigHandlerDefinition,
+} from './LayerZeroMultisigHandler'
+import {
   StarkWareGovernanceHandler,
   StarkWareGovernanceHandlerDefinition,
 } from './StarkWareGovernanceHandler'
@@ -58,6 +62,7 @@ export const UserHandlerDefinition = z.union([
   StateFromEventDefinition,
   HardCodedDefinition,
   StarkWareGovernanceHandlerDefinition,
+  LayerZeroMultisigHandlerDefinition,
 ])
 
 export function getUserHandler(
@@ -84,7 +89,7 @@ export function getUserHandler(
     case 'arrayFromTwoEvents':
       return new ArrayFromTwoEventsHandler(field, definition, abi, logger)
     case 'constructorArgs':
-      return new ConstructorArgsHandler(field, abi, logger)
+      return new ConstructorArgsHandler(field, definition, abi, logger)
     case 'eventCount':
       return new EventCountHandler(field, definition, logger)
     case 'hardcoded':
@@ -93,5 +98,7 @@ export function getUserHandler(
       return new StarkWareGovernanceHandler(field, definition, abi, logger)
     case 'stateFromEvent':
       return new StateFromEventHandler(field, definition, abi, logger)
+    case 'layerZeroMultisig':
+      return new LayerZeroMultisigHandler(field, abi, logger)
   }
 }
