@@ -6,6 +6,7 @@ import { EthereumAddress } from '../../utils/EthereumAddress'
 import { EtherscanLikeClient } from '../../utils/EtherscanLikeClient'
 import { Hash256 } from '../../utils/Hash256'
 import { UnixTime } from '../../utils/UnixTime'
+import { DiscoveryLogger } from '../DiscoveryLogger'
 import { jsonToHumanReadableAbi } from './jsonToHumanReadableAbi'
 
 export interface ContractMetadata {
@@ -29,6 +30,7 @@ export class DiscoveryProvider {
   constructor(
     private readonly provider: providers.Provider,
     private readonly etherscanLikeClient: EtherscanLikeClient,
+    private readonly logger: DiscoveryLogger,
   ) {}
 
   async call(
@@ -56,13 +58,61 @@ export class DiscoveryProvider {
     return Bytes.fromHex(result)
   }
 
-  async getLogs(
+  public async getLogs(
     address: EthereumAddress,
     topics: (string | string[])[],
     fromBlock: number,
     toBlock: number,
   ): Promise<providers.Log[]> {
-    return this.provider.getLogs({
+    if (fromBlock > toBlock) {
+      throw new Error(
+        `fromBlock (${fromBlock}) can't be bigger than toBlock (${toBlock})`,
+      )
+    }
+
+    const { blockNumber: deploymentBlockNumber } =
+      await this.getDeploymentInfo(address)
+
+    // Prepare ranges to query.
+    // Important: the `to` parameter of getLogs is inclusive!
+    // To support efficient caching, we divide the requested blocks range into
+    // sequential boundaries of `maxRange` size, e.g [0,10k-1], [10k, 20k-1], ...
+    // Otherwise ranges would depend on `fromBlock` and even small change to it
+    // would make the previous cache useless.
+
+    const maxRange = 10000
+    const ranges: [number, number][] = []
+
+    let curBoundaryStart
+    let curBoundaryEnd
+    let start = Math.max(fromBlock, deploymentBlockNumber)
+    let end
+    do {
+      curBoundaryStart = Math.floor(start / maxRange) * maxRange
+      curBoundaryEnd = curBoundaryStart + maxRange - 1
+      end = Math.min(curBoundaryEnd, toBlock)
+      ranges.push([start, end])
+      start = end + 1
+    } while (start <= toBlock)
+
+    // Query for logs in ranges:
+    let allLogs: providers.Log[] = []
+    for (const [from, to] of ranges) {
+      const logs = await this.getLogsBatch(address, topics, from, to)
+      allLogs = allLogs.concat(logs)
+    }
+
+    return allLogs
+  }
+
+  public async getLogsBatch(
+    address: EthereumAddress,
+    topics: (string | string[])[],
+    fromBlock: number,
+    toBlock: number,
+  ): Promise<providers.Log[]> {
+    this.logger.logFetchingEvents(fromBlock, toBlock)
+    return await this.provider.getLogs({
       address: address.toString(),
       fromBlock,
       toBlock,
@@ -113,12 +163,18 @@ export class DiscoveryProvider {
     return this.etherscanLikeClient.getFirstTxTimestamp(address)
   }
 
-  async getDeploymentTimestamp(address: EthereumAddress): Promise<UnixTime> {
+  async getDeploymentInfo(address: EthereumAddress): Promise<{
+    blockNumber: number
+    timestamp: UnixTime
+  }> {
     const txHash = await this.getContractDeploymentTx(address)
     const tx = await this.provider.getTransaction(txHash.toString())
     assert(tx.blockNumber, 'Transaction returned without a block number.')
     const block = await this.provider.getBlock(tx.blockNumber)
-    return new UnixTime(block.timestamp)
+    return {
+      blockNumber: tx.blockNumber,
+      timestamp: new UnixTime(block.timestamp),
+    }
   }
 
   async getBlockNumber(): Promise<number> {

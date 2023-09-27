@@ -128,6 +128,7 @@ export async function discover(
   const discoveryProvider = new ProviderWithCache(
     provider,
     etherscanClient,
+    logger,
     config.chainId,
   )
   const proxyDetector = new ProxyDetector(discoveryProvider, logger)
