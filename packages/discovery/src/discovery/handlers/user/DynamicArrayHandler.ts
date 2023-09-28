@@ -13,6 +13,13 @@ import { SingleSlot } from '../storageCommon'
 import { bytes32ToContractValue } from '../utils/bytes32ToContractValue'
 import { valueToBigInt } from '../utils/valueToBigInt'
 
+// Solidity differentiates between two different array types:
+//  - static sized arrays   e.g. address[32]
+//  - dynamic sized arrays  e.g. address[]
+// This handler is designed for dynamically sized arrays and does not work with
+// statically sized arrays! This is because the first slot of a dynamic array
+// contains its length instead of actual data, also the place in storage where
+// the data is located is i = keccak256(slot) instead of i = slot.
 export type DynamicArrayHandlerDefinition = z.infer<
   typeof DynamicArrayHandlerDefinition
 >
