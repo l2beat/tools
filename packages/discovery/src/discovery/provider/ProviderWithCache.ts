@@ -21,8 +21,9 @@ export class ProviderWithCache extends DiscoveryProvider {
     etherscanClient: EtherscanLikeClient,
     logger: DiscoveryLogger,
     chainId: ChainId,
+    maxGetLogsRange?: number,
   ) {
-    super(provider, etherscanClient, logger)
+    super(provider, etherscanClient, logger, maxGetLogsRange)
     this.cache = new ProviderCache(chainId)
   }
 

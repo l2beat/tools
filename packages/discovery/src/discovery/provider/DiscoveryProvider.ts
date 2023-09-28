@@ -31,6 +31,7 @@ export class DiscoveryProvider {
     private readonly provider: providers.Provider,
     private readonly etherscanLikeClient: EtherscanLikeClient,
     private readonly logger: DiscoveryLogger,
+    private readonly maxGetLogsRange?: number,
   ) {}
 
   async call(
@@ -70,8 +71,9 @@ export class DiscoveryProvider {
       )
     }
 
-    const { blockNumber: deploymentBlockNumber } =
-      await this.getDeploymentInfo(address)
+    if (this.maxGetLogsRange === undefined) {
+      return await this.getLogsBatch(address, topics, fromBlock, toBlock)
+    }
 
     // Prepare ranges to query.
     // Important: the `to` parameter of getLogs is inclusive!
@@ -80,12 +82,16 @@ export class DiscoveryProvider {
     // Otherwise ranges would depend on `fromBlock` and even small change to it
     // would make the previous cache useless.
 
-    const maxRange = 10000
+    // Let's start with the deployment block number if it's higher than fromBlock
+    const { blockNumber: deploymentBlockNumber } =
+      await this.getDeploymentInfo(address)
+    let start = Math.max(fromBlock, deploymentBlockNumber)
+
+    const maxRange = this.maxGetLogsRange
     const ranges: [number, number][] = []
 
     let curBoundaryStart
     let curBoundaryEnd
-    let start = Math.max(fromBlock, deploymentBlockNumber)
     let end
     do {
       curBoundaryStart = Math.floor(start / maxRange) * maxRange

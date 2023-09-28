@@ -12,6 +12,8 @@ const rangesFromCalls = (provider: MockObject<providers.Provider>) =>
     call.args[0].toBlock,
   ])
 
+const GETLOGS_MAX_RANGE = 10000
+
 describe(DiscoveryProvider.name, () => {
   describe(DiscoveryProvider.prototype.getLogs.name, () => {
     const etherscanLikeClientMock = mockObject<EtherscanLikeClient>({})
@@ -28,6 +30,7 @@ describe(DiscoveryProvider.name, () => {
         providerMock,
         etherscanLikeClientMock,
         DiscoveryLogger.SILENT,
+        GETLOGS_MAX_RANGE,
       )
       discoveryProviderMock.getDeploymentInfo = mockFn().resolvesTo({
         blockNumber: 0,
@@ -101,6 +104,25 @@ describe(DiscoveryProvider.name, () => {
       await discoveryProviderMock.getLogs(address, topics, 1400, 1600)
       const ranges = rangesFromCalls(providerMock)
       expect(ranges).toEqual([[1400, 1600]])
+    })
+
+    it('handles maxGetLogsRange undefined (no range)', async () => {
+      providerMock = mockObject<providers.Provider>({
+        getLogs: mockFn().resolvesTo([]),
+      })
+      discoveryProviderMock = new DiscoveryProvider(
+        providerMock,
+        etherscanLikeClientMock,
+        DiscoveryLogger.SILENT,
+        undefined,
+      )
+      discoveryProviderMock.getDeploymentInfo = mockFn().resolvesTo({
+        blockNumber: 0,
+        timestamp: 0,
+      })
+      await discoveryProviderMock.getLogs(address, topics, 5000, 35000)
+      const ranges = rangesFromCalls(providerMock)
+      expect(ranges).toEqual([[5000, 35000]])
     })
   })
 })
