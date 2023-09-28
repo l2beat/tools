@@ -87,13 +87,11 @@ export class DiscoveryProvider {
     const maxRange = this.getLogsMaxRange
     const allLogs: providers.Log[][] = []
 
-    let curBoundaryStart
-    let curBoundaryEnd
     let start = Math.max(fromBlock, deploymentBlockNumber)
     let end
     do {
-      curBoundaryStart = Math.floor(start / maxRange) * maxRange
-      curBoundaryEnd = curBoundaryStart + maxRange - 1 // getLogs 'to' is inclusive!
+      const curBoundaryStart = Math.floor(start / maxRange) * maxRange
+      const curBoundaryEnd = curBoundaryStart + maxRange - 1 // getLogs 'to' is inclusive!
       end = Math.min(curBoundaryEnd, toBlock)
       const logs = await this.getLogsBatch(address, topics, start, end)
       allLogs.push(logs)
