@@ -31,7 +31,7 @@ export class DiscoveryProvider {
     private readonly provider: providers.Provider,
     private readonly etherscanLikeClient: EtherscanLikeClient,
     private readonly logger: DiscoveryLogger,
-    private readonly maxGetLogsRange?: number,
+    private readonly getLogsMaxRange?: number,
   ) {}
 
   async call(
@@ -71,7 +71,7 @@ export class DiscoveryProvider {
       )
     }
 
-    if (this.maxGetLogsRange === undefined) {
+    if (this.getLogsMaxRange === undefined) {
       return await this.getLogsBatch(address, topics, fromBlock, toBlock)
     }
 
@@ -84,7 +84,7 @@ export class DiscoveryProvider {
     const { blockNumber: deploymentBlockNumber } =
       await this.getDeploymentInfo(address)
 
-    const maxRange = this.maxGetLogsRange
+    const maxRange = this.getLogsMaxRange
     const allLogs: providers.Log[][] = []
 
     let curBoundaryStart

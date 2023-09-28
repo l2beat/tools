@@ -34,7 +34,7 @@ export function getDiscoveryCliConfig(cli: CliParameters): DiscoveryCliConfig {
       dryRun: cli.dryRun,
       dev: cli.dev,
       blockNumber: env.optionalInteger('DISCOVERY_BLOCK_NUMBER'),
-      maxGetLogsRange: chain.rpcGetLogsMaxRange,
+      getLogsMaxRange: chain.rpcGetLogsMaxRange,
     },
     singleDiscovery: singleDiscoveryEnabled && {
       address: cli.address,
@@ -180,7 +180,7 @@ export interface DiscoveryModuleConfig {
   readonly dryRun?: boolean
   readonly dev?: boolean
   readonly blockNumber?: number
-  readonly maxGetLogsRange?: number
+  readonly getLogsMaxRange?: number
 }
 
 export interface SingleDiscoveryModuleConfig {

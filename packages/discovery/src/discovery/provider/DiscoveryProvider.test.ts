@@ -106,7 +106,7 @@ describe(DiscoveryProvider.name, () => {
       expect(ranges).toEqual([[1400, 1600]])
     })
 
-    it('handles maxGetLogsRange undefined (no range)', async () => {
+    it('handles getLogsMaxRange undefined (no range)', async () => {
       providerMock = mockObject<providers.Provider>({
         getLogs: mockFn().resolvesTo([]),
       })

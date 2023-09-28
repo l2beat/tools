@@ -41,7 +41,7 @@ export async function runDiscovery(
     projectConfig,
     logger,
     blockNumber,
-    config.maxGetLogsRange,
+    config.getLogsMaxRange,
   )
   await saveDiscoveryResult(
     result,
@@ -73,14 +73,14 @@ export async function dryRunDiscovery(
       etherscanClient,
       projectConfig,
       blockNumber,
-      config.maxGetLogsRange,
+      config.getLogsMaxRange,
     ),
     justDiscover(
       provider,
       etherscanClient,
       projectConfig,
       blockNumberYesterday,
-      config.maxGetLogsRange,
+      config.getLogsMaxRange,
     ),
   ])
 
@@ -102,7 +102,7 @@ export async function justDiscover(
   etherscanClient: EtherscanLikeClient,
   config: DiscoveryConfig,
   blockNumber: number,
-  maxGetLogsRange?: number,
+  getLogsMaxRange?: number,
 ): Promise<DiscoveryOutput> {
   const result = await discover(
     provider,
@@ -110,7 +110,7 @@ export async function justDiscover(
     config,
     DiscoveryLogger.CLI,
     blockNumber,
-    maxGetLogsRange,
+    getLogsMaxRange,
   )
 
   const { name } = config
@@ -134,14 +134,14 @@ export async function discover(
   config: DiscoveryConfig,
   logger: DiscoveryLogger,
   blockNumber: number,
-  maxGetLogsRange?: number,
+  getLogsMaxRange?: number,
 ): Promise<Analysis[]> {
   const discoveryProvider = new ProviderWithCache(
     provider,
     etherscanClient,
     logger,
     config.chainId,
-    maxGetLogsRange,
+    getLogsMaxRange,
   )
   const proxyDetector = new ProxyDetector(discoveryProvider, logger)
   const sourceCodeService = new SourceCodeService(discoveryProvider)
