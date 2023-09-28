@@ -69,14 +69,13 @@ describe(DynamicArrayHandler.name, () => {
     it('does nothing on empty address array', async () => {
       const address = EthereumAddress.random()
       const provider = mockObject<DiscoveryProvider>({
-        getStorage: mockFn()
-          .executesOnce((passedAddress, slot) => {
-            expect(passedAddress).toEqual(address)
-            expect(slot).toEqual(85n)
-            return Bytes.fromHex(
-              '0x0000000000000000000000000000000000000000000000000000000000000000',
-            )
-          })
+        getStorage: mockFn().executesOnce((passedAddress, slot) => {
+          expect(passedAddress).toEqual(address)
+          expect(slot).toEqual(85n)
+          return Bytes.fromHex(
+            '0x0000000000000000000000000000000000000000000000000000000000000000',
+          )
+        }),
       })
 
       const handler = new DynamicArrayHandler(
