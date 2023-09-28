@@ -75,8 +75,6 @@ export class DiscoveryProvider {
       return await this.getLogsBatch(address, topics, fromBlock, toBlock)
     }
 
-    // Prepare ranges to query.
-    // Important: the `to` parameter of getLogs is inclusive!
     // To support efficient caching, we divide the requested blocks range into
     // sequential boundaries of `maxRange` size, e.g [0,10k-1], [10k, 20k-1], ...
     // Otherwise ranges would depend on `fromBlock` and even small change to it
@@ -85,30 +83,24 @@ export class DiscoveryProvider {
     // Let's start with the deployment block number if it's higher than fromBlock
     const { blockNumber: deploymentBlockNumber } =
       await this.getDeploymentInfo(address)
-    let start = Math.max(fromBlock, deploymentBlockNumber)
 
     const maxRange = this.maxGetLogsRange
-    const ranges: [number, number][] = []
+    const allLogs: providers.Log[][] = []
 
     let curBoundaryStart
     let curBoundaryEnd
+    let start = Math.max(fromBlock, deploymentBlockNumber)
     let end
     do {
       curBoundaryStart = Math.floor(start / maxRange) * maxRange
-      curBoundaryEnd = curBoundaryStart + maxRange - 1
+      curBoundaryEnd = curBoundaryStart + maxRange - 1 // getLogs 'to' is inclusive!
       end = Math.min(curBoundaryEnd, toBlock)
-      ranges.push([start, end])
+      const logs = await this.getLogsBatch(address, topics, start, end)
+      allLogs.push(logs)
       start = end + 1
     } while (start <= toBlock)
 
-    // Query for logs in ranges:
-    let allLogs: providers.Log[] = []
-    for (const [from, to] of ranges) {
-      const logs = await this.getLogsBatch(address, topics, from, to)
-      allLogs = allLogs.concat(logs)
-    }
-
-    return allLogs
+    return allLogs.flat()
   }
 
   public async getLogsBatch(

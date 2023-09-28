@@ -124,5 +124,29 @@ describe(DiscoveryProvider.name, () => {
       const ranges = rangesFromCalls(providerMock)
       expect(ranges).toEqual([[5000, 35000]])
     })
+
+    it('starts with deployment block if bigger then fromBlock', async () => {
+      providerMock = mockObject<providers.Provider>({
+        getLogs: mockFn().resolvesTo([]),
+      })
+      discoveryProviderMock = new DiscoveryProvider(
+        providerMock,
+        etherscanLikeClientMock,
+        DiscoveryLogger.SILENT,
+        GETLOGS_MAX_RANGE,
+      )
+      discoveryProviderMock.getDeploymentInfo = mockFn().resolvesTo({
+        blockNumber: 16000,
+        timestamp: 0,
+      })
+
+      await discoveryProviderMock.getLogs(address, topics, 5000, 35000)
+      const ranges = rangesFromCalls(providerMock)
+      expect(ranges).toEqual([
+        [16000, 19999],
+        [20000, 29999],
+        [30000, 35000],
+      ])
+    })
   })
 })
