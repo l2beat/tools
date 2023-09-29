@@ -114,7 +114,7 @@ describe(DiscoveryProvider.name, () => {
         providerMock,
         etherscanLikeClientMock,
         DiscoveryLogger.SILENT,
-        undefined,
+        undefined, // PROVIDING UNDEFINED for getLogsMaxRange, so no batching
       )
       discoveryProviderMock.getDeploymentInfo = mockFn().resolvesTo({
         blockNumber: 0,
