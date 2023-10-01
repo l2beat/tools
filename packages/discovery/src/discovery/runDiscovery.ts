@@ -143,6 +143,8 @@ export async function discover(
     config.chainId,
     getLogsMaxRange,
   )
+  await discoveryProvider.init()
+
   const proxyDetector = new ProxyDetector(discoveryProvider, logger)
   const sourceCodeService = new SourceCodeService(discoveryProvider)
   const handlerExecutor = new HandlerExecutor(discoveryProvider, logger)

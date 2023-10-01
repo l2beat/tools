@@ -11,7 +11,8 @@ import { isRevert } from '../utils/isRevert'
 import { ContractMetadata, DiscoveryProvider } from './DiscoveryProvider'
 import { ProviderCache } from './ProviderCache'
 
-const identity = <T>(x: T): T => x
+const toJSON = <T>(x: T): string => JSON.stringify(x)
+const fromJSON = <T>(x: string): T => JSON.parse(x) as T
 
 export class ProviderWithCache extends DiscoveryProvider {
   private readonly cache: ProviderCache
@@ -27,20 +28,24 @@ export class ProviderWithCache extends DiscoveryProvider {
     this.cache = new ProviderCache(chainId)
   }
 
-  private async cacheOrFetch<R, S>(
+  async init(): Promise<void> {
+    await this.cache.init()
+  }
+
+  private async cacheOrFetch<R>(
     filename: string,
     key: string,
     fetch: () => Promise<R>,
-    toCache: (value: R) => S,
-    fromCache: (value: S) => R,
+    toCache: (value: R) => string,
+    fromCache: (value: string) => R,
   ): Promise<R> {
-    const known = this.cache.get(filename, key)
+    const known = await this.cache.get(filename, key)
     if (known !== undefined) {
-      return fromCache(known as S)
+      return fromCache(known)
     }
 
     const result = await fetch()
-    this.cache.set(filename, key, toCache(result))
+    await this.cache.set(filename, key, toCache(result))
 
     return result
   }
@@ -66,8 +71,8 @@ export class ProviderWithCache extends DiscoveryProvider {
           }
         }
       },
-      identity,
-      identity,
+      toJSON,
+      fromJSON,
     )
     if (result.value !== undefined) {
       return Bytes.fromHex(result.value)
@@ -104,8 +109,8 @@ export class ProviderWithCache extends DiscoveryProvider {
       `logs/${address.toString()}`,
       `getLogs.${fromBlock}.${toBlock}.${topicsHash}`,
       () => super.getLogsBatch(address, topics, fromBlock, toBlock),
-      identity,
-      identity,
+      toJSON,
+      fromJSON,
     )
   }
 
@@ -114,7 +119,8 @@ export class ProviderWithCache extends DiscoveryProvider {
     blockNumber: number,
   ): Promise<Bytes> {
     return this.cacheOrFetch(
-      `blocks/${blockNumber}`,
+      // Ignoring blockNumber here, assuming that code will not change
+      `addresses/${address.toString()}}`,
       `getCode.${address.toString()}`,
       () => super.getCode(address, blockNumber),
       (result) => result.toString(),
@@ -129,8 +135,18 @@ export class ProviderWithCache extends DiscoveryProvider {
       `transactions/${hash.toString()}}`,
       `getTransaction`,
       () => super.getTransaction(hash),
-      identity,
-      identity,
+      toJSON,
+      fromJSON,
+    )
+  }
+
+  override async getBlock(blockNumber: number): Promise<providers.Block> {
+    return this.cacheOrFetch(
+      `blocks/${blockNumber}`,
+      `getBlock`,
+      () => super.getBlock(blockNumber),
+      toJSON,
+      fromJSON,
     )
   }
 
@@ -141,8 +157,20 @@ export class ProviderWithCache extends DiscoveryProvider {
       `addresses/${address.toString()}}`,
       `getMetadata`,
       () => super.getMetadata(address),
-      identity,
-      identity,
+      toJSON,
+      fromJSON,
+    )
+  }
+
+  override async getContractDeploymentTx(
+    address: EthereumAddress,
+  ): Promise<Hash256> {
+    return this.cacheOrFetch(
+      `addresses/${address.toString()}}`,
+      `getContractDeploymentTx`,
+      () => super.getContractDeploymentTx(address),
+      toJSON,
+      fromJSON,
     )
   }
 }
