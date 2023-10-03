@@ -1,4 +1,3 @@
-import { DiscoveryCache } from '@l2beat/discovery-types'
 import { createHash } from 'crypto'
 import { providers } from 'ethers'
 
@@ -13,6 +12,11 @@ import { ContractMetadata, DiscoveryProvider } from './DiscoveryProvider'
 
 const toJSON = <T>(x: T): string => JSON.stringify(x)
 const fromJSON = <T>(x: string): T => JSON.parse(x) as T
+
+export interface DiscoveryCache {
+  set(key: string, value: string): Promise<void>
+  get(key: string): Promise<string | undefined>
+}
 
 export class ProviderWithCache extends DiscoveryProvider {
   constructor(
