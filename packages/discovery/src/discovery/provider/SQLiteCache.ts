@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync } from 'fs'
 import sqlite3 from 'sqlite3' // SQLite Client
 
-import { DiscoveryCache } from './ProviderWithCache'
+import { CacheIdentity, DiscoveryCache } from './ProviderWithCache'
 
 const DEFAULT_DATABASE_DIR = 'cache'
 const DEFAULT_DATABASE_FILENAME = 'discovery.sqlite'
@@ -23,30 +23,39 @@ export class SQLiteCache implements DiscoveryCache {
     await this.query(`
       CREATE TABLE IF NOT EXISTS cache (
         key TEXT PRIMARY KEY,
+        blockNumber INTEGER,
         value TEXT
       )
     `)
   }
 
-  async get(key: string): Promise<string | undefined> {
+  async get(identity: CacheIdentity): Promise<string | undefined> {
+    const andStatement = identity.blockNumber
+      ? 'WHERE key=$1 AND blockNumber=$2'
+      : 'WHERE key=$1'
+    const andParams = identity.blockNumber
+      ? [identity.key, identity.blockNumber]
+      : [identity.key]
+
     try {
-      const result = (await this.query('SELECT value FROM cache WHERE key=$1', [
-        key,
-      ])) as { value: string }[]
+      const result = (await this.query(
+        `SELECT value FROM cache ${andStatement}`,
+        andParams,
+      )) as { value: string }[]
       return result[0]?.value
     } catch (error) {
       console.error('Error reading from cache', error)
     }
   }
 
-  async set(key: string, value: string): Promise<void> {
+  async set(identity: CacheIdentity, value: string): Promise<void> {
     try {
       await this.query(
         `
-        INSERT INTO cache(key, value) 
-        VALUES($1, $2) 
-        ON CONFLICT(key) DO UPDATE SET value=$2`,
-        [key, value],
+        INSERT INTO cache(key, blockNumber, value) 
+        VALUES($1, $2, $3) 
+        ON CONFLICT(key) DO UPDATE SET value=$3`,
+        [identity.key, identity.blockNumber, value],
       )
     } catch (error) {
       console.error('Error writing to cache', error)
