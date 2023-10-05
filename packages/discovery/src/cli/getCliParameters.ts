@@ -190,19 +190,3 @@ function extractArgWithValue(
   }
   return { found: false }
 }
-
-// const blockNumberIndex = remaining.findIndex((arg) =>
-// arg.startsWith('--block-number='),
-// )
-// if (blockNumberIndex !== -1) {
-// const blockNumberStr = remaining[blockNumberIndex]?.split('=')[1]
-// if (blockNumberStr === undefined) {
-// return { mode: 'help', error: 'Please provide a valid block number' }
-// }
-// blockNumber = parseInt(blockNumberStr, 10)
-// assert(
-// blockNumber.toString() === blockNumberStr,
-// `"${blockNumberStr}" is not a valid block number`,
-// )
-// remaining.splice(blockNumberIndex, 1)
-// }
