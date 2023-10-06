@@ -60,7 +60,16 @@ export class AddressAnalyzer {
     try {
       deployment = await this.provider.getDeploymentInfo(address)
     } catch (e) {
-      this.logger.logWarning(`Failed to fetch contract creation info! [${e}]`)
+      let errorStr = ''
+      if (e instanceof Error) {
+        errorStr = e.toString()
+      } else {
+        errorStr = '<COULD NOT STRINGIFY ERROR>'
+      }
+
+      this.logger.logWarning(
+        `Failed to fetch contract creation info! [${errorStr}]`,
+      )
     }
 
     const proxy = await this.proxyDetector.detectProxy(
