@@ -59,8 +59,8 @@ export class AddressAnalyzer {
     let deployment = undefined
     try {
       deployment = await this.provider.getDeploymentInfo(address)
-    } catch (_) {
-      _
+    } catch (e) {
+      this.logger.logWarning(`Failed to fetch contract creation info! [${e}]`)
     }
 
     const proxy = await this.proxyDetector.detectProxy(
