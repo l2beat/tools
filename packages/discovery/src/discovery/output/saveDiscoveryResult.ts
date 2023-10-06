@@ -33,9 +33,7 @@ export async function saveDiscoveryResult(
   const root = `discovery/${config.name}/${chainName}`
 
   discoveryFilename ??= 'discovered.json'
-  if (discoveryFilename !== '@skip') {
-    await writeFile(`${root}/${discoveryFilename}`, json)
-  }
+  await writeFile(`${root}/${discoveryFilename}`, json)
 
   sourcesFolder ??= '.code'
   const sourcesPath = `${root}/${sourcesFolder}`
