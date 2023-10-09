@@ -11,11 +11,19 @@ import { UnixTime } from './UnixTime'
 
 class EtherscanError extends Error {}
 
+// If a given instance of Etherscan does not support some endpoint set a
+// coressponding variable to true, otherwise do not set to anything -
+// `undefined` is treated as supported.
+export interface EtherscanUnsupportedMethods {
+  getContractCreation?: boolean
+}
+
 export class EtherscanLikeClient {
   private readonly rateLimiter = new RateLimiter({
     callsPerMinute: 150,
   })
   private readonly timeoutMs = 20_000
+  private unsupportedMethods: EtherscanUnsupportedMethods = {}
 
   constructor(
     private readonly httpClient: HttpClient,
@@ -25,6 +33,24 @@ export class EtherscanLikeClient {
     private readonly logger = Logger.SILENT,
   ) {
     this.call = this.rateLimiter.wrap(this.call.bind(this))
+  }
+
+  setUnsuppoted(unsupported: EtherscanUnsupportedMethods) {
+    this.unsupportedMethods = unsupported
+  }
+
+  static errorMeansUnsupported(error: unknown): boolean {
+    if (error instanceof Error) {
+      return error
+        .toString()
+        .includes(EtherscanLikeClient.getUnsupportedErrorString())
+    }
+
+    return false
+  }
+
+  private static getUnsupportedErrorString() {
+    return 'This method configured set as unsupported'
   }
 
   /**
@@ -88,6 +114,10 @@ export class EtherscanLikeClient {
   }
 
   async getContractDeploymentTx(address: EthereumAddress): Promise<Hash256> {
+    if (this.unsupportedMethods.getContractCreation) {
+      throw new Error(EtherscanLikeClient.getUnsupportedErrorString())
+    }
+
     const response = await this.call('contract', 'getcontractcreation', {
       contractaddresses: address.toString(),
     })

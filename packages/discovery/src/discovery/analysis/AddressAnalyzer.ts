@@ -12,6 +12,7 @@ import { DiscoveryProvider } from '../provider/DiscoveryProvider'
 import { ProxyDetector } from '../proxies/ProxyDetector'
 import { SourceCodeService } from '../source/SourceCodeService'
 import { getRelatives } from './getRelatives'
+import { EtherscanLikeClient } from '../../utils/EtherscanLikeClient'
 
 export type Analysis = AnalyzedContract | AnalyzedEOA
 
@@ -60,16 +61,13 @@ export class AddressAnalyzer {
     try {
       deployment = await this.provider.getDeploymentInfo(address)
     } catch (e) {
-      let errorStr = ''
-      if (e instanceof Error) {
-        errorStr = e.toString()
+      if (EtherscanLikeClient.errorMeansUnsupported(e)) {
+        this.logger.logWarning(
+          `Getting deployment info is unsupported by Etherscan like endpoint`,
+        )
       } else {
-        errorStr = '<COULD NOT STRINGIFY ERROR>'
+        throw e
       }
-
-      this.logger.logWarning(
-        `Failed to fetch contract creation info! [${errorStr}]`,
-      )
     }
 
     const proxy = await this.proxyDetector.detectProxy(
