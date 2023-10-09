@@ -12,7 +12,6 @@ import { DiscoveryProvider } from '../provider/DiscoveryProvider'
 import { ProxyDetector } from '../proxies/ProxyDetector'
 import { SourceCodeService } from '../source/SourceCodeService'
 import { getRelatives } from './getRelatives'
-import { EtherscanLikeClient } from '../../utils/EtherscanLikeClient'
 
 export type Analysis = AnalyzedContract | AnalyzedEOA
 
@@ -57,18 +56,7 @@ export class AddressAnalyzer {
       return { analysis: { type: 'EOA', address }, relatives: [] }
     }
 
-    let deployment = undefined
-    try {
-      deployment = await this.provider.getDeploymentInfo(address)
-    } catch (e) {
-      if (EtherscanLikeClient.errorMeansUnsupported(e)) {
-        this.logger.logWarning(
-          `Getting deployment info is unsupported by Etherscan like endpoint`,
-        )
-      } else {
-        throw e
-      }
-    }
+    const deployment = await this.provider.getDeploymentInfo(address)
 
     const proxy = await this.proxyDetector.detectProxy(
       address,

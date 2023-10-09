@@ -12,7 +12,7 @@ import { UnixTime } from './UnixTime'
 class EtherscanError extends Error {}
 
 // If a given instance of Etherscan does not support some endpoint set a
-// coressponding variable to true, otherwise do not set to anything -
+// corresponding variable to true, otherwise do not set to anything -
 // `undefined` is treated as supported.
 export interface EtherscanUnsupportedMethods {
   getContractCreation?: boolean
@@ -23,34 +23,16 @@ export class EtherscanLikeClient {
     callsPerMinute: 150,
   })
   private readonly timeoutMs = 20_000
-  private unsupportedMethods: EtherscanUnsupportedMethods = {}
 
   constructor(
     private readonly httpClient: HttpClient,
     private readonly url: string,
     private readonly apiKey: string,
-    readonly minTimestamp: UnixTime,
+    private readonly minTimestamp: UnixTime,
+    private readonly unsupportedMethods: EtherscanUnsupportedMethods = {},
     private readonly logger = Logger.SILENT,
   ) {
     this.call = this.rateLimiter.wrap(this.call.bind(this))
-  }
-
-  setUnsuppoted(unsupported: EtherscanUnsupportedMethods) {
-    this.unsupportedMethods = unsupported
-  }
-
-  static errorMeansUnsupported(error: unknown): boolean {
-    if (error instanceof Error) {
-      return error
-        .toString()
-        .includes(EtherscanLikeClient.getUnsupportedErrorString())
-    }
-
-    return false
-  }
-
-  private static getUnsupportedErrorString() {
-    return 'This method configured set as unsupported'
   }
 
   /**
@@ -113,9 +95,12 @@ export class EtherscanLikeClient {
     return source[0]
   }
 
-  async getContractDeploymentTx(address: EthereumAddress): Promise<Hash256> {
+  // Returns undefined if the method is not supported by API.
+  async getContractDeploymentTx(
+    address: EthereumAddress,
+  ): Promise<Hash256 | undefined> {
     if (this.unsupportedMethods.getContractCreation) {
-      throw new Error(EtherscanLikeClient.getUnsupportedErrorString())
+      return undefined
     }
 
     const response = await this.call('contract', 'getcontractcreation', {

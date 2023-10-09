@@ -189,7 +189,7 @@ describe(AddressAnalyzer.name, () => {
         })
     })
 
-    it('handles contracts while ommiting the sinceTimestamp', async () => {
+    it('handles contracts while omitting the sinceTimestamp', async () => {
         const address = EthereumAddress.random()
         const implementation = EthereumAddress.random()
         const admin = EthereumAddress.random()
@@ -212,7 +212,7 @@ describe(AddressAnalyzer.name, () => {
         const addressAnalyzer = new AddressAnalyzer(
             mockObject<DiscoveryProvider>({
                 getCode: async () => Bytes.fromHex('0x1234'),
-                getDeploymentInfo: mockFn().throwsOnce(new Error("This method configured set as unsupported"))
+                getDeploymentInfo: mockFn().resolvesTo(undefined),
             }),
             mockObject<ProxyDetector>({
                 detectProxy: async () => ({
