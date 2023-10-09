@@ -25,6 +25,11 @@ export interface CacheIdentity {
    * If not provided, the cache is valid for all blocks
    */
   blockNumber?: number
+
+  /**
+   * Chain ID for which the cache is valid
+   */
+  chainId: ChainId
 }
 
 export interface DiscoveryCache {
@@ -78,6 +83,7 @@ export class ProviderWithCache extends DiscoveryProvider {
     return {
       key: result.join('.'),
       blockNumber,
+      chainId: this.chainId,
     }
   }
 
@@ -179,10 +185,10 @@ export class ProviderWithCache extends DiscoveryProvider {
     address: EthereumAddress,
     blockNumber: number,
   ): Promise<Bytes> {
-    // Ignoring blockNumber here, assuming that code will not change
     const identity = this.buildIdentity({
       invocation: 'getCode',
       blockNumber,
+      // Ignoring blockNumber here, assuming that code will not change
       params: [address],
     })
 

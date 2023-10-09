@@ -24,6 +24,7 @@ export class SQLiteCache implements DiscoveryCache {
       CREATE TABLE IF NOT EXISTS cache (
         key TEXT PRIMARY KEY,
         blockNumber INTEGER,
+        chainId INTEGER,
         value TEXT
       )
     `)
@@ -31,15 +32,15 @@ export class SQLiteCache implements DiscoveryCache {
 
   async get(identity: CacheIdentity): Promise<string | undefined> {
     const andStatement = identity.blockNumber
-      ? 'WHERE key=$1 AND blockNumber=$2'
-      : 'WHERE key=$1'
+      ? 'key=$1 AND chainId=$2 AND blockNumber=$3'
+      : 'key=$1 AND chainId=$2'
     const andParams = identity.blockNumber
-      ? [identity.key, identity.blockNumber]
-      : [identity.key]
+      ? [identity.key, Number(identity.chainId), identity.blockNumber]
+      : [identity.key, Number(identity.chainId)]
 
     try {
       const result = (await this.query(
-        `SELECT value FROM cache ${andStatement}`,
+        `SELECT value FROM cache WHERE ${andStatement}`,
         andParams,
       )) as { value: string }[]
       return result[0]?.value
