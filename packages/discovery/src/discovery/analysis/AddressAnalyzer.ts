@@ -1,8 +1,13 @@
+import { assert } from '@l2beat/backend-tools'
 import {
+  ContractParameters,
   ContractValue,
+  DiscoveryOutput,
   UpgradeabilityParameters,
 } from '@l2beat/discovery-types'
+import { isEqual } from 'lodash'
 
+import { Bytes } from '../../utils/Bytes'
 import { EthereumAddress } from '../../utils/EthereumAddress'
 import { UnixTime } from '../../utils/UnixTime'
 import { ContractOverrides } from '../config/DiscoveryOverrides'
@@ -50,7 +55,7 @@ export class AddressAnalyzer {
     overrides: ContractOverrides | undefined,
     blockNumber: number,
   ): Promise<{ analysis: Analysis; relatives: EthereumAddress[] }> {
-    const code = await this.provider.getCode(address, blockNumber)
+    const code = await this.getCode(address, blockNumber)
     if (code.length === 0) {
       this.logger.logEoa()
       return { analysis: { type: 'EOA', address }, relatives: [] }
@@ -101,5 +106,39 @@ export class AddressAnalyzer {
         proxy?.implementations,
       ),
     }
+  }
+
+  async watch(
+    contract: ContractParameters,
+    overrides: ContractOverrides,
+    blockNumber: number,
+    prevOutput: DiscoveryOutput,
+  ): Promise<boolean> {
+    const abi = this.sourceCodeService.zipAbis(
+      prevOutput.abis,
+      contract.address,
+      contract.implementations,
+    )
+
+    const { values, errors } = await this.handlerExecutor.execute(
+      contract.address,
+      abi,
+      overrides,
+      blockNumber,
+    )
+    assert(
+      errors === undefined || Object.keys(errors).length === 0,
+      'Errors during watch mode',
+    )
+
+    if (values && contract.values && !isEqual(values, contract.values)) {
+      return true
+    }
+
+    return false
+  }
+
+  async getCode(address: EthereumAddress, blockNumber: number): Promise<Bytes> {
+    return await this.provider.getCode(address, blockNumber)
   }
 }

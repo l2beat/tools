@@ -45,4 +45,22 @@ export class SourceCodeService {
 
     return { name, isVerified, abi, abis, files }
   }
+
+  zipAbis(
+    abis: Record<string, string[]>,
+    address: EthereumAddress,
+    implementations?: EthereumAddress[],
+  ): string[] {
+    const addresses = [address, ...(implementations ?? [])]
+    const relevantAbis = addresses.flatMap((add) => {
+      const abiEntry = Object.entries(abis).find(
+        ([key]) => key === add.toString(),
+      )
+      return abiEntry ? abiEntry[1] : []
+    })
+
+    const abi = deduplicateAbi(relevantAbis)
+
+    return abi
+  }
 }

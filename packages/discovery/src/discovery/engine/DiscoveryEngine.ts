@@ -1,3 +1,5 @@
+import { DiscoveryOutput } from '@l2beat/discovery-types'
+
 import { AddressAnalyzer, Analysis } from '../analysis/AddressAnalyzer'
 import { DiscoveryConfig } from '../config/DiscoveryConfig'
 import { DiscoveryLogger } from '../DiscoveryLogger'
@@ -49,6 +51,38 @@ export class DiscoveryEngine {
     this.checkErrors(resolved)
 
     return resolved
+  }
+
+  async watch(
+    config: DiscoveryConfig,
+    prevOutput: DiscoveryOutput,
+    blockNumber: number,
+  ): Promise<{ changed: boolean }> {
+    const contracts = prevOutput.contracts
+
+    const changed = await Promise.all(
+      contracts.map(async (contract) => {
+        if (contract.unverified) {
+          // Check if the contract is verified now
+          const code = await this.addressAnalyzer.getCode(
+            contract.address,
+            blockNumber,
+          )
+          return code.length === 0
+        }
+
+        const overrides = config.overrides.get(contract.address)
+
+        return await this.addressAnalyzer.watch(
+          contract,
+          overrides,
+          blockNumber,
+          prevOutput,
+        )
+      }),
+    )
+
+    return { changed: changed.some((x) => x) }
   }
 
   private checkErrors(resolved: Analysis[]): void {
