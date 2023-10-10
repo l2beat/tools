@@ -38,7 +38,6 @@ export class ProviderWithCache extends DiscoveryProvider {
 
   private async cacheOrFetch<R>(
     key: string,
-    chainId: number,
     blockNumber: number | undefined,
     fetch: () => Promise<R>,
     toCache: (value: R) => string,
@@ -50,7 +49,12 @@ export class ProviderWithCache extends DiscoveryProvider {
     }
 
     const result = await fetch()
-    await this.cache.set(key, toCache(result), chainId, blockNumber)
+    await this.cache.set(
+      key,
+      toCache(result),
+      this.chainId.valueOf(),
+      blockNumber,
+    )
 
     return result
   }
@@ -74,7 +78,6 @@ export class ProviderWithCache extends DiscoveryProvider {
 
     const result = await this.cacheOrFetch(
       key,
-      this.chainId.valueOf(),
       blockNumber,
       async () => {
         try {
@@ -108,7 +111,6 @@ export class ProviderWithCache extends DiscoveryProvider {
 
     return this.cacheOrFetch(
       key,
-      this.chainId.valueOf(),
       blockNumber,
       () => super.getStorage(address, slot, blockNumber),
       (result) => result.toString(),
@@ -150,7 +152,6 @@ export class ProviderWithCache extends DiscoveryProvider {
      */
     return this.cacheOrFetch(
       key,
-      this.chainId.valueOf(),
       toBlock,
       () => super.getLogsBatch(address, topics, fromBlock, toBlock),
       toJSON,
@@ -170,7 +171,6 @@ export class ProviderWithCache extends DiscoveryProvider {
 
     return this.cacheOrFetch(
       key,
-      this.chainId.valueOf(),
       blockNumber,
       () => super.getCode(address, blockNumber),
       (result) => result.toString(),
@@ -185,7 +185,6 @@ export class ProviderWithCache extends DiscoveryProvider {
 
     return this.cacheOrFetch(
       key,
-      this.chainId.valueOf(),
       undefined,
       () => super.getTransaction(hash),
       toJSON,
@@ -198,7 +197,6 @@ export class ProviderWithCache extends DiscoveryProvider {
 
     return this.cacheOrFetch(
       key,
-      this.chainId.valueOf(),
       blockNumber,
       () => super.getBlock(blockNumber),
       toJSON,
@@ -213,7 +211,6 @@ export class ProviderWithCache extends DiscoveryProvider {
 
     return this.cacheOrFetch(
       key,
-      this.chainId.valueOf(),
       undefined,
       () => super.getMetadata(address),
       toJSON,
