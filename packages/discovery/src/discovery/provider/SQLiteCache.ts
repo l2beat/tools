@@ -50,10 +50,10 @@ export class SQLiteCache implements DiscoveryCache {
     try {
       await this.query(
         `
-        INSERT INTO cache(key, blockNumber, chainId, value) 
+        INSERT INTO cache(key, value, chainId, blockNumber) 
         VALUES($1, $2, $3, $4) 
-        ON CONFLICT(key) DO UPDATE SET value=$4`,
-        [key, blockNumber, chainId, value],
+        ON CONFLICT(key) DO UPDATE SET value=$2`,
+        [key, value, chainId, blockNumber],
       )
     } catch (error) {
       console.error('Error writing to cache', error)
