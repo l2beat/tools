@@ -209,13 +209,27 @@ export class ProviderWithCache extends DiscoveryProvider {
   ): Promise<ContractMetadata> {
     const key = this.buildKey('getMetadata', [address])
 
-    return this.cacheOrFetch(
-      key,
-      undefined,
-      () => super.getMetadata(address),
-      toJSON,
-      fromJSON,
-    )
+    const cachedResult = await this.cache.get(key)
+
+    if (cachedResult !== undefined) {
+      return fromJSON(cachedResult)
+    }
+
+    const result = await super.getMetadata(address)
+
+    // Cache only present & verified contracts to prevent cache poisoning
+    if (result.isVerified && result.source.length > 0) {
+      const currentBlock = await super.getBlockNumber()
+
+      await this.cache.set(
+        key,
+        toJSON(result),
+        this.chainId.valueOf(),
+        currentBlock,
+      )
+    }
+
+    return result
   }
 
   override async getContractDeploymentTx(
@@ -234,11 +248,13 @@ export class ProviderWithCache extends DiscoveryProvider {
     const result = await super.getContractDeploymentTx(address)
     // Don't cache "undefined"
     if (result !== undefined) {
+      const currentBlock = await super.getBlockNumber()
+
       await this.cache.set(
         key,
         toJSON(result),
         this.chainId.valueOf(),
-        undefined,
+        currentBlock,
       )
     }
     return result
