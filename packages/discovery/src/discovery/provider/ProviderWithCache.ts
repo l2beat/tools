@@ -59,10 +59,10 @@ export class ProviderWithCache extends DiscoveryProvider {
     return result
   }
 
-  buildKey(method: string, params: { toString: () => string }[]): string {
+  buildKey(invocation: string, params: { toString: () => string }[]): string {
     const result = [
       this.chainId.toString(),
-      method,
+      invocation,
       ...params.map((p) => p.toString()),
     ]
 
