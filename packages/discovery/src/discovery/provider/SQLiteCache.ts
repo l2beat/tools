@@ -52,7 +52,7 @@ export class SQLiteCache implements DiscoveryCache {
         `
         INSERT INTO cache(key, value, chainId, blockNumber) 
         VALUES($1, $2, $3, $4) 
-        ON CONFLICT(key) DO UPDATE SET value=$2, blockNumber=$4`,
+        ON CONFLICT(key) DO UPDATE SET value=$2, chainId=$3, blockNumber=$4`,
         [key, value, chainId, blockNumber],
       )
     } catch (error) {
