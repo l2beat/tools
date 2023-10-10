@@ -14,26 +14,13 @@ import { RateLimitedProvider } from './RateLimitedProvider'
 const toJSON = <T>(x: T): string => JSON.stringify(x)
 const fromJSON = <T>(x: string): T => JSON.parse(x) as T
 
-export interface CacheIdentity {
-  /**
-   * Key constructed from the parameters of the call
-   */
-  key: string
-
-  /**
-   * Block number up to which the cache is valid
-   * If not provided, the cache is valid for all blocks
-   */
-  blockNumber?: number
-
-  /**
-   * Chain ID for which the cache is valid
-   */
-  chainId: ChainId
-}
-
 export interface DiscoveryCache {
-  set(identity: CacheIdentity, value: string): Promise<void>
+  set(
+    key: string,
+    value: string,
+    chainId: number,
+    blockNumber: number | undefined,
+  ): Promise<void>
   get(key: string): Promise<string | undefined>
 }
 
@@ -50,41 +37,32 @@ export class ProviderWithCache extends DiscoveryProvider {
   }
 
   private async cacheOrFetch<R>(
-    identity: CacheIdentity,
+    key: string,
+    chainId: number,
+    blockNumber: number | undefined,
     fetch: () => Promise<R>,
     toCache: (value: R) => string,
     fromCache: (value: string) => R,
   ): Promise<R> {
-    const known = await this.cache.get(identity.key)
+    const known = await this.cache.get(key)
     if (known !== undefined) {
       return fromCache(known)
     }
 
     const result = await fetch()
-    await this.cache.set(identity, toCache(result))
+    await this.cache.set(key, toCache(result), chainId, blockNumber)
 
     return result
   }
 
-  buildIdentity({
-    invocation,
-    blockNumber,
-    params,
-  }: {
-    invocation: string
-    blockNumber?: number
-    params: { toString: () => string }[]
-  }): CacheIdentity {
+  buildKey(method: string, params: { toString: () => string }[]): string {
     const result = [
       this.chainId.toString(),
-      invocation,
+      method,
       ...params.map((p) => p.toString()),
     ]
-    return {
-      key: result.join('.'),
-      blockNumber,
-      chainId: this.chainId,
-    }
+
+    return result.join('.')
   }
 
   override async call(
@@ -92,14 +70,12 @@ export class ProviderWithCache extends DiscoveryProvider {
     data: Bytes,
     blockNumber: number,
   ): Promise<Bytes> {
-    const identity = this.buildIdentity({
-      invocation: 'call',
-      blockNumber,
-      params: [blockNumber, address, data],
-    })
+    const key = this.buildKey('call', [blockNumber, address, data])
 
     const result = await this.cacheOrFetch(
-      identity,
+      key,
+      this.chainId.valueOf(),
+      blockNumber,
       async () => {
         try {
           return {
@@ -128,14 +104,12 @@ export class ProviderWithCache extends DiscoveryProvider {
     slot: number | Bytes,
     blockNumber: number,
   ): Promise<Bytes> {
-    const identity = this.buildIdentity({
-      invocation: 'getStorage',
-      blockNumber,
-      params: [blockNumber, address, slot],
-    })
+    const key = this.buildKey('getStorage', [blockNumber, address, slot])
 
     return this.cacheOrFetch(
-      identity,
+      key,
+      this.chainId.valueOf(),
+      blockNumber,
       () => super.getStorage(address, slot, blockNumber),
       (result) => result.toString(),
       (cached) => Bytes.fromHex(cached),
@@ -152,6 +126,13 @@ export class ProviderWithCache extends DiscoveryProvider {
       .update(JSON.stringify(topics))
       .digest('hex')
 
+    const key = this.buildKey('getLogsBatch', [
+      address,
+      fromBlock,
+      toBlock,
+      topicsHash,
+    ])
+
     /**
      * Passing `toBlock` as a point-in-time reference, so that whenever you are up to the invalidation
      * you will include whole range of blocks.
@@ -167,14 +148,10 @@ export class ProviderWithCache extends DiscoveryProvider {
      * await invalidateAfter(invalidateAfterBlock) // catches 1500 and thus whole range
      * ```
      */
-    const identity = this.buildIdentity({
-      invocation: 'getLogsBatch',
-      blockNumber: toBlock,
-      params: [address, fromBlock, toBlock, topicsHash],
-    })
-
     return this.cacheOrFetch(
-      identity,
+      key,
+      this.chainId.valueOf(),
+      toBlock,
       () => super.getLogsBatch(address, topics, fromBlock, toBlock),
       toJSON,
       fromJSON,
@@ -185,15 +162,16 @@ export class ProviderWithCache extends DiscoveryProvider {
     address: EthereumAddress,
     blockNumber: number,
   ): Promise<Bytes> {
-    const identity = this.buildIdentity({
-      invocation: 'getCode',
-      blockNumber,
+    const key = this.buildKey(
+      'getCode',
       // Ignoring blockNumber here, assuming that code will not change
-      params: [address],
-    })
+      [address],
+    )
 
     return this.cacheOrFetch(
-      identity,
+      key,
+      this.chainId.valueOf(),
+      blockNumber,
       () => super.getCode(address, blockNumber),
       (result) => result.toString(),
       (cached) => Bytes.fromHex(cached),
@@ -203,13 +181,12 @@ export class ProviderWithCache extends DiscoveryProvider {
   override async getTransaction(
     hash: Hash256,
   ): Promise<providers.TransactionResponse> {
-    const identity = this.buildIdentity({
-      invocation: 'getTransaction',
-      params: [hash],
-    })
+    const key = this.buildKey('getTransaction', [hash])
 
     return this.cacheOrFetch(
-      identity,
+      key,
+      this.chainId.valueOf(),
+      undefined,
       () => super.getTransaction(hash),
       toJSON,
       fromJSON,
@@ -217,14 +194,12 @@ export class ProviderWithCache extends DiscoveryProvider {
   }
 
   override async getBlock(blockNumber: number): Promise<providers.Block> {
-    const identity = this.buildIdentity({
-      invocation: 'getBlock',
-      blockNumber,
-      params: [blockNumber],
-    })
+    const key = this.buildKey('getBlock', [blockNumber])
 
     return this.cacheOrFetch(
-      identity,
+      key,
+      this.chainId.valueOf(),
+      blockNumber,
       () => super.getBlock(blockNumber),
       toJSON,
       fromJSON,
@@ -234,13 +209,12 @@ export class ProviderWithCache extends DiscoveryProvider {
   override async getMetadata(
     address: EthereumAddress,
   ): Promise<ContractMetadata> {
-    const key = this.buildIdentity({
-      invocation: 'getMetadata',
-      params: [address],
-    })
+    const key = this.buildKey('getMetadata', [address])
 
     return this.cacheOrFetch(
       key,
+      this.chainId.valueOf(),
+      undefined,
       () => super.getMetadata(address),
       toJSON,
       fromJSON,
@@ -250,15 +224,12 @@ export class ProviderWithCache extends DiscoveryProvider {
   override async getContractDeploymentTx(
     address: EthereumAddress,
   ): Promise<Hash256 | undefined> {
-    const identity = this.buildIdentity({
-      invocation: 'getContractDeploymentTx',
-      params: [address],
-    })
+    const key = this.buildKey('getContractDeploymentTx', [address])
 
     // Special cache handling is necessary because
     // we support cases where getContractDeploymentTx API
     // is not available.
-    const cached = await this.cache.get(identity.key)
+    const cached = await this.cache.get(key)
     if (cached !== undefined) {
       return fromJSON(cached)
     }
@@ -266,7 +237,12 @@ export class ProviderWithCache extends DiscoveryProvider {
     const result = await super.getContractDeploymentTx(address)
     // Don't cache "undefined"
     if (result !== undefined) {
-      await this.cache.set(identity, toJSON(result))
+      await this.cache.set(
+        key,
+        toJSON(result),
+        this.chainId.valueOf(),
+        undefined,
+      )
     }
     return result
   }

@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync } from 'fs'
 import sqlite3 from 'sqlite3' // SQLite Client
 
-import { CacheIdentity, DiscoveryCache } from './ProviderWithCache'
+import { DiscoveryCache } from './ProviderWithCache'
 
 const DEFAULT_DATABASE_DIR = 'cache'
 const DEFAULT_DATABASE_FILENAME = 'discovery.sqlite'
@@ -41,14 +41,19 @@ export class SQLiteCache implements DiscoveryCache {
     }
   }
 
-  async set(identity: CacheIdentity, value: string): Promise<void> {
+  async set(
+    key: string,
+    value: string,
+    chainId: number,
+    blockNumber: number | undefined,
+  ): Promise<void> {
     try {
       await this.query(
         `
         INSERT INTO cache(key, blockNumber, chainId, value) 
         VALUES($1, $2, $3, $4) 
         ON CONFLICT(key) DO UPDATE SET value=$4`,
-        [identity.key, identity.blockNumber, Number(identity.chainId), value],
+        [key, blockNumber, chainId, value],
       )
     } catch (error) {
       console.error('Error writing to cache', error)
