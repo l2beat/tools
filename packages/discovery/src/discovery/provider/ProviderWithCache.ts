@@ -34,7 +34,7 @@ export interface CacheIdentity {
 
 export interface DiscoveryCache {
   set(identity: CacheIdentity, value: string): Promise<void>
-  get(identity: CacheIdentity): Promise<string | undefined>
+  get(key: string): Promise<string | undefined>
 }
 
 export class ProviderWithCache extends DiscoveryProvider {
@@ -55,7 +55,7 @@ export class ProviderWithCache extends DiscoveryProvider {
     toCache: (value: R) => string,
     fromCache: (value: string) => R,
   ): Promise<R> {
-    const known = await this.cache.get(identity)
+    const known = await this.cache.get(identity.key)
     if (known !== undefined) {
       return fromCache(known)
     }
@@ -258,7 +258,7 @@ export class ProviderWithCache extends DiscoveryProvider {
     // Special cache handling is necessary because
     // we support cases where getContractDeploymentTx API
     // is not available.
-    const cached = await this.cache.get(identity)
+    const cached = await this.cache.get(identity.key)
     if (cached !== undefined) {
       return fromJSON(cached)
     }

@@ -30,19 +30,11 @@ export class SQLiteCache implements DiscoveryCache {
     `)
   }
 
-  async get(identity: CacheIdentity): Promise<string | undefined> {
-    const andStatement = identity.blockNumber
-      ? 'key=$1 AND chainId=$2 AND blockNumber=$3'
-      : 'key=$1 AND chainId=$2'
-    const andParams = identity.blockNumber
-      ? [identity.key, Number(identity.chainId), identity.blockNumber]
-      : [identity.key, Number(identity.chainId)]
-
+  async get(key: string): Promise<string | undefined> {
     try {
-      const result = (await this.query(
-        `SELECT value FROM cache WHERE ${andStatement}`,
-        andParams,
-      )) as { value: string }[]
+      const result = (await this.query(`SELECT value FROM cache WHERE key=$1`, [
+        key,
+      ])) as { value: string }[]
       return result[0]?.value
     } catch (error) {
       console.error('Error reading from cache', error)
