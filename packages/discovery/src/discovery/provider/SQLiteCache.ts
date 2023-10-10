@@ -32,7 +32,7 @@ export class SQLiteCache implements DiscoveryCache {
 
   async get(key: string): Promise<string | undefined> {
     try {
-      const result = (await this.query(`SELECT value FROM cache WHERE key=$1`, [
+      const result = (await this.query('SELECT value FROM cache WHERE key=$1', [
         key,
       ])) as { value: string }[]
       return result[0]?.value
