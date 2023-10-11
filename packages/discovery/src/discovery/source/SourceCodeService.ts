@@ -5,6 +5,7 @@ import { DiscoveryProvider } from '../provider/DiscoveryProvider'
 import { deduplicateAbi } from './deduplicateAbi'
 import { getLegacyDerivedName } from './getDerivedName'
 import { processSources } from './processSources'
+import { skipIgnoredFunctions } from './skipIgnoredFunctions'
 
 export interface ContractSources {
   name: string
@@ -46,10 +47,11 @@ export class SourceCodeService {
     return { name, isVerified, abi, abis, files }
   }
 
-  zipAbis(
+  getRelevantAbi(
     abis: Record<string, string[]>,
     address: EthereumAddress,
     implementations?: EthereumAddress[],
+    ignoreInWatchMode?: string[],
   ): string[] {
     const addresses = [address, ...(implementations ?? [])]
     const relevantAbis = addresses.flatMap((add) => {
@@ -60,7 +62,8 @@ export class SourceCodeService {
     })
 
     const abi = deduplicateAbi(relevantAbis)
+    const relevantAbi = skipIgnoredFunctions(abi, ignoreInWatchMode)
 
-    return abi
+    return relevantAbi
   }
 }

@@ -119,10 +119,11 @@ export class AddressAnalyzer {
       return code.length > 0
     }
 
-    const abi = this.sourceCodeService.zipAbis(
+    const abi = this.sourceCodeService.getRelevantAbi(
       abis,
       contract.address,
       contract.implementations,
+      overrides.ignoreInWatchMode,
     )
 
     const { values, errors } = await this.handlerExecutor.execute(

@@ -279,7 +279,7 @@ describe(AddressAnalyzer.name, () => {
         }),
         mockObject<ProxyDetector>(),
         mockObject<SourceCodeService>({
-          zipAbis: (abis) => abis[0] ?? [],
+          getRelevantAbi: (abis) => abis[0] ?? [],
         }),
         mockObject<HandlerExecutor>({
           execute: mockFn()
@@ -359,7 +359,7 @@ describe(AddressAnalyzer.name, () => {
         }),
         mockObject<ProxyDetector>(),
         mockObject<SourceCodeService>({
-          zipAbis: (abis) => [...(abis[0] ?? []), ...(abis[1] ?? [])],
+          getRelevantAbi: (abis) => [...(abis[0] ?? []), ...(abis[1] ?? [])],
         }),
         mockObject<HandlerExecutor>({
           execute: mockFn()
@@ -418,7 +418,7 @@ describe(AddressAnalyzer.name, () => {
         }),
         mockObject<ProxyDetector>(),
         mockObject<SourceCodeService>({
-          zipAbis: (abis) => abis[0] ?? [],
+          getRelevantAbi: (abis) => abis[0] ?? [],
         }),
         mockObject<HandlerExecutor>(),
         DiscoveryLogger.SILENT,
