@@ -115,8 +115,8 @@ export class AddressAnalyzer {
   ): Promise<boolean> {
     if (contract.unverified) {
       // Check if the contract is verified now
-      const code = await this.getCode(contract.address, blockNumber)
-      return code.length > 0
+      const metadata = await this.provider.getMetadata(contract.address)
+      return metadata.isVerified
     }
 
     const abi = this.sourceCodeService.getRelevantAbi(
@@ -126,7 +126,7 @@ export class AddressAnalyzer {
       overrides.ignoreInWatchMode,
     )
 
-    const { values, errors } = await this.handlerExecutor.execute(
+    const { values: newValues, errors } = await this.handlerExecutor.execute(
       contract.address,
       abi,
       overrides,
@@ -138,7 +138,12 @@ export class AddressAnalyzer {
       'Errors during watch mode',
     )
 
-    if (!isEqual(values, contract.values)) {
+    const prevRelevantValues = getRelevantValues(
+      contract.values ?? {},
+      overrides.ignoreInWatchMode ?? [],
+    )
+
+    if (!isEqual(newValues, prevRelevantValues)) {
       return true
     }
 
@@ -156,4 +161,16 @@ export class AddressAnalyzer {
   async getCode(address: EthereumAddress, blockNumber: number): Promise<Bytes> {
     return await this.provider.getCode(address, blockNumber)
   }
+}
+
+function getRelevantValues(
+  contractValues: Record<string, ContractValue | undefined>,
+  ignoreInWatchMode: string[],
+): Record<string, ContractValue | undefined> {
+  return Object.keys(contractValues)
+    .filter((key) => !ignoreInWatchMode.includes(key))
+    .reduce((obj: Record<string, ContractValue | undefined>, key: string) => {
+      obj[key] = contractValues[key]
+      return obj
+    }, {})
 }

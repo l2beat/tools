@@ -412,9 +412,19 @@ describe(AddressAnalyzer.name, () => {
 
       const addressAnalyzer = new AddressAnalyzer(
         mockObject<DiscoveryProvider>({
-          getCode: mockFn()
-            .resolvesToOnce(Bytes.EMPTY)
-            .resolvesToOnce(Bytes.fromHex('0x10')),
+          getMetadata: mockFn()
+            .resolvesToOnce({
+              name: '',
+              isVerified: false,
+              abi: [],
+              source: '',
+            })
+            .resolvesToOnce({
+              name: '',
+              isVerified: true,
+              abi: [],
+              source: '',
+            }),
         }),
         mockObject<ProxyDetector>(),
         mockObject<SourceCodeService>({
