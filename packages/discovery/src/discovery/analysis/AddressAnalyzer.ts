@@ -2,7 +2,6 @@ import { assert } from '@l2beat/backend-tools'
 import {
   ContractParameters,
   ContractValue,
-  DiscoveryOutput,
   UpgradeabilityParameters,
 } from '@l2beat/discovery-types'
 import { isEqual } from 'lodash'
@@ -108,14 +107,20 @@ export class AddressAnalyzer {
     }
   }
 
-  async watch(
+  async watchContract(
     contract: ContractParameters,
     overrides: ContractOverrides,
     blockNumber: number,
-    prevOutput: DiscoveryOutput,
+    abis: Record<string, string[]>,
   ): Promise<boolean> {
+    if (contract.unverified) {
+      // Check if the contract is verified now
+      const code = await this.getCode(contract.address, blockNumber)
+      return code.length > 0
+    }
+
     const abi = this.sourceCodeService.zipAbis(
-      prevOutput.abis,
+      abis,
       contract.address,
       contract.implementations,
     )
@@ -126,16 +131,25 @@ export class AddressAnalyzer {
       overrides,
       blockNumber,
     )
+
     assert(
       errors === undefined || Object.keys(errors).length === 0,
       'Errors during watch mode',
     )
 
-    if (values && contract.values && !isEqual(values, contract.values)) {
+    if (!isEqual(values, contract.values)) {
       return true
     }
 
     return false
+  }
+
+  async watchEoa(
+    address: EthereumAddress,
+    blockNumber: number,
+  ): Promise<boolean> {
+    const code = await this.getCode(address, blockNumber)
+    return code.length > 0
   }
 
   async getCode(address: EthereumAddress, blockNumber: number): Promise<Bytes> {
