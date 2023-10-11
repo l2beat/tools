@@ -44,7 +44,13 @@ export class EtherscanLikeClient {
     apiKey: string,
     unsupportedMethods: EtherscanUnsupportedMethods = {},
   ): EtherscanLikeClient {
-    return new EtherscanLikeClient(httpClient, url, apiKey, new UnixTime(0), unsupportedMethods)
+    return new EtherscanLikeClient(
+      httpClient,
+      url,
+      apiKey,
+      new UnixTime(0),
+      unsupportedMethods,
+    )
   }
 
   // Etherscan API is not stable enough to trust it to return "closest" block.
