@@ -13,6 +13,7 @@ import { diffDiscovery } from './output/diffDiscovery'
 import { saveDiscoveryResult } from './output/saveDiscoveryResult'
 import { toDiscoveryOutput } from './output/toDiscoveryOutput'
 import { ProviderWithCache } from './provider/ProviderWithCache'
+import { SQLiteCache } from './provider/SQLiteCache'
 import { ProxyDetector } from './proxies/ProxyDetector'
 import { SourceCodeService } from './source/SourceCodeService'
 
@@ -41,6 +42,7 @@ export async function runDiscovery(
     projectConfig,
     logger,
     blockNumber,
+    config.getLogsMaxRange,
   )
   await saveDiscoveryResult(
     result,
@@ -48,6 +50,8 @@ export async function runDiscovery(
     blockNumber,
     projectConfig.hash,
     config.chainId,
+    config.sourcesFolder,
+    config.discoveryFilename,
   )
 }
 
@@ -67,12 +71,19 @@ export async function dryRunDiscovery(
   )
 
   const [discovered, discoveredYesterday] = await Promise.all([
-    justDiscover(provider, etherscanClient, projectConfig, blockNumber),
+    justDiscover(
+      provider,
+      etherscanClient,
+      projectConfig,
+      blockNumber,
+      config.getLogsMaxRange,
+    ),
     justDiscover(
       provider,
       etherscanClient,
       projectConfig,
       blockNumberYesterday,
+      config.getLogsMaxRange,
     ),
   ])
 
@@ -94,6 +105,7 @@ export async function justDiscover(
   etherscanClient: EtherscanLikeClient,
   config: DiscoveryConfig,
   blockNumber: number,
+  getLogsMaxRange?: number,
 ): Promise<DiscoveryOutput> {
   const result = await discover(
     provider,
@@ -101,6 +113,7 @@ export async function justDiscover(
     config,
     DiscoveryLogger.CLI,
     blockNumber,
+    getLogsMaxRange,
   )
 
   const { name } = config
@@ -124,12 +137,20 @@ export async function discover(
   config: DiscoveryConfig,
   logger: DiscoveryLogger,
   blockNumber: number,
+  getLogsMaxRange?: number,
 ): Promise<Analysis[]> {
+  const sqliteCache = new SQLiteCache()
+  await sqliteCache.init()
+
   const discoveryProvider = new ProviderWithCache(
     provider,
     etherscanClient,
+    logger,
     config.chainId,
+    sqliteCache,
+    getLogsMaxRange,
   )
+
   const proxyDetector = new ProxyDetector(discoveryProvider, logger)
   const sourceCodeService = new SourceCodeService(discoveryProvider)
   const handlerExecutor = new HandlerExecutor(discoveryProvider, logger)

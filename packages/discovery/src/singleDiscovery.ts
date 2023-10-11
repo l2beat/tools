@@ -36,6 +36,7 @@ export async function singleDiscovery(
     http,
     chainConfig.etherscanUrl,
     chainConfig.etherscanApiKey,
+    chainConfig.etherscanUnsupported,
   )
   const blockNumber = await provider.getBlockNumber()
 
@@ -48,6 +49,7 @@ export async function singleDiscovery(
     projectConfig,
     DiscoveryLogger.CLI,
     blockNumber,
+    chainConfig.rpcGetLogsMaxRange,
   )
 
   const discoveryOutput = toDiscoveryOutput(

@@ -4,11 +4,11 @@ import { config as dotenv } from 'dotenv'
 import { CliParameters } from '../cli/getCliParameters'
 import { ChainId } from '../utils/ChainId'
 import { EthereumAddress } from '../utils/EthereumAddress'
+import { EtherscanUnsupportedMethods } from '../utils/EtherscanLikeClient'
 
 export function getDiscoveryCliConfig(cli: CliParameters): DiscoveryCliConfig {
   dotenv()
 
-  const env = getEnv()
   if (
     cli.mode !== 'invert' &&
     cli.mode !== 'discover' &&
@@ -20,6 +20,7 @@ export function getDiscoveryCliConfig(cli: CliParameters): DiscoveryCliConfig {
   const discoveryEnabled = cli.mode === 'discover'
   const singleDiscoveryEnabled = cli.mode === 'single-discovery'
   const invertEnabled = cli.mode === 'invert'
+  const chain = getChainConfig(cli.chain)
 
   return {
     invert: invertEnabled && {
@@ -32,13 +33,16 @@ export function getDiscoveryCliConfig(cli: CliParameters): DiscoveryCliConfig {
       chainId: cli.chain,
       dryRun: cli.dryRun,
       dev: cli.dev,
-      blockNumber: env.optionalInteger('DISCOVERY_BLOCK_NUMBER'),
+      blockNumber: cli.blockNumber,
+      getLogsMaxRange: chain.rpcGetLogsMaxRange,
+      sourcesFolder: cli.sourcesFolder,
+      discoveryFilename: cli.discoveryFilename,
     },
     singleDiscovery: singleDiscoveryEnabled && {
       address: cli.address,
       chainId: cli.chain,
     },
-    chain: getChainConfig(cli.chain),
+    chain,
   }
 }
 
@@ -50,6 +54,9 @@ function getChainConfig(chainId: ChainId): DiscoveryChainConfig {
       return {
         chainId: ChainId.ETHEREUM,
         rpcUrl: env.string('DISCOVERY_ETHEREUM_RPC_URL'),
+        rpcGetLogsMaxRange: env.optionalInteger(
+          'DISCOVERY_ETHEREUM_RPC_GETLOGS_MAX_RANGE',
+        ),
         etherscanApiKey: env.string('DISCOVERY_ETHEREUM_ETHERSCAN_API_KEY'),
         etherscanUrl: 'https://api.etherscan.io/api',
       }
@@ -57,6 +64,9 @@ function getChainConfig(chainId: ChainId): DiscoveryChainConfig {
       return {
         chainId: ChainId.ARBITRUM,
         rpcUrl: env.string('DISCOVERY_ARBITRUM_RPC_URL'),
+        rpcGetLogsMaxRange: env.optionalInteger(
+          'DISCOVERY_ARBITRUM_RPC_GETLOGS_MAX_RANGE',
+        ),
         etherscanApiKey: env.string('DISCOVERY_ARBITRUM_ETHERSCAN_API_KEY'),
         etherscanUrl: 'https://api.arbiscan.io/api',
       }
@@ -64,6 +74,9 @@ function getChainConfig(chainId: ChainId): DiscoveryChainConfig {
       return {
         chainId: ChainId.OPTIMISM,
         rpcUrl: env.string('DISCOVERY_OPTIMISM_RPC_URL'),
+        rpcGetLogsMaxRange: env.optionalInteger(
+          'DISCOVERY_OPTIMISM_RPC_GETLOGS_MAX_RANGE',
+        ),
         etherscanApiKey: env.string('DISCOVERY_OPTIMISM_ETHERSCAN_API_KEY'),
         etherscanUrl: 'https://api-optimistic.etherscan.io/api',
       }
@@ -71,6 +84,9 @@ function getChainConfig(chainId: ChainId): DiscoveryChainConfig {
       return {
         chainId: ChainId.POLYGON_POS,
         rpcUrl: env.string('DISCOVERY_POLYGON_POS_RPC_URL'),
+        rpcGetLogsMaxRange: env.optionalInteger(
+          'DISCOVERY_POLYGON_POS_RPC_GETLOGS_MAX_RANGE',
+        ),
         etherscanApiKey: env.string('DISCOVERY_POLYGON_POS_ETHERSCAN_API_KEY'),
         etherscanUrl: 'https://api.polygonscan.com/api',
       }
@@ -78,6 +94,9 @@ function getChainConfig(chainId: ChainId): DiscoveryChainConfig {
       return {
         chainId: ChainId.BSC,
         rpcUrl: env.string('DISCOVERY_BSC_RPC_URL'),
+        rpcGetLogsMaxRange: env.optionalInteger(
+          'DISCOVERY_BSC_RPC_GETLOGS_MAX_RANGE',
+        ),
         etherscanApiKey: env.string('DISCOVERY_BSC_ETHERSCAN_API_KEY'),
         etherscanUrl: 'https://api.bscscan.com/api',
       }
@@ -85,6 +104,9 @@ function getChainConfig(chainId: ChainId): DiscoveryChainConfig {
       return {
         chainId: ChainId.AVALANCHE,
         rpcUrl: env.string('DISCOVERY_AVALANCHE_RPC_URL'),
+        rpcGetLogsMaxRange: env.optionalInteger(
+          'DISCOVERY_AVALANCHE_RPC_GETLOGS_MAX_RANGE',
+        ),
         etherscanApiKey: env.string('DISCOVERY_AVALANCHE_ETHERSCAN_API_KEY'),
         etherscanUrl: 'https://api.snowtrace.io/api',
       }
@@ -92,13 +114,22 @@ function getChainConfig(chainId: ChainId): DiscoveryChainConfig {
       return {
         chainId: ChainId.CELO,
         rpcUrl: env.string('DISCOVERY_CELO_RPC_URL'),
+        rpcGetLogsMaxRange: env.optionalInteger(
+          'DISCOVERY_CELO_RPC_GETLOGS_MAX_RANGE',
+        ),
         etherscanApiKey: env.string('DISCOVERY_CELO_ETHERSCAN_API_KEY'),
         etherscanUrl: 'https://api.celoscan.io/api',
+        etherscanUnsupported: {
+          getContractCreation: true,
+        },
       }
     case ChainId.LINEA:
       return {
         chainId: ChainId.LINEA,
         rpcUrl: env.string('DISCOVERY_LINEA_RPC_URL'),
+        rpcGetLogsMaxRange: env.optionalInteger(
+          'DISCOVERY_LINEA_RPC_GETLOGS_MAX_RANGE',
+        ),
         etherscanApiKey: env.string('DISCOVERY_LINEA_ETHERSCAN_API_KEY'),
         etherscanUrl: 'https://api.lineascan.build/api',
       }
@@ -106,6 +137,9 @@ function getChainConfig(chainId: ChainId): DiscoveryChainConfig {
       return {
         chainId: ChainId.BASE,
         rpcUrl: env.string('DISCOVERY_BASE_RPC_URL'),
+        rpcGetLogsMaxRange: env.optionalInteger(
+          'DISCOVERY_BASE_RPC_GETLOGS_MAX_RANGE',
+        ),
         etherscanApiKey: env.string('DISCOVERY_BASE_ETHERSCAN_API_KEY'),
         etherscanUrl: 'https://api.basescan.org/api',
       }
@@ -113,6 +147,9 @@ function getChainConfig(chainId: ChainId): DiscoveryChainConfig {
       return {
         chainId: ChainId.POLYGON_ZKEVM,
         rpcUrl: env.string('DISCOVERY_POLYGON_ZKEVM_RPC_URL'),
+        rpcGetLogsMaxRange: env.optionalInteger(
+          'DISCOVERY_POLYGON_ZKEVM_RPC_GETLOGS_MAX_RANGE',
+        ),
         etherscanApiKey: env.string(
           'DISCOVERY_POLYGON_ZKEVM_ETHERSCAN_API_KEY',
         ),
@@ -122,6 +159,9 @@ function getChainConfig(chainId: ChainId): DiscoveryChainConfig {
       return {
         chainId: ChainId.GNOSIS,
         rpcUrl: env.string('DISCOVERY_GNOSIS_RPC_URL'),
+        rpcGetLogsMaxRange: env.optionalInteger(
+          'DISCOVERY_GNOSIS_RPC_GETLOGS_MAX_RANGE',
+        ),
         etherscanApiKey: env.string('DISCOVERY_GNOSIS_ETHERSCAN_API_KEY'),
         etherscanUrl: 'https://api.gnosisscan.io/api',
       }
@@ -145,6 +185,9 @@ export interface DiscoveryModuleConfig {
   readonly dryRun?: boolean
   readonly dev?: boolean
   readonly blockNumber?: number
+  readonly getLogsMaxRange?: number
+  readonly sourcesFolder?: string
+  readonly discoveryFilename?: string
 }
 
 export interface SingleDiscoveryModuleConfig {
@@ -155,8 +198,10 @@ export interface SingleDiscoveryModuleConfig {
 export interface DiscoveryChainConfig {
   chainId: ChainId
   rpcUrl: string
+  rpcGetLogsMaxRange?: number
   etherscanApiKey: string
   etherscanUrl: string
+  etherscanUnsupported?: EtherscanUnsupportedMethods
 }
 
 export interface InversionConfig {

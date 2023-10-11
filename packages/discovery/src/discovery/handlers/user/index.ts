@@ -25,6 +25,10 @@ import {
   ConstructorArgsHandler,
 } from './ConstructorArgsHandler'
 import {
+  DynamicArrayHandler,
+  DynamicArrayHandlerDefinition,
+} from './DynamicArrayHandler'
+import {
   EventCountHandler,
   EventCountHandlerDefinition,
 } from './EventCountHandler'
@@ -50,6 +54,8 @@ import { StorageHandler, StorageHandlerDefinition } from './StorageHandler'
 export type UserHandlerDefinition = z.infer<typeof UserHandlerDefinition>
 export const UserHandlerDefinition = z.union([
   StorageHandlerDefinition,
+  DynamicArrayHandlerDefinition,
+  DynamicArrayHandlerDefinition,
   ArrayHandlerDefinition,
   CallHandlerDefinition,
   StarkWareNamedStorageHandlerDefinition,
@@ -74,6 +80,8 @@ export function getUserHandler(
   switch (definition.type) {
     case 'storage':
       return new StorageHandler(field, definition, logger)
+    case 'dynamicArray':
+      return new DynamicArrayHandler(field, definition, logger)
     case 'array':
       return new ArrayHandler(field, definition, abi, logger)
     case 'call':
