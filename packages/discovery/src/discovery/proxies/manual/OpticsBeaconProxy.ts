@@ -53,21 +53,6 @@ export async function getOpticsBeaconProxy(
   }
 }
 
-// eslint-disable-next-line
-export async function getOpticsUpgradeBeacon(
-  _provider: DiscoveryProvider,
-  _address: EthereumAddress,
-  _blockNumber: number,
-): Promise<ProxyDetails | undefined> {
-  return {
-    upgradeability: {
-      type: 'immutable',
-    },
-    implementations: [],
-    relatives: [],
-  }
-}
-
 async function getAddressFromConstructor(
   provider: DiscoveryProvider,
   address: EthereumAddress,
