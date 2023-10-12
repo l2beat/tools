@@ -354,9 +354,7 @@ describe(AddressAnalyzer.name, () => {
       const values = { ...proxyValues, ...implementationValues }
 
       const addressAnalyzer = new AddressAnalyzer(
-        mockObject<DiscoveryProvider>({
-          getCode: async () => Bytes.fromHex('0x10'),
-        }),
+        mockObject<DiscoveryProvider>(),
         mockObject<ProxyDetector>(),
         mockObject<SourceCodeService>({
           getRelevantAbi: (abis) => [...(abis[0] ?? []), ...(abis[1] ?? [])],
@@ -411,24 +409,12 @@ describe(AddressAnalyzer.name, () => {
       const address = EthereumAddress.random()
 
       const addressAnalyzer = new AddressAnalyzer(
-        mockObject<DiscoveryProvider>({
-          getMetadata: mockFn()
-            .resolvesToOnce({
-              name: '',
-              isVerified: false,
-              abi: [],
-              source: '',
-            })
-            .resolvesToOnce({
-              name: '',
-              isVerified: true,
-              abi: [],
-              source: '',
-            }),
-        }),
+        mockObject<DiscoveryProvider>(),
         mockObject<ProxyDetector>(),
         mockObject<SourceCodeService>({
-          getRelevantAbi: (abis) => abis[0] ?? [],
+          getSources: mockFn()
+            .resolvesToOnce(mockSources({ isVerified: false }))
+            .resolvesToOnce(mockSources({ isVerified: true })),
         }),
         mockObject<HandlerExecutor>(),
         DiscoveryLogger.SILENT,
@@ -438,6 +424,54 @@ describe(AddressAnalyzer.name, () => {
         name: 'name',
         address,
         upgradeability: { type: 'immutable' },
+        unverified: true,
+      }
+      const overrides: ContractOverrides = { address }
+
+      const result = await addressAnalyzer.watchContract(
+        contractParameters,
+        overrides,
+        BLOCK_NUMBER,
+        {},
+      )
+
+      expect(result).toEqual(false)
+
+      const changedResult = await addressAnalyzer.watchContract(
+        contractParameters,
+        overrides,
+        BLOCK_NUMBER,
+        {},
+      )
+
+      expect(changedResult).toEqual(true)
+    })
+
+    it('handles verified proxy with unverified implementation', async () => {
+      const address = EthereumAddress.random()
+      const implementation = EthereumAddress.random()
+
+      const addressAnalyzer = new AddressAnalyzer(
+        mockObject<DiscoveryProvider>(),
+        mockObject<ProxyDetector>(),
+        mockObject<SourceCodeService>({
+          getSources: mockFn()
+            .resolvesToOnce(mockSources({ isVerified: false }))
+            .resolvesToOnce(mockSources({ isVerified: true })),
+        }),
+        mockObject<HandlerExecutor>(),
+        DiscoveryLogger.SILENT,
+      )
+
+      const contractParameters: ContractParameters = {
+        name: 'name',
+        address,
+        upgradeability: {
+          type: 'EIP1967 proxy',
+          implementation,
+          admin: EthereumAddress.random(),
+        },
+        implementations: [implementation],
         unverified: true,
       }
       const overrides: ContractOverrides = { address }
@@ -486,3 +520,13 @@ describe(AddressAnalyzer.name, () => {
     expect(changedResult).toEqual(true)
   })
 })
+
+function mockSources({ isVerified }: { isVerified: boolean }): ContractSources {
+  return {
+    name: '',
+    isVerified,
+    abi: [],
+    abis: {},
+    files: [],
+  }
+}

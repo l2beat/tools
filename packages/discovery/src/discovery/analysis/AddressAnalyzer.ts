@@ -115,8 +115,11 @@ export class AddressAnalyzer {
   ): Promise<boolean> {
     if (contract.unverified) {
       // Check if the contract is verified now
-      const metadata = await this.provider.getMetadata(contract.address)
-      return metadata.isVerified
+      const { isVerified } = await this.sourceCodeService.getSources(
+        contract.address,
+        contract.implementations,
+      )
+      return isVerified
     }
 
     const abi = this.sourceCodeService.getRelevantAbi(
