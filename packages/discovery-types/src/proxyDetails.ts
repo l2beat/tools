@@ -17,6 +17,7 @@ export const ManualProxyType = z.enum([
   'Eternal Storage proxy',
   'Polygon Extension proxy',
   'Optics Beacon proxy',
+  'Optics Upgrade Beacon',
 ])
 
 export type UpgradeabilityParameters =
