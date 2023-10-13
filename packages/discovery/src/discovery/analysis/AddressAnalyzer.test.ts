@@ -268,7 +268,7 @@ describe(AddressAnalyzer.name, () => {
     })
   })
 
-  describe(AddressAnalyzer.prototype.watchContract.name, () => {
+  describe(AddressAnalyzer.prototype.hasContractChanged.name, () => {
     it('handles immutable contracts', async () => {
       const address = EthereumAddress.random()
       const values = { foo: 'bar' }
@@ -317,7 +317,7 @@ describe(AddressAnalyzer.name, () => {
         [address.toString()]: ['function foo()'],
       }
 
-      const result = await addressAnalyzer.watchContract(
+      const result = await addressAnalyzer.hasContractChanged(
         contractParameters,
         overrides,
         BLOCK_NUMBER,
@@ -325,7 +325,7 @@ describe(AddressAnalyzer.name, () => {
       )
       expect(result).toEqual(false)
 
-      const changedResult = await addressAnalyzer.watchContract(
+      const changedResult = await addressAnalyzer.hasContractChanged(
         contractParameters,
         overrides,
         BLOCK_NUMBER,
@@ -335,7 +335,7 @@ describe(AddressAnalyzer.name, () => {
 
       await expect(
         async () =>
-          await addressAnalyzer.watchContract(
+          await addressAnalyzer.hasContractChanged(
             contractParameters,
             overrides,
             BLOCK_NUMBER,
@@ -388,7 +388,7 @@ describe(AddressAnalyzer.name, () => {
         [implementation.toString()]: ['function bar()'],
       }
 
-      const result = await addressAnalyzer.watchContract(
+      const result = await addressAnalyzer.hasContractChanged(
         contractParameters,
         overrides,
         BLOCK_NUMBER,
@@ -396,7 +396,7 @@ describe(AddressAnalyzer.name, () => {
       )
       expect(result).toEqual(false)
 
-      const changedResult = await addressAnalyzer.watchContract(
+      const changedResult = await addressAnalyzer.hasContractChanged(
         contractParameters,
         overrides,
         BLOCK_NUMBER,
@@ -428,7 +428,7 @@ describe(AddressAnalyzer.name, () => {
       }
       const overrides: ContractOverrides = { address }
 
-      const result = await addressAnalyzer.watchContract(
+      const result = await addressAnalyzer.hasContractChanged(
         contractParameters,
         overrides,
         BLOCK_NUMBER,
@@ -437,7 +437,7 @@ describe(AddressAnalyzer.name, () => {
 
       expect(result).toEqual(false)
 
-      const changedResult = await addressAnalyzer.watchContract(
+      const changedResult = await addressAnalyzer.hasContractChanged(
         contractParameters,
         overrides,
         BLOCK_NUMBER,
@@ -476,7 +476,7 @@ describe(AddressAnalyzer.name, () => {
       }
       const overrides: ContractOverrides = { address }
 
-      const result = await addressAnalyzer.watchContract(
+      const result = await addressAnalyzer.hasContractChanged(
         contractParameters,
         overrides,
         BLOCK_NUMBER,
@@ -485,7 +485,7 @@ describe(AddressAnalyzer.name, () => {
 
       expect(result).toEqual(false)
 
-      const changedResult = await addressAnalyzer.watchContract(
+      const changedResult = await addressAnalyzer.hasContractChanged(
         contractParameters,
         overrides,
         BLOCK_NUMBER,
@@ -496,7 +496,7 @@ describe(AddressAnalyzer.name, () => {
     })
   })
 
-  it(AddressAnalyzer.prototype.watchEoa.name, async () => {
+  it(AddressAnalyzer.prototype.hasEoaBecomeContract.name, async () => {
     const addressAnalyzer = new AddressAnalyzer(
       mockObject<DiscoveryProvider>({
         getCode: mockFn()
@@ -511,11 +511,17 @@ describe(AddressAnalyzer.name, () => {
 
     const address = EthereumAddress.random()
 
-    const result = await addressAnalyzer.watchEoa(address, BLOCK_NUMBER)
+    const result = await addressAnalyzer.hasEoaBecomeContract(
+      address,
+      BLOCK_NUMBER,
+    )
 
     expect(result).toEqual(false)
 
-    const changedResult = await addressAnalyzer.watchEoa(address, BLOCK_NUMBER)
+    const changedResult = await addressAnalyzer.hasEoaBecomeContract(
+      address,
+      BLOCK_NUMBER,
+    )
 
     expect(changedResult).toEqual(true)
   })

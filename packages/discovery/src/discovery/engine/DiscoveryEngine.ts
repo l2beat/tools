@@ -53,18 +53,18 @@ export class DiscoveryEngine {
     return resolved
   }
 
-  async watch(
+  async hasOutputChanged(
     config: DiscoveryConfig,
     prevOutput: DiscoveryOutput,
     blockNumber: number,
-  ): Promise<{ changed: boolean }> {
+  ): Promise<boolean> {
     const contracts = prevOutput.contracts
 
     const contractsChanged = await Promise.all(
       contracts.map(async (contract) => {
         const overrides = config.overrides.get(contract.address)
 
-        return await this.addressAnalyzer.watchContract(
+        return await this.addressAnalyzer.hasContractChanged(
           contract,
           overrides,
           blockNumber,
@@ -75,22 +75,22 @@ export class DiscoveryEngine {
 
     if (contractsChanged.some((x) => x)) {
       this.logger.log('Some contracts changed')
-      return { changed: true }
+      return true
     }
 
     const eoas = prevOutput.eoas
     const eoasChanged = await Promise.all(
       eoas.map(async (eoa) => {
-        return await this.addressAnalyzer.watchEoa(eoa, blockNumber)
+        return await this.addressAnalyzer.hasEoaBecomeContract(eoa, blockNumber)
       }),
     )
 
     if (eoasChanged.some((x) => x)) {
-      this.logger.log('Some EOAs changed')
-      return { changed: true }
+      this.logger.log('Some EOAs became contracts')
+      return true
     }
 
-    return { changed: false }
+    return false
   }
 
   private checkErrors(resolved: Analysis[]): void {

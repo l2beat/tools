@@ -54,7 +54,7 @@ export class AddressAnalyzer {
     overrides: ContractOverrides | undefined,
     blockNumber: number,
   ): Promise<{ analysis: Analysis; relatives: EthereumAddress[] }> {
-    const code = await this.getCode(address, blockNumber)
+    const code = await this.provider.getCode(address, blockNumber)
     if (code.length === 0) {
       this.logger.logEoa()
       return { analysis: { type: 'EOA', address }, relatives: [] }
@@ -107,7 +107,7 @@ export class AddressAnalyzer {
     }
   }
 
-  async watchContract(
+  async hasContractChanged(
     contract: ContractParameters,
     overrides: ContractOverrides,
     blockNumber: number,
@@ -147,22 +147,28 @@ export class AddressAnalyzer {
     )
 
     if (!isEqual(newValues, prevRelevantValues)) {
+      this.logger.log(
+        `Some values changed on contract ${
+          contract.name
+        }(${contract.address.toString()})})`,
+      )
       return true
     }
 
     return false
   }
 
-  async watchEoa(
+  async hasEoaBecomeContract(
     address: EthereumAddress,
     blockNumber: number,
   ): Promise<boolean> {
-    const code = await this.getCode(address, blockNumber)
-    return code.length > 0
-  }
+    const code = await this.provider.getCode(address, blockNumber)
+    if (code.length > 0) {
+      this.logger.log(`EOA ${address.toString()} became a contract`)
+      return true
+    }
 
-  async getCode(address: EthereumAddress, blockNumber: number): Promise<Bytes> {
-    return await this.provider.getCode(address, blockNumber)
+    return false
   }
 }
 
