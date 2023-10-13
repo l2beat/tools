@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- Add immutable proxy type
+- Add immutable proxy override
 
 ## 0.3.1
 

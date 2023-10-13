@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- Add immutable proxy type
+- Add immutable proxy override
 - Updated dependencies
   - @l2beat/discovery-types@0.3.2
 
