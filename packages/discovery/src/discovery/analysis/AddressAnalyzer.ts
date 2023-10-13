@@ -6,7 +6,6 @@ import {
 } from '@l2beat/discovery-types'
 import { isEqual } from 'lodash'
 
-import { Bytes } from '../../utils/Bytes'
 import { EthereumAddress } from '../../utils/EthereumAddress'
 import { UnixTime } from '../../utils/UnixTime'
 import { ContractOverrides } from '../config/DiscoveryOverrides'
