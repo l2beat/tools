@@ -1,5 +1,5 @@
-import { dirname, basename } from 'path'
-import { readdirSync } from 'fs';
+import { readdirSync } from 'fs'
+import { basename, dirname } from 'path'
 
 // NOTE(radomski): On some file systems, mainly Apple's AFS and Microsoft's
 // NTFS the path names are not case sensitive. So while you can have a file
@@ -11,10 +11,10 @@ import { readdirSync } from 'fs';
 // sure that a given file exists with the same basename as provided in the path
 // use this function.
 export function fileExistsCaseSensitive(path: string): boolean {
-    var filenames = readdirSync(dirname(path));
-    if (filenames.indexOf(basename(path)) === -1) {
-        return false;
-    }
+  const filenames = readdirSync(dirname(path))
+  if (!filenames.includes(basename(path))) {
+    return false
+  }
 
-    return true
+  return true
 }
