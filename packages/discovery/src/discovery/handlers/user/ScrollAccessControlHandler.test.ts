@@ -6,6 +6,8 @@ import { EthereumAddress } from '../../../utils/EthereumAddress'
 import { DiscoveryLogger } from '../../DiscoveryLogger'
 import { DiscoveryProvider } from '../../provider/DiscoveryProvider'
 import { ScrollAccessControlHandler } from './ScrollAccessControlHandler'
+import { getSignature } from '../../source/deduplicateAbi'
+import { assert } from '@l2beat/backend-tools'
 
 describe(ScrollAccessControlHandler.name, () => {
   const BLOCK_NUMBER = 1234
@@ -17,6 +19,13 @@ describe(ScrollAccessControlHandler.name, () => {
     'event GrantAccess(bytes32 indexed role, address indexed target, bytes4[] selectors)',
     'event RevokeAccess(bytes32 indexed role, address indexed target, bytes4[] selectors)',
   ])
+
+  function getFunctionSelector(functionDecl: string) {
+      const iface = new utils.Interface([functionDecl])
+      const key = Object.keys(iface.functions)[0]
+      assert(key)
+      return iface.getSighash(key)
+  }
 
   function RoleGranted(role: string, account: EthereumAddress): providers.Log {
     return abi.encodeEventLog(abi.getEvent('RoleGranted'), [
@@ -125,6 +134,11 @@ describe(ScrollAccessControlHandler.name, () => {
     const ContractB = EthereumAddress.random()
     const ContractC = EthereumAddress.random()
 
+    const FunctionA = "function test(bytes32 id)"
+    const FunctionB = "function testSecond(bytes32 id)"
+    const FunctionSigA = getFunctionSelector(FunctionA)
+    const FunctionSigB = getFunctionSelector(FunctionB)
+
     const address = EthereumAddress.random()
     const provider = mockObject<DiscoveryProvider>({
       async getLogs() {
@@ -144,21 +158,21 @@ describe(ScrollAccessControlHandler.name, () => {
           RoleGranted(WARRIOR_ROLE, Charlie),
           RoleGranted(WARRIOR_ROLE, Alice),
           RoleAdminChanged(ROGUE_ROLE, GOBLIN_ROLE),
-          GrantAccess(WIZARD_ROLE, ContractA, ['0x99372321']),
-          GrantAccess(ROGUE_ROLE, ContractA, ['0x99372321']),
-          GrantAccess(WIZARD_ROLE, ContractA, ['0x625ba713']),
-          GrantAccess(WARRIOR_ROLE, ContractB, ['0x99372321']),
-          GrantAccess(WARRIOR_ROLE, ContractB, ['0x625ba713']),
-          GrantAccess(GOBLIN_ROLE, ContractB, ['0x99372321']),
-          GrantAccess(GOBLIN_ROLE, ContractB, ['0x625ba713']),
-          GrantAccess(WARRIOR_ROLE, ContractA, ['0x99372321']),
-          GrantAccess(GOBLIN_ROLE, ContractA, ['0x99372321']),
-          GrantAccess(GOBLIN_ROLE, ContractC, ['0x99372321']),
-          RevokeAccess(GOBLIN_ROLE, ContractB, ['0x99372321']),
-          RevokeAccess(GOBLIN_ROLE, ContractB, ['0x625ba713']),
-          RevokeAccess(WARRIOR_ROLE, ContractA, ['0x99372321']),
-          RevokeAccess(GOBLIN_ROLE, ContractA, ['0x99372321']),
-          RevokeAccess(GOBLIN_ROLE, ContractC, ['0x99372321']),
+          GrantAccess(WIZARD_ROLE, ContractA, [FunctionSigA]),
+          GrantAccess(ROGUE_ROLE, ContractA, [FunctionSigA]),
+          GrantAccess(WIZARD_ROLE, ContractA, [FunctionSigB]),
+          GrantAccess(WARRIOR_ROLE, ContractB, [FunctionSigA]),
+          GrantAccess(WARRIOR_ROLE, ContractB, [FunctionSigB]),
+          GrantAccess(GOBLIN_ROLE, ContractB, [FunctionSigA]),
+          GrantAccess(GOBLIN_ROLE, ContractB, [FunctionSigB]),
+          GrantAccess(WARRIOR_ROLE, ContractA, [FunctionSigA]),
+          GrantAccess(GOBLIN_ROLE, ContractA, [FunctionSigA]),
+          GrantAccess(GOBLIN_ROLE, ContractC, [FunctionSigA]),
+          RevokeAccess(GOBLIN_ROLE, ContractB, [FunctionSigA]),
+          RevokeAccess(GOBLIN_ROLE, ContractB, [FunctionSigB]),
+          RevokeAccess(WARRIOR_ROLE, ContractA, [FunctionSigA]),
+          RevokeAccess(GOBLIN_ROLE, ContractA, [FunctionSigA]),
+          RevokeAccess(GOBLIN_ROLE, ContractC, [FunctionSigA]),
         ]
       },
       getStorage: mockFn().resolvesTo(Bytes.fromHex('0'.repeat(88))),
@@ -166,7 +180,7 @@ describe(ScrollAccessControlHandler.name, () => {
       getMetadata: mockFn().resolvesTo({
         name: 'name',
         isVerified: true,
-        abi: ['function test(bytes32 id)', 'function testSecond(bytes32 id)'],
+        abi: [FunctionA,FunctionB],
         source: 'name',
       }),
     })
