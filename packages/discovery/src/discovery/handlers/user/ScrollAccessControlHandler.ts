@@ -6,6 +6,7 @@ import { DiscoveryLogger } from '../../DiscoveryLogger'
 import { DiscoveryProvider } from '../../provider/DiscoveryProvider'
 import { Handler, HandlerResult } from '../Handler'
 import { assert } from '@l2beat/backend-tools'
+import { ProxyDetector } from '../../proxies/ProxyDetector'
 
 export type ScrollAccessControlHandlerDefinition = z.infer<
   typeof ScrollAccessControlHandlerDefinition
@@ -110,18 +111,26 @@ export class ScrollAccessControlHandler implements Handler {
       return value
     }
 
+    const proxyDetector = new ProxyDetector(provider, this.logger)
     async function decodeSelectors(
       target: EthereumAddress,
       encodedSelectors: string[],
     ): Promise<string[]> {
-      const metadata = await provider.getMetadata(target)
-      const iface = new utils.Interface(metadata.abi)
-      const abiSelectors = Object.entries(iface.functions).map(
+        const abiAddresses = [target]
+
+        const proxy = await proxyDetector.detectProxy(target, blockNumber)
+        if(proxy) {
+            abiAddresses.push(...proxy.implementations)
+        }
+
+      const metadatas = await Promise.all(abiAddresses.map(a => provider.getMetadata(a)))
+      const ifaces = metadatas.map(m => new utils.Interface(m.abi))
+      const abiSelectors = ifaces.flatMap(iface => Object.entries(iface.functions).map(
         ([functionName, fragment]) => [
           functionName,
           iface.getSighash(fragment),
         ],
-      )
+      ))
 
       return encodedSelectors.map((s) => {
         const decoded = abiSelectors.find(
@@ -146,15 +155,17 @@ export class ScrollAccessControlHandler implements Handler {
         role.members.delete(parsed.account)
       } else if (parsed.type === 'GrantAccess') {
         const target = getTarget(parsed.target.toString())
-        parsed.selectors.forEach((s) => {
+        const decodedSelectors = await decodeSelectors(parsed.target, parsed.selectors)
+        decodedSelectors.forEach((s) => {
             if(target[s] === undefined) {
                 target[s] = new Set()
             }
         })
-        parsed.selectors.forEach((s) => getSelector(target, s).add(parsed.role))
+        decodedSelectors.forEach((s) => getSelector(target, s).add(this.getRoleName(parsed.role)))
       } else if (parsed.type === 'RevokeAccess') {
         const target = getTarget(parsed.target.toString())
-        parsed.selectors.forEach((s) => delete target[s])
+        const decodedSelectors = await decodeSelectors(parsed.target, parsed.selectors)
+        decodedSelectors.forEach((s) => delete target[s])
       }
     }
 
