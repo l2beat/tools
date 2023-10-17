@@ -1,3 +1,4 @@
+import { assert } from '@l2beat/backend-tools'
 import { expect, mockFn, mockObject } from 'earl'
 import { providers, utils } from 'ethers'
 
@@ -6,8 +7,6 @@ import { EthereumAddress } from '../../../utils/EthereumAddress'
 import { DiscoveryLogger } from '../../DiscoveryLogger'
 import { DiscoveryProvider } from '../../provider/DiscoveryProvider'
 import { ScrollAccessControlHandler } from './ScrollAccessControlHandler'
-import { getSignature } from '../../source/deduplicateAbi'
-import { assert } from '@l2beat/backend-tools'
 
 describe(ScrollAccessControlHandler.name, () => {
   const BLOCK_NUMBER = 1234
@@ -21,10 +20,10 @@ describe(ScrollAccessControlHandler.name, () => {
   ])
 
   function getFunctionSelector(functionDecl: string) {
-      const iface = new utils.Interface([functionDecl])
-      const key = Object.keys(iface.functions)[0]
-      assert(key)
-      return iface.getSighash(key)
+    const iface = new utils.Interface([functionDecl])
+    const key = Object.keys(iface.functions)[0]
+    assert(key)
+    return iface.getSighash(key)
   }
 
   function RoleGranted(role: string, account: EthereumAddress): providers.Log {
@@ -134,8 +133,8 @@ describe(ScrollAccessControlHandler.name, () => {
     const ContractB = EthereumAddress.random()
     const ContractC = EthereumAddress.random()
 
-    const FunctionA = "function test(bytes32 id)"
-    const FunctionB = "function testSecond(bytes32 id)"
+    const FunctionA = 'function test(bytes32 id)'
+    const FunctionB = 'function testSecond(bytes32 id)'
     const FunctionSigA = getFunctionSelector(FunctionA)
     const FunctionSigB = getFunctionSelector(FunctionB)
 
@@ -180,7 +179,7 @@ describe(ScrollAccessControlHandler.name, () => {
       getMetadata: mockFn().resolvesTo({
         name: 'name',
         isVerified: true,
-        abi: [FunctionA,FunctionB],
+        abi: [FunctionA, FunctionB],
         source: 'name',
       }),
     })
