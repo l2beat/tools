@@ -7,6 +7,7 @@ import { mkdir, writeFile } from 'fs/promises'
 import { ConfigReader } from '../discovery/config/ConfigReader'
 import { ChainId } from '../utils/ChainId'
 import { EthereumAddress } from '../utils/EthereumAddress'
+import { isObject } from 'lodash'
 
 interface AddressDetails {
   name?: string
@@ -81,16 +82,25 @@ export async function runInversion(
           })
         }
       } else if (key === 'accessControl') {
-        for (const [roleName, role] of Object.entries(
-          value as Record<string, { members: string[] }>,
-        )) {
-          for (const member of role.members) {
-            add(member, {
-              name: roleName,
-              atName: contract.name,
-              atAddress: contract.address,
-            })
+        function addRoles(roleMembers: Record<string, { members: string[] }>) {
+          for (const [roleName, role] of Object.entries(roleMembers)) {
+            for (const member of role.members) {
+              add(member, {
+                name: roleName,
+                atName: contract.name,
+                atAddress: contract.address,
+              })
+            }
           }
+        }
+
+        const isScrollAccessControl =
+          value && isObject(value) && 'roles' in value && 'targets' in value
+
+        if (isScrollAccessControl) {
+          addRoles(value.roles as Record<string, { members: string[] }>)
+        } else {
+          addRoles(value as Record<string, { members: string[] }>)
         }
       } else if (value) {
         add(value, {
