@@ -1,11 +1,11 @@
 import { expect, mockFn, mockObject } from 'earl'
 import { providers, utils } from 'ethers'
 
+import { Bytes } from '../../../utils/Bytes'
 import { EthereumAddress } from '../../../utils/EthereumAddress'
 import { DiscoveryLogger } from '../../DiscoveryLogger'
 import { DiscoveryProvider } from '../../provider/DiscoveryProvider'
 import { ScrollAccessControlHandler } from './ScrollAccessControlHandler'
-import { Bytes } from '../../../utils/Bytes'
 
 describe(ScrollAccessControlHandler.name, () => {
   const BLOCK_NUMBER = 1234

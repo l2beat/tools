@@ -38,6 +38,10 @@ import {
   LayerZeroMultisigHandlerDefinition,
 } from './LayerZeroMultisigHandler'
 import {
+  ScrollAccessControlHandler,
+  ScrollAccessControlHandlerDefinition,
+} from './ScrollAccessControlHandler'
+import {
   StarkWareGovernanceHandler,
   StarkWareGovernanceHandlerDefinition,
 } from './StarkWareGovernanceHandler'
@@ -50,10 +54,6 @@ import {
   StateFromEventHandler,
 } from './StateFromEventHandler'
 import { StorageHandler, StorageHandlerDefinition } from './StorageHandler'
-import {
-  ScrollAccessControlHandler,
-  ScrollAccessControlHandlerDefinition,
-} from './ScrollAccessControlHandler'
 
 export type UserHandlerDefinition = z.infer<typeof UserHandlerDefinition>
 export const UserHandlerDefinition = z.union([
