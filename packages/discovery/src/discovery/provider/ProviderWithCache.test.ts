@@ -41,7 +41,7 @@ describe('ProviderWithCache', () => {
     })
 
     const blockNumber = undefined
-    const resultCached = await providerWithCache.cacheOrFetch(
+    const result = await providerWithCache.cacheOrFetch(
       'mockCachedKey',
       blockNumber,
       async () => 'mockNotCachedValue',
@@ -49,7 +49,7 @@ describe('ProviderWithCache', () => {
       (value) => value,
     )
 
-    expect(resultCached).toEqual('mockCachedValue')
+    expect(result).toEqual('mockCachedValue')
     expect(mockCache.get).toHaveBeenCalledWith('mockCachedKey')
     expect(mockCache.set).toHaveBeenCalledTimes(0)
   })
@@ -61,7 +61,7 @@ describe('ProviderWithCache', () => {
     })
 
     const blockNumber = 1000
-    const resultCached = await providerWithCache.cacheOrFetch(
+    const result = await providerWithCache.cacheOrFetch(
       'mockCachedKey',
       blockNumber,
       async () => 'mockNotCachedValue',
@@ -69,7 +69,7 @@ describe('ProviderWithCache', () => {
       (value) => value,
     )
 
-    expect(resultCached).toEqual('mockCachedValue')
+    expect(result).toEqual('mockCachedValue')
     expect(mockCache.get).toHaveBeenCalledWith('mockCachedKey')
     expect(mockCache.set).toHaveBeenCalledTimes(0)
   })
@@ -81,7 +81,7 @@ describe('ProviderWithCache', () => {
     })
 
     const blockNumber = undefined
-    const resultCached = await providerWithCache.cacheOrFetch(
+    const result = await providerWithCache.cacheOrFetch(
       'mockNotCachedKey',
       blockNumber,
       async () => 'mockNotCachedValue',
@@ -89,7 +89,7 @@ describe('ProviderWithCache', () => {
       (value) => value,
     )
 
-    expect(resultCached).toEqual('mockNotCachedValue')
+    expect(result).toEqual('mockNotCachedValue')
     expect(mockCache.set).toHaveBeenCalledWith(
       'mockNotCachedKey',
       'mockNotCachedValue',
@@ -105,7 +105,7 @@ describe('ProviderWithCache', () => {
     })
 
     const blockNumber = 1000
-    const resultCached = await providerWithCache.cacheOrFetch(
+    const result = await providerWithCache.cacheOrFetch(
       'mockNotCachedKey',
       blockNumber,
       async () => 'mockNotCachedValue',
@@ -113,7 +113,7 @@ describe('ProviderWithCache', () => {
       (value) => value,
     )
 
-    expect(resultCached).toEqual('mockNotCachedValue')
+    expect(result).toEqual('mockNotCachedValue')
     expect(mockCache.set).toHaveBeenCalledWith(
       'mockNotCachedKey',
       'mockNotCachedValue',
@@ -129,7 +129,7 @@ describe('ProviderWithCache', () => {
     })
 
     const blockNumber = 900
-    const resultCached = await providerWithCache.cacheOrFetch(
+    const result = await providerWithCache.cacheOrFetch(
       'mockNotCachedKey',
       blockNumber,
       async () => 'mockNotCachedValue',
@@ -137,7 +137,7 @@ describe('ProviderWithCache', () => {
       (value) => value,
     )
 
-    expect(resultCached).toEqual('mockNotCachedValue')
+    expect(result).toEqual('mockNotCachedValue')
     expect(mockCache.get).toHaveBeenCalledWith('mockNotCachedKey')
     expect(mockCache.set).toHaveBeenCalledWith(
       'mockNotCachedKey',
@@ -154,7 +154,7 @@ describe('ProviderWithCache', () => {
     })
 
     const blockNumber = 901
-    const resultCached = await providerWithCache.cacheOrFetch(
+    const result = await providerWithCache.cacheOrFetch(
       'mockNotCachedKey',
       blockNumber,
       async () => 'mockNotCachedValue',
@@ -162,7 +162,7 @@ describe('ProviderWithCache', () => {
       (value) => value,
     )
 
-    expect(resultCached).toEqual('mockNotCachedValue')
+    expect(result).toEqual('mockNotCachedValue')
     expect(mockCache.get).toHaveBeenCalledWith('mockNotCachedKey')
     expect(mockCache.set).toHaveBeenCalledTimes(0)
   })
