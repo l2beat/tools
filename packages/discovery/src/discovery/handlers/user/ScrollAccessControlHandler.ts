@@ -82,8 +82,7 @@ export class ScrollAccessControlHandler implements Handler {
         members: Set<EthereumAddress>
       }
     > = {}
-    const targets: Record<string, Set<string>> = {}
-    const selectors: Record<string, Set<string>> = {}
+    const targets: Record<string, Record<string, Set<string>>> = {}
 
     getRole('DEFAULT_ADMIN_ROLE')
 
@@ -99,15 +98,15 @@ export class ScrollAccessControlHandler implements Handler {
       return value
     }
 
-    function getTarget(target: string): Set<string> {
-      const value = targets[target] ?? new Set()
+    function getTarget(target: string): Record<string, Set<string>> {
+      const value = targets[target] ?? {}
       targets[target] = value
       return value
     }
 
-    function getSelector(selector: string): Set<string> {
-      const value = selectors[selector] ?? new Set()
-      selectors[selector] = value
+    function getSelector(target: Record<string, Set<string>>, selector: string): Set<string> {
+      const value = target[selector] ?? new Set()
+      target[selector] = value
       return value
     }
 
@@ -147,12 +146,15 @@ export class ScrollAccessControlHandler implements Handler {
         role.members.delete(parsed.account)
       } else if (parsed.type === 'GrantAccess') {
         const target = getTarget(parsed.target.toString())
-        parsed.selectors.forEach((s) => target.add(s))
-        parsed.selectors.forEach((s) => getSelector(s).add(parsed.role))
+        parsed.selectors.forEach((s) => {
+            if(target[s] === undefined) {
+                target[s] = new Set()
+            }
+        })
+        parsed.selectors.forEach((s) => getSelector(target, s).add(parsed.role))
       } else if (parsed.type === 'RevokeAccess') {
         const target = getTarget(parsed.target.toString())
-        parsed.selectors.forEach((s) => target.delete(s))
-        parsed.selectors.forEach((s) => getSelector(s).delete(parsed.role))
+        parsed.selectors.forEach((s) => delete target[s])
       }
     }
 
@@ -171,13 +173,9 @@ export class ScrollAccessControlHandler implements Handler {
         targets: Object.fromEntries(
           Object.entries(targets).map(([target, selectors]) => [
             target,
-            [...selectors],
-          ]),
-        ),
-        selectors: Object.fromEntries(
-          Object.entries(selectors).map(([selector, roles]) => [
-            selector,
-            [...roles],
+            Object.fromEntries(Object.entries(selectors).map(([selector, roles]) => [
+                selector, [...roles]
+            ]))
           ]),
         ),
       },
