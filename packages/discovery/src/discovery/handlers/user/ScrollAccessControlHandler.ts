@@ -99,13 +99,16 @@ export class ScrollAccessControlHandler implements Handler {
       return value
     }
 
-    function getTarget(target: string): Record<string, Set<string>> {
-      const value = targets[target] ?? {}
-      targets[target] = value
+    function getTarget(target: EthereumAddress): Record<string, Set<string>> {
+      const value = targets[target.toString()] ?? {}
+      targets[target.toString()] = value
       return value
     }
 
-    function getSelector(target: Record<string, Set<string>>, selector: string): Set<string> {
+    function getSelector(
+      target: Record<string, Set<string>>,
+      selector: string,
+    ): Set<string> {
       const value = target[selector] ?? new Set()
       target[selector] = value
       return value
@@ -116,21 +119,23 @@ export class ScrollAccessControlHandler implements Handler {
       target: EthereumAddress,
       encodedSelectors: string[],
     ): Promise<string[]> {
-        const abiAddresses = [target]
+      const abiAddresses = [target]
 
-        const proxy = await proxyDetector.detectProxy(target, blockNumber)
-        if(proxy) {
-            abiAddresses.push(...proxy.implementations)
-        }
+      const proxy = await proxyDetector.detectProxy(target, blockNumber)
+      if (proxy) {
+        abiAddresses.push(...proxy.implementations)
+      }
 
-      const metadatas = await Promise.all(abiAddresses.map(a => provider.getMetadata(a)))
-      const ifaces = metadatas.map(m => new utils.Interface(m.abi))
-      const abiSelectors = ifaces.flatMap(iface => Object.entries(iface.functions).map(
-        ([functionName, fragment]) => [
+      const metadatas = await Promise.all(
+        abiAddresses.map((a) => provider.getMetadata(a)),
+      )
+      const ifaces = metadatas.map((m) => new utils.Interface(m.abi))
+      const abiSelectors = ifaces.flatMap((iface) =>
+        Object.entries(iface.functions).map(([functionName, fragment]) => [
           functionName,
           iface.getSighash(fragment),
-        ],
-      ))
+        ]),
+      )
 
       return encodedSelectors.map((s) => {
         const decoded = abiSelectors.find(
@@ -154,18 +159,29 @@ export class ScrollAccessControlHandler implements Handler {
       } else if (parsed.type === 'RoleRevoked') {
         role.members.delete(parsed.account)
       } else if (parsed.type === 'GrantAccess') {
-        const target = getTarget(parsed.target.toString())
-        const decodedSelectors = await decodeSelectors(parsed.target, parsed.selectors)
-        decodedSelectors.forEach((s) => {
-            if(target[s] === undefined) {
-                target[s] = new Set()
-            }
+        const target = getTarget(parsed.target)
+        const decoded = await decodeSelectors(parsed.target, parsed.selectors)
+        decoded.forEach((s) => {
+          if (target[s] === undefined) {
+            target[s] = new Set()
+          }
         })
-        decodedSelectors.forEach((s) => getSelector(target, s).add(this.getRoleName(parsed.role)))
+        decoded.forEach((s) =>
+          getSelector(target, s).add(this.getRoleName(parsed.role)),
+        )
       } else if (parsed.type === 'RevokeAccess') {
-        const target = getTarget(parsed.target.toString())
-        const decodedSelectors = await decodeSelectors(parsed.target, parsed.selectors)
-        decodedSelectors.forEach((s) => delete target[s])
+        const target = getTarget(parsed.target)
+        const decoded = await decodeSelectors(parsed.target, parsed.selectors)
+        decoded.forEach((s) => {
+          const selector = getSelector(target, s)
+          selector.delete(this.getRoleName(parsed.role))
+          if (selector.size === 0) {
+            delete target[s]
+            if (Object.entries(target).length === 0) {
+              delete targets[parsed.target.toString()]
+            }
+          }
+        })
       }
     }
 
@@ -184,9 +200,12 @@ export class ScrollAccessControlHandler implements Handler {
         targets: Object.fromEntries(
           Object.entries(targets).map(([target, selectors]) => [
             target,
-            Object.fromEntries(Object.entries(selectors).map(([selector, roles]) => [
-                selector, [...roles]
-            ]))
+            Object.fromEntries(
+              Object.entries(selectors).map(([selector, roles]) => [
+                selector,
+                [...roles],
+              ]),
+            ),
           ]),
         ),
       },
