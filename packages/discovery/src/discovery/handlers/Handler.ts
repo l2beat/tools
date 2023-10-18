@@ -15,7 +15,7 @@ export interface HandlerResult {
   ignoreRelative?: boolean
 }
 
-export interface ClassicHandler {
+interface BaseHandler {
   field: string
   dependencies: string[]
   logger?: DiscoveryLogger
@@ -27,7 +27,11 @@ export interface ClassicHandler {
   ): Promise<HandlerResult>
 }
 
-export interface MulticallableHandler extends ClassicHandler {
+export interface ClassicHandler extends BaseHandler {
+  multicallable?: false
+}
+
+export interface MulticallableHandler extends BaseHandler {
   multicallable: true
   encode(
     address: EthereumAddress,

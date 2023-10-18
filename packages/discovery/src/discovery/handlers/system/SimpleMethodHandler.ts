@@ -79,6 +79,9 @@ export class SimpleMethodHandler implements MulticallableHandler {
       response.data.toString(),
     )
     const value = decoded[0] as string
-    return { field: this.field, value: toContractValue(value) }
+    return {
+      field: this.field,
+      value: toContractValue(value),
+    }
   }
 }

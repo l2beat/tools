@@ -14,6 +14,7 @@ export {
 } from './discovery/output/diffDiscovery'
 export { toDiscoveryOutput } from './discovery/output/toDiscoveryOutput'
 export { DiscoveryProvider } from './discovery/provider/DiscoveryProvider'
+export { MulticallClient } from './discovery/provider/multicall/MulticallClient'
 export type { DiscoveryCache } from './discovery/provider/ProviderWithCache'
 export { ProviderWithCache } from './discovery/provider/ProviderWithCache'
 export { RateLimitedProvider } from './discovery/provider/RateLimitedProvider'
