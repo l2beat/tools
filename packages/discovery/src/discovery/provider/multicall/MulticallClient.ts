@@ -1,10 +1,5 @@
 import { DiscoveryProvider } from '../DiscoveryProvider'
-import {
-  MulticallConfig,
-  MulticallConfigEntry,
-  MulticallRequest,
-  MulticallResponse,
-} from './types'
+import { MulticallConfig, MulticallRequest, MulticallResponse } from './types'
 
 export class MulticallClient {
   constructor(
@@ -42,14 +37,13 @@ export class MulticallClient {
     requests: MulticallRequest[],
     blockNumber: number,
   ): Promise<MulticallResponse[]> {
-    const config = this.config.find((x) => blockNumber >= x.sinceBlock)
     try {
-      if (!config) {
+      if (this.config.sinceBlock > blockNumber) {
         return this.executeIndividual(requests, blockNumber)
       } else {
-        const batches = toBatches(requests, config.batchSize)
+        const batches = toBatches(requests, this.config.batchSize)
         const batchedResults = await Promise.all(
-          batches.map((batch) => this.executeBatch(config, batch, blockNumber)),
+          batches.map((batch) => this.executeBatch(batch, blockNumber)),
         )
         return batchedResults.flat()
       }
@@ -78,17 +72,16 @@ export class MulticallClient {
   }
 
   private async executeBatch(
-    config: MulticallConfigEntry,
     requests: MulticallRequest[],
     blockNumber: number,
   ): Promise<MulticallResponse[]> {
-    const encoded = config.encodeBatch(requests)
+    const encoded = this.config.encodeBatch(requests)
     const result = await this.provider.call(
-      config.address,
+      this.config.address,
       encoded,
       blockNumber,
     )
-    return config.decodeBatch(result)
+    return this.config.decodeBatch(result)
   }
 }
 

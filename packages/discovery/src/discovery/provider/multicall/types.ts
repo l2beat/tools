@@ -1,8 +1,7 @@
 import { Bytes } from '../../../utils/Bytes'
 import { EthereumAddress } from '../../../utils/EthereumAddress'
 
-export type MulticallConfig = MulticallConfigEntry[]
-export interface MulticallConfigEntry {
+export interface MulticallConfig {
   sinceBlock: number
   batchSize: number
   address: EthereumAddress

@@ -7,9 +7,9 @@ import { DiscoveryProvider } from '../provider/DiscoveryProvider'
 import { MulticallClient } from '../provider/multicall/MulticallClient'
 import { executeHandlers } from './executeHandlers'
 import { ClassicHandler, HandlerResult } from './Handler'
-import { StorageHandler } from './user/StorageHandler'
 import { SimpleMethodHandler } from './system/SimpleMethodHandler'
 import { ArrayHandler } from './user/ArrayHandler'
+import { StorageHandler } from './user/StorageHandler'
 
 describe(executeHandlers.name, () => {
   const BLOCK_NUMBER = 1234

@@ -4,57 +4,34 @@ import { Bytes } from '../../../utils/Bytes'
 import { EthereumAddress } from '../../../utils/EthereumAddress'
 import { MulticallConfig, MulticallRequest, MulticallResponse } from './types'
 
-export const ETHEREUM_MULTICALL_V1_ADDRESS = EthereumAddress(
-  '0xeefBa1e63905eF1D7ACbA5a8513c70307C1cE441',
-)
-export const ETHEREUM_MULTICALL_V1_BLOCK = 7929876
+export const multicallConfig = {
+  ethereum: getMulticall3Config(14353601),
+  arbitrum: getMulticall3Config(7654707),
+  optimism: getMulticall3Config(4286263),
+  base: getMulticall3Config(5022),
+  avalanche: getMulticall3Config(11907934),
+  bsc: getMulticall3Config(15921452),
+  celo: getMulticall3Config(13112599),
+  gnosis: getMulticall3Config(21022491),
+  linea: getMulticall3Config(42),
+  polygon_pos: getMulticall3Config(25770160),
+  polygon_zkevm: getMulticall3Config(57746),
+}
 
-export const ETHEREUM_MULTICALL_CONFIG: MulticallConfig = [
-  {
-    sinceBlock: 12336033,
+function getMulticall3Config(
+  sinceBlock: number,
+  address: EthereumAddress = EthereumAddress(
+    '0xcA11bde05977b3631167028862bE2a173976CA11',
+  ),
+): MulticallConfig {
+  return {
+    address,
+    sinceBlock,
     batchSize: 150,
-    address: EthereumAddress('0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696'),
-    encodeBatch: encodeMulticallV2,
-    decodeBatch: decodeMulticallV2,
-  },
-  {
-    sinceBlock: ETHEREUM_MULTICALL_V1_BLOCK,
-    batchSize: 150,
-    address: ETHEREUM_MULTICALL_V1_ADDRESS,
-    encodeBatch: encodeMulticallV1,
-    decodeBatch: decodeMulticallV1,
-  },
-]
-
-export const ARBITRUM_MULTICALL_CONFIG: MulticallConfig = [
-  {
-    sinceBlock: 821923,
-    batchSize: 150,
-    address: EthereumAddress('0x842eC2c7D803033Edf55E478F461FC547Bc54EB2'),
-    encodeBatch: encodeMulticallV2,
-    decodeBatch: decodeMulticallV2,
-  },
-]
-
-export const OPTIMISM_MULTICALL_CONFIG: MulticallConfig = [
-  {
-    sinceBlock: 0,
-    batchSize: 150,
-    address: EthereumAddress('0xE295aD71242373C37C5FdA7B57F26f9eA1088AFe'),
-    encodeBatch: encodeOptimismMulticall,
-    decodeBatch: decodeOptimismMulticall,
-  },
-]
-
-export const BASE_MULTICALL_CONFIG: MulticallConfig = [
-  {
-    sinceBlock: 5022,
-    batchSize: 150,
-    address: EthereumAddress('0xcA11bde05977b3631167028862bE2a173976CA11'),
-    encodeBatch: encodeMulticallV2,
-    decodeBatch: decodeMulticallV2,
-  },
-]
+    encodeBatch: encodeMulticall3,
+    decodeBatch: decodeMulticall3,
+  }
+}
 
 export const multicallInterface = new utils.Interface([
   'function multicall(tuple(address, bytes)[] memory calls) public returns (bytes[] memory results)',
@@ -62,31 +39,7 @@ export const multicallInterface = new utils.Interface([
   'function tryAggregate(bool requireSuccess, tuple(address target, bytes callData)[] calls) public returns (tuple(bool success, bytes returnData)[] returnData)',
 ])
 
-export function encodeMulticallV1(requests: MulticallRequest[]): Bytes {
-  const string = multicallInterface.encodeFunctionData('aggregate', [
-    requests.map((request): [string, string] => [
-      request.address.toString(),
-      request.data.toString(),
-    ]),
-  ])
-  return Bytes.fromHex(string)
-}
-
-export function decodeMulticallV1(result: Bytes): MulticallResponse[] {
-  const decoded = multicallInterface.decodeFunctionResult(
-    'aggregate',
-    result.toString(),
-  )
-  const values = decoded[1] as string[]
-  return values.map(
-    (data): MulticallResponse => ({
-      success: data !== '0x',
-      data: Bytes.fromHex(data),
-    }),
-  )
-}
-
-export function encodeMulticallV2(requests: MulticallRequest[]): Bytes {
+export function encodeMulticall3(requests: MulticallRequest[]): Bytes {
   const string = multicallInterface.encodeFunctionData('tryAggregate', [
     false,
     requests.map((request): [string, string] => [
@@ -97,7 +50,7 @@ export function encodeMulticallV2(requests: MulticallRequest[]): Bytes {
   return Bytes.fromHex(string)
 }
 
-export function decodeMulticallV2(result: Bytes): MulticallResponse[] {
+export function decodeMulticall3(result: Bytes): MulticallResponse[] {
   const decoded = multicallInterface.decodeFunctionResult(
     'tryAggregate',
     result.toString(),
@@ -110,31 +63,4 @@ export function decodeMulticallV2(result: Bytes): MulticallResponse[] {
       data: bytes,
     }
   })
-}
-
-export function encodeOptimismMulticall(requests: MulticallRequest[]): Bytes {
-  const hexCalldata = multicallInterface.encodeFunctionData('multicall', [
-    requests.map((request) => [
-      request.address.toString(),
-      request.data.toString(),
-    ]),
-  ])
-
-  return Bytes.fromHex(hexCalldata)
-}
-
-export function decodeOptimismMulticall(response: Bytes): MulticallResponse[] {
-  const decodedResponse = multicallInterface.decodeFunctionResult(
-    'multicall',
-    response.toString(),
-  )
-
-  const values = decodedResponse[0] as string[]
-
-  return values.map(
-    (data): MulticallResponse => ({
-      success: data !== '0x',
-      data: Bytes.fromHex(data),
-    }),
-  )
 }

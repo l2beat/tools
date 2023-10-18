@@ -5,41 +5,28 @@ import { EthereumAddress } from '../../../utils/EthereumAddress'
 import { DiscoveryProvider } from '../DiscoveryProvider'
 import { MulticallClient } from './MulticallClient'
 import {
-  decodeMulticallV1,
-  decodeMulticallV2,
-  encodeMulticallV1,
-  encodeMulticallV2,
+  decodeMulticall3,
+  encodeMulticall3,
   multicallInterface,
 } from './MulticallConfig'
-import { MulticallConfigEntry } from './types'
+import { MulticallConfig } from './types'
 
 describe(MulticallClient.name, () => {
   const ADDRESS_A = EthereumAddress('0x' + 'a'.repeat(40))
   const ADDRESS_B = EthereumAddress('0x' + 'b'.repeat(40))
   const ADDRESS_C = EthereumAddress('0x' + 'c'.repeat(40))
 
-  const ADDRESS_V2 = EthereumAddress('0x' + '2'.repeat(40))
-  const ADDRESS_V1 = EthereumAddress('0x' + '1'.repeat(40))
+  const ADDRESS_3 = EthereumAddress('0x' + '3'.repeat(40))
 
-  const MULTICALL_V2_BLOCK = 2_222
-  const MULTICALL_V1_BLOCK = 1_111
+  const MULTICALL3_BLOCK = 3_333
   const BATCH_SIZE = 3
-  const TEST_MULTICALL_CONFIG: MulticallConfigEntry[] = [
-    {
-      sinceBlock: MULTICALL_V2_BLOCK,
-      batchSize: BATCH_SIZE,
-      address: ADDRESS_V2,
-      encodeBatch: encodeMulticallV2,
-      decodeBatch: decodeMulticallV2,
-    },
-    {
-      sinceBlock: MULTICALL_V1_BLOCK,
-      batchSize: BATCH_SIZE,
-      address: ADDRESS_V1,
-      encodeBatch: encodeMulticallV1,
-      decodeBatch: decodeMulticallV1,
-    },
-  ]
+  const TEST_MULTICALL_CONFIG: MulticallConfig = {
+    sinceBlock: MULTICALL3_BLOCK,
+    batchSize: BATCH_SIZE,
+    address: ADDRESS_3,
+    encodeBatch: encodeMulticall3,
+    decodeBatch: decodeMulticall3,
+  }
 
   interface Call {
     address?: EthereumAddress
@@ -60,7 +47,7 @@ describe(MulticallClient.name, () => {
       DiscoveryProvider,
       TEST_MULTICALL_CONFIG,
     )
-    const blockNumber = MULTICALL_V1_BLOCK - 1
+    const blockNumber = MULTICALL3_BLOCK - 1
     const result = await multicallClient.multicall(
       [
         { address: ADDRESS_A, data: Bytes.fromHex('0x123456') },
@@ -82,54 +69,7 @@ describe(MulticallClient.name, () => {
     ])
   })
 
-  it('uses v1 for blocks without v2', async () => {
-    const calls: Call[] = []
-    const discoveryProvider = mockObject<DiscoveryProvider>({
-      async call(address, data, blockNumber) {
-        calls.push({ address, data, blockNumber })
-        return Bytes.fromHex(
-          multicallInterface.encodeFunctionResult('aggregate', [
-            blockNumber.toString(),
-            ['0x12', '0x0f00', '0x'],
-          ]),
-        )
-      },
-    })
-
-    const multicallClient = new MulticallClient(
-      discoveryProvider,
-      TEST_MULTICALL_CONFIG,
-    )
-    const blockNumber = MULTICALL_V1_BLOCK + 1
-
-    const result = await multicallClient.multicall(
-      [
-        { address: ADDRESS_A, data: Bytes.fromHex('0x123456') },
-        { address: ADDRESS_B, data: Bytes.fromHex('0x') },
-        { address: ADDRESS_C, data: Bytes.fromHex('0xdeadbeef') },
-      ],
-      blockNumber,
-    )
-    expect(result).toEqual([
-      { success: true, data: Bytes.fromHex('0x12') },
-      { success: true, data: Bytes.fromHex('0x0f00') },
-      // empty result is is treated as unsuccessful!
-      { success: false, data: Bytes.fromHex('0x') },
-    ])
-    expect(calls).toEqual([
-      {
-        address: ADDRESS_V1,
-        data: encodeMulticallV1([
-          { address: ADDRESS_A, data: Bytes.fromHex('0x123456') },
-          { address: ADDRESS_B, data: Bytes.fromHex('0x') },
-          { address: ADDRESS_C, data: Bytes.fromHex('0xdeadbeef') },
-        ]),
-        blockNumber,
-      },
-    ])
-  })
-
-  it('uses v2 for new blocks', async () => {
+  it('uses multicall for new blocks', async () => {
     const calls: Call[] = []
     const discoveryProvider = mockObject<DiscoveryProvider>({
       async call(address, data, blockNumber) {
@@ -150,7 +90,7 @@ describe(MulticallClient.name, () => {
       discoveryProvider,
       TEST_MULTICALL_CONFIG,
     )
-    const blockNumber = MULTICALL_V2_BLOCK + 1
+    const blockNumber = MULTICALL3_BLOCK + 1
 
     const result = await multicallClient.multicall(
       [
@@ -167,8 +107,8 @@ describe(MulticallClient.name, () => {
     ])
     expect(calls).toEqual([
       {
-        address: ADDRESS_V2,
-        data: encodeMulticallV2([
+        address: ADDRESS_3,
+        data: encodeMulticall3([
           { address: ADDRESS_A, data: Bytes.fromHex('0x123456') },
           { address: ADDRESS_B, data: Bytes.fromHex('0x') },
           { address: ADDRESS_C, data: Bytes.fromHex('0xdeadbeef') },
@@ -178,7 +118,7 @@ describe(MulticallClient.name, () => {
     ])
   })
 
-  it(`batches calls`, async () => {
+  it('batches calls', async () => {
     const calls: number[] = []
     const discoveryProvider = mockObject<DiscoveryProvider>({
       async call(_, data) {
@@ -199,7 +139,7 @@ describe(MulticallClient.name, () => {
       discoveryProvider,
       TEST_MULTICALL_CONFIG,
     )
-    const blockNumber = MULTICALL_V2_BLOCK + 1
+    const blockNumber = MULTICALL3_BLOCK + 1
 
     const result = await multicallClient.multicall(
       new Array(BATCH_SIZE * 2 + 1).fill(0).map(() => ({
@@ -230,7 +170,7 @@ describe(MulticallClient.name, () => {
       discoveryProvider,
       TEST_MULTICALL_CONFIG,
     )
-    const blockNumber = MULTICALL_V2_BLOCK + 1
+    const blockNumber = MULTICALL3_BLOCK + 1
 
     const result = await multicallClient.multicallNamed(
       {
