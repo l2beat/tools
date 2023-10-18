@@ -72,8 +72,9 @@ export class ProviderWithCache extends DiscoveryProvider {
     return result
   }
 
-  private async isBlockNumberReorgSafe(
+  public async isBlockNumberReorgSafe(
     blockNumber: number | undefined,
+    curTimeMsOverride?: number, // for testing
   ): Promise<boolean> {
     if (blockNumber === undefined) {
       return true
@@ -83,15 +84,16 @@ export class ProviderWithCache extends DiscoveryProvider {
       return true
     }
 
+    const curTime = curTimeMsOverride ?? Date.now()
     const timeSinceLastCurBlockCheck =
-      Date.now() - (this.lastCurBlockCheckTime ?? 0)
+      curTime - (this.lastCurBlockCheckTime ?? 0)
 
     if (
       this.curBlockNumber === undefined ||
-      timeSinceLastCurBlockCheck > CUR_BLOCK_CHECK_INTERVAL_SECONDS * 1000
+      timeSinceLastCurBlockCheck >= CUR_BLOCK_CHECK_INTERVAL_SECONDS * 1000
     ) {
       this.curBlockNumber = await super.getBlockNumber()
-      this.lastCurBlockCheckTime = Date.now()
+      this.lastCurBlockCheckTime = curTime
     }
 
     const reorgSafeBlockNumber = this.curBlockNumber - this.reorgSafeDepth
