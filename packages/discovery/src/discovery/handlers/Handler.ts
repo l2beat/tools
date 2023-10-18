@@ -15,20 +15,7 @@ export interface HandlerResult {
   ignoreRelative?: boolean
 }
 
-export interface MulticallableHandler {
-  type: 'multicallable'
-  field: string
-  dependencies: string[]
-  logger?: DiscoveryLogger
-  encode(
-    address: EthereumAddress,
-    previousResults: Record<string, HandlerResult | undefined>,
-  ): MulticallRequest[]
-  decode: (result: MulticallResponse[]) => HandlerResult
-}
-
 export interface ClassicHandler {
-  type?: 'classic'
   field: string
   dependencies: string[]
   logger?: DiscoveryLogger
@@ -38,6 +25,15 @@ export interface ClassicHandler {
     blockNumber: number,
     previousResults: Record<string, HandlerResult | undefined>,
   ): Promise<HandlerResult>
+}
+
+export interface MulticallableHandler extends ClassicHandler {
+  multicallable: true
+  encode(
+    address: EthereumAddress,
+    previousResults: Record<string, HandlerResult | undefined>,
+  ): MulticallRequest[]
+  decode: (result: MulticallResponse[]) => HandlerResult
 }
 
 export type Handler = MulticallableHandler | ClassicHandler
