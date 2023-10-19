@@ -4,6 +4,8 @@ import { Bytes } from '../../../utils/Bytes'
 import { EthereumAddress } from '../../../utils/EthereumAddress'
 import { DiscoveryProvider } from '../../provider/DiscoveryProvider'
 import { bytes32ToAddress } from '../../utils/address'
+import { BigNumber, utils } from 'ethers'
+import { Hash256 } from '../../../utils/Hash256'
 
 // keccak256(abi.encode(uint256(keccak256('eip1967.proxy.implementation')) - 1, s))
 //
@@ -18,11 +20,7 @@ async function getImplementation(
   blockNumber: number,
 ): Promise<EthereumAddress> {
   return bytes32ToAddress(
-    await provider.getStorage(
-      address,
-      IMPLEMENTATION_SLOT,
-      blockNumber,
-    ),
+    await provider.getStorage(address, IMPLEMENTATION_SLOT, blockNumber),
   )
 }
 
@@ -31,27 +29,49 @@ export async function detectAxelarProxy(
   address: EthereumAddress,
   blockNumber: number,
 ): Promise<ProxyDetails | undefined> {
-  const implementation = await getImplementation(
-    provider,
-    address,
-    blockNumber,
-  )
+  const implementation = await getImplementation(provider, address, blockNumber)
   if (implementation === EthereumAddress.ZERO) {
     return
   }
 
-  // const [adminImplementation, admin] = await Promise.all([
-  //   getImplementation(provider, address, blockNumber),
-  //   getAdmin(provider, address, blockNumber),
-  // ])
-  //
+  const adminDeployment = await getAdminsDeployment(provider, address)
+
   return {
     implementations: [implementation],
     relatives: [],
     upgradeability: {
       type: 'Axelar proxy',
-      admin: implementation,
+      admins: adminDeployment.adminAddresses,
+      adminThreshold: adminDeployment.adminThreshold,
       implementation,
     },
   }
+}
+
+async function getAdminsDeployment(
+  provider: DiscoveryProvider,
+  address: EthereumAddress,
+) : Promise<{
+    adminAddresses: EthereumAddress[],
+    adminThreshold: number,
+}> {
+    const constructorInterface = utils.Fragment.from('constructor(bytes memory params)')
+    const result = await provider.getConstructorArgs(address);
+    const decodedArgs = utils.defaultAbiCoder.decode(constructorInterface.inputs, '0x' + result)
+
+    const decodedParams = utils.defaultAbiCoder.decode([
+        "address[]", // adminAddresses
+        "uint256",   // adminThreshold
+        "address[]", // ownerAddresses
+        "uint256",   // ownerThreshold
+        "address[]", // operatorAddresses
+        "uint256"    // operatorThreshold
+    ], decodedArgs[0])
+
+    const [adminAddresses, adminThreshold] = decodedParams
+
+    return {
+        adminAddresses: (adminAddresses as string[]).map(a => EthereumAddress(a)),
+        adminThreshold: (adminThreshold as BigNumber).toNumber()
+    }
 }

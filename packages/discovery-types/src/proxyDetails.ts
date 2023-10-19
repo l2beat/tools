@@ -161,6 +161,7 @@ export interface OpticsBeaconProxyUpgradeability {
 
 export interface AxelarProxyUpgradeability {
   type: 'Axelar proxy'
-  admin: EthereumAddress
+  admins: EthereumAddress[]
+  adminThreshold: number
   implementation: EthereumAddress
 }
