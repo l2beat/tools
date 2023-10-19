@@ -4,9 +4,10 @@ import { Bytes } from '../../../utils/Bytes'
 import { EthereumAddress } from '../../../utils/EthereumAddress'
 import { DiscoveryProvider } from '../../provider/DiscoveryProvider'
 import { bytes32ToAddress } from '../../utils/address'
-import { getAdmin  } from './Eip1967Proxy'
 
-// keccak256('eip1967.proxy.implementation') - 1
+// keccak256(abi.encode(uint256(keccak256('eip1967.proxy.implementation')) - 1, s))
+//
+// where `s` is the slot of the `_addressStorage`, so in this case it's s = 2
 const IMPLEMENTATION_SLOT = Bytes.fromHex(
   '0x11141f466c69fd409e1990e063b49cd6d61ed2ecff27a2e402e259ca6b9a01a3',
 )
