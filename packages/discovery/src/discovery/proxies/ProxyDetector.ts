@@ -20,7 +20,7 @@ import { getOpticsBeaconProxy } from './manual/OpticsBeaconProxy'
 import { getPolygonExtensionProxy } from './manual/PolygonExtensionProxy'
 import { getZkSpaceProxy } from './manual/ZkSpaceProxy'
 import { getZkSyncLiteProxy } from './manual/ZkSyncLiteProxy'
-import { detectAxelarProxy } from './auto/AxelarGatewayProxy'
+import { detectAxelarProxy } from './auto/AxelarProxy'
 
 export type Detector = (
   provider: DiscoveryProvider,
