@@ -20,6 +20,7 @@ import { getOpticsBeaconProxy } from './manual/OpticsBeaconProxy'
 import { getPolygonExtensionProxy } from './manual/PolygonExtensionProxy'
 import { getZkSpaceProxy } from './manual/ZkSpaceProxy'
 import { getZkSyncLiteProxy } from './manual/ZkSyncLiteProxy'
+import { detectAxelarProxy } from './auto/AxelarGatewayProxy'
 
 export type Detector = (
   provider: DiscoveryProvider,
@@ -38,6 +39,7 @@ const DEFAULT_AUTO_DETECTORS: Detector[] = [
   detectEip897Proxy,
   detectZeppelinOSProxy,
   detectEip2535proxy,
+  detectAxelarProxy,
 ]
 
 const MANUAL_DETECTORS: Record<ManualProxyType, Detector> = {

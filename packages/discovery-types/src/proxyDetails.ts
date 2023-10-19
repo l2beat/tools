@@ -39,6 +39,7 @@ export type UpgradeabilityParameters =
   | PolygonExtensionProxyUpgradeability
   | ZkSpaceProxyUpgradeability
   | OpticsBeaconProxyUpgradeability
+  | AxelarProxyUpgradeability
 
 export interface ImmutableUpgradeability {
   type: 'immutable'
@@ -155,5 +156,11 @@ export interface OpticsBeaconProxyUpgradeability {
   type: 'Optics Beacon proxy'
   upgradeBeacon: EthereumAddress
   beaconController: EthereumAddress
+  implementation: EthereumAddress
+}
+
+export interface AxelarProxyUpgradeability {
+  type: 'Axelar proxy'
+  admin: EthereumAddress
   implementation: EthereumAddress
 }
