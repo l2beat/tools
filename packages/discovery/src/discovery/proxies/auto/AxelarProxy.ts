@@ -1,3 +1,4 @@
+import { assert } from '@l2beat/backend-tools'
 import { ProxyDetails } from '@l2beat/discovery-types'
 import { BigNumber, BytesLike, utils } from 'ethers'
 
@@ -34,6 +35,9 @@ export async function detectAxelarProxy(
   }
 
   const adminDeployment = await getAdminsDeployment(provider, address)
+  const owners = await getOwners(provider, address, blockNumber)
+  const operators = await getOperators(provider, address, blockNumber)
+  assert(owners && operators)
 
   return {
     implementations: [implementation],
@@ -42,6 +46,10 @@ export async function detectAxelarProxy(
       type: 'Axelar proxy',
       admins: adminDeployment.adminAddresses,
       adminThreshold: adminDeployment.adminThreshold,
+      owners: owners.ownerAddresses,
+      ownerThreshold: owners.ownerThreshold,
+      operators: operators.operatorAddresses,
+      operatorThreshold: operators.operatorThreshold,
       implementation,
     },
   }
@@ -80,5 +88,95 @@ async function getAdminsDeployment(
   return {
     adminAddresses: (adminAddresses as string[]).map((a) => EthereumAddress(a)),
     adminThreshold: (adminThreshold as BigNumber).toNumber(),
+  }
+}
+
+async function getOwners(
+  provider: DiscoveryProvider,
+  address: EthereumAddress,
+  blockNumber: number,
+): Promise<
+  | {
+      ownerAddresses: EthereumAddress[]
+      ownerThreshold: number
+    }
+  | false
+> {
+  const event = new utils.Interface([
+    'event OwnershipTransferred(address[] preOwners, uint256 prevThreshold, address[] newOwners, uint256 newThreshold)',
+  ])
+
+  const transfers = await provider.getLogs(
+    address,
+    [event.getEventTopic('OwnershipTransferred')],
+    0,
+    blockNumber,
+  )
+
+  const lastTransfer = transfers.at(-1)
+  if (lastTransfer === undefined) {
+    return false
+  }
+
+  const [_preOwners, _prevThreshold, newOwners, newThreshold] =
+    utils.defaultAbiCoder.decode(
+      [
+        'address[]', // preOwners
+        'uint256', // prevThreshold
+        'address[]', // newOwners
+        'uint256', // newThreshold
+      ],
+      lastTransfer.data,
+    )
+
+  return {
+    ownerAddresses: (newOwners as string[]).map((a) => EthereumAddress(a)),
+    ownerThreshold: (newThreshold as BigNumber).toNumber(),
+  }
+}
+
+async function getOperators(
+  provider: DiscoveryProvider,
+  address: EthereumAddress,
+  blockNumber: number,
+): Promise<
+  | {
+      operatorAddresses: EthereumAddress[]
+      operatorThreshold: number
+    }
+  | false
+> {
+  const event = new utils.Interface([
+    'event OperatorshipTransferred(address[] preOperators, uint256 prevThreshold, address[] newOperators, uint256 newThreshold)',
+  ])
+
+  const transfers = await provider.getLogs(
+    address,
+    [event.getEventTopic('OperatorshipTransferred')],
+    0,
+    blockNumber,
+  )
+
+  const lastTransfer = transfers.at(-1)
+  if (lastTransfer === undefined) {
+    return false
+  }
+
+  const [_preOperators, _prevThreshold, newOperators, newThreshold] =
+    utils.defaultAbiCoder.decode(
+      [
+        'address[]', // preOperators
+        'uint256', // prevThreshold
+        'address[]', // newOperators
+        'uint256', // newThreshold
+      ],
+      lastTransfer.data,
+    )
+
+  return {
+    operatorAddresses: (newOperators as string[]).map((a) =>
+      EthereumAddress(a),
+    ),
+    operatorThreshold: (newThreshold as BigNumber).toNumber(),
   }
 }

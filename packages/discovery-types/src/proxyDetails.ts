@@ -163,5 +163,9 @@ export interface AxelarProxyUpgradeability {
   type: 'Axelar proxy'
   admins: EthereumAddress[]
   adminThreshold: number
+  owners: EthereumAddress[]
+  ownerThreshold: number
+  operators: EthereumAddress[]
+  operatorThreshold: number
   implementation: EthereumAddress
 }
