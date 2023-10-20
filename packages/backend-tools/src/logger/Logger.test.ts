@@ -254,6 +254,20 @@ describe(Logger.name, () => {
         parameters: { x: 1, y: 2, message: true },
         error: undefined,
       })
+
+      logger.error('foo', { error: new Error('bar') })
+      expect(mockReportError).toHaveBeenNthCalledWith(8, {
+        message: 'foo',
+        parameters: undefined,
+        error: new Error('bar'),
+      })
+
+      logger.error('foo', { error: new Error('bar'), x: 1, y: 2 })
+      expect(mockReportError).toHaveBeenNthCalledWith(9, {
+        message: 'foo',
+        parameters: {x: 1, y:2},
+        error: new Error('bar'),
+      })
     })
   })
 })

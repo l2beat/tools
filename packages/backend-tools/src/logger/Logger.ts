@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-types */
 import { join } from 'path'
+import { isEmpty } from 'lodash'
 
 import { assertUnreachable } from '../utils/assertUnreachable'
 import { formatLevelPretty } from './formatLevelPretty'
@@ -281,7 +282,16 @@ function toReportedError(arg1: unknown, arg2: unknown): ReportedError {
     if (arg2 instanceof Error) {
       error = arg2
     } else if (arg2 !== undefined) {
-      parameters = arg2
+      if (typeof arg2 === 'object' && arg2 !== null) {
+        const shallow = { ...arg2 } as Record<string, unknown>
+        const errorLike: unknown = Reflect.get(arg2, 'error')
+        if (errorLike instanceof Error) {
+          error = errorLike
+          delete shallow.error
+        }
+
+        parameters = isEmpty(shallow) ? undefined : shallow
+      }
     }
   } else {
     if (arg1 instanceof Error) {
