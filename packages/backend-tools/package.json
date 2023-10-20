@@ -32,10 +32,12 @@
   "dependencies": {
     "chalk": "^4.1.2",
     "dotenv": "^16.3.1",
-    "error-stack-parser": "^2.1.4"
+    "error-stack-parser": "^2.1.4",
+    "lodash": "^4.17.21"
   },
   "devDependencies": {
     "@sinonjs/fake-timers": "^11.1.0",
-    "@types/sinonjs__fake-timers": "^8.1.2"
+    "@types/sinonjs__fake-timers": "^8.1.2",
+    "@types/lodash": "^4.14.198"
   }
 }
