@@ -1,5 +1,11 @@
 # @l2beat/backend-tools
 
+## 0.4.1
+
+### Patch Changes
+
+- Allow for error to be defined in the parameters object
+
 ## 0.4.0
 
 ### Minor Changes
