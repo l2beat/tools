@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-types */
-import { join } from 'path'
 import { isEmpty } from 'lodash'
+import { join } from 'path'
 
 import { assertUnreachable } from '../utils/assertUnreachable'
 import { formatLevelPretty } from './formatLevelPretty'

@@ -265,7 +265,7 @@ describe(Logger.name, () => {
       logger.error('foo', { error: new Error('bar'), x: 1, y: 2 })
       expect(mockReportError).toHaveBeenNthCalledWith(9, {
         message: 'foo',
-        parameters: {x: 1, y:2},
+        parameters: { x: 1, y: 2 },
         error: new Error('bar'),
       })
     })
