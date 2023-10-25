@@ -1,5 +1,29 @@
 # @l2beat/discovery
 
+## 0.18.4
+
+### Patch Changes
+
+- Categorize a project as a folder with a config.jsonc and discovered.json
+
+## 0.18.3
+
+### Patch Changes
+
+- Fix address analyzer log output
+
+## 0.18.2
+
+### Patch Changes
+
+- Export multicall config type
+
+## 0.18.1
+
+### Patch Changes
+
+- Expose the type for inversion
+
 ## 0.18.0
 
 ### Minor Changes
