@@ -1,10 +1,14 @@
 import { assert } from '@l2beat/backend-tools'
 import { providers, utils } from 'ethers'
+import { filter } from 'lodash'
 import * as z from 'zod'
 
 import { EthereumAddress } from '../../../utils/EthereumAddress'
 import { DiscoveryLogger } from '../../DiscoveryLogger'
-import { DiscoveryProvider } from '../../provider/DiscoveryProvider'
+import {
+  ContractMetadata,
+  DiscoveryProvider,
+} from '../../provider/DiscoveryProvider'
 import { ProxyDetector } from '../../proxies/ProxyDetector'
 import { ClassicHandler, HandlerResult } from '../Handler'
 
@@ -114,21 +118,12 @@ export class ScrollAccessControlHandler implements ClassicHandler {
       return value
     }
 
-    const proxyDetector = new ProxyDetector(provider, this.logger)
-    async function decodeSelectors(
+    const proxyDetector = new ProxyDetector(provider, DiscoveryLogger.SILENT)
+    function decodeSelectors(
       target: EthereumAddress,
       encodedSelectors: string[],
-    ): Promise<string[]> {
-      const abiAddresses = [target]
-
-      const proxy = await proxyDetector.detectProxy(target, blockNumber)
-      if (proxy) {
-        abiAddresses.push(...proxy.implementations)
-      }
-
-      const metadatas = await Promise.all(
-        abiAddresses.map((a) => provider.getMetadata(a)),
-      )
+      metadatas: ContractMetadata[],
+    ): string[] {
       const ifaces = metadatas.map((m) => new utils.Interface(m.abi))
       const abiSelectors = ifaces.flatMap((iface) =>
         Object.entries(iface.functions).map(([functionName, fragment]) => [
@@ -149,6 +144,61 @@ export class ScrollAccessControlHandler implements ClassicHandler {
       })
     }
 
+    // resolve proxy contracts
+    const accessChangeLogs = filter(
+      logs.map(parseRoleLog),
+      (parsed) =>
+        parsed.type === 'GrantAccess' || parsed.type === 'RevokeAccess',
+    ) as AccessChangeLog[]
+
+    const contractsWithAccessModification = new Set<EthereumAddress>(
+      accessChangeLogs.map((parsed) => parsed.target),
+    )
+
+    // Find all proxy contracts and their implementations
+    const proxyImplementations: Record<string, EthereumAddress[]> = {}
+    await Promise.all(
+      [...contractsWithAccessModification].map(async (address) => {
+        const proxy = await proxyDetector.detectProxy(address, blockNumber)
+        if (proxy) {
+          proxyImplementations[address.toString()] = proxy.implementations
+        }
+      }),
+    )
+    const implementationContracts = new Set<EthereumAddress>(
+      Object.values(proxyImplementations).flat(),
+    )
+
+    // Resovle all metadata for the contracts
+    const contractToMetadata: Record<string, ContractMetadata> = {}
+    await Promise.all(
+      [...contractsWithAccessModification, ...implementationContracts].map(
+        async (address) => {
+          contractToMetadata[address.toString()] =
+            await provider.getMetadata(address)
+        },
+      ),
+    )
+
+    /**
+     * @param address
+     * @returns Metadata of the contract and all its implementations
+     */
+    function getMetadatas(address: EthereumAddress): ContractMetadata[] {
+      const contractMetadata = contractToMetadata[address.toString()]
+      const implementationsMetaData = (
+        proxyImplementations[address.toString()] ?? []
+      ).map(
+        (implementationAddress) =>
+          contractToMetadata[implementationAddress.toString()],
+      )
+
+      return filter([
+        contractMetadata,
+        ...implementationsMetaData,
+      ]) as ContractMetadata[]
+    }
+
     for (const log of logs) {
       const parsed = parseRoleLog(log)
       const role = getRole(this.getRoleName(parsed.role))
@@ -160,7 +210,11 @@ export class ScrollAccessControlHandler implements ClassicHandler {
         role.members.delete(parsed.account)
       } else if (parsed.type === 'GrantAccess') {
         const target = getTarget(parsed.target)
-        const decoded = await decodeSelectors(parsed.target, parsed.selectors)
+        const decoded = decodeSelectors(
+          parsed.target,
+          parsed.selectors,
+          getMetadatas(parsed.target),
+        )
         decoded.forEach((s) => {
           if (target[s] === undefined) {
             target[s] = new Set()
@@ -172,7 +226,11 @@ export class ScrollAccessControlHandler implements ClassicHandler {
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       } else if (parsed.type === 'RevokeAccess') {
         const target = getTarget(parsed.target)
-        const decoded = await decodeSelectors(parsed.target, parsed.selectors)
+        const decoded = decodeSelectors(
+          parsed.target,
+          parsed.selectors,
+          getMetadatas(parsed.target),
+        )
         decoded.forEach((s) => {
           const selector = getSelector(target, s)
           selector.delete(this.getRoleName(parsed.role))
@@ -216,26 +274,27 @@ export class ScrollAccessControlHandler implements ClassicHandler {
     }
   }
 }
-
-function parseRoleLog(log: providers.Log):
-  | {
-      readonly type: 'RoleGranted' | 'RoleRevoked'
-      readonly role: string
-      readonly account: EthereumAddress
-      readonly adminRole?: undefined
-    }
-  | {
-      readonly type: 'RoleAdminChanged'
-      readonly role: string
-      readonly adminRole: string
-      readonly account?: undefined
-    }
-  | {
-      readonly type: 'GrantAccess' | 'RevokeAccess'
-      readonly role: string
-      readonly target: EthereumAddress
-      readonly selectors: string[]
-    } {
+interface RoleChangeLog {
+  readonly type: 'RoleGranted' | 'RoleRevoked'
+  readonly role: string
+  readonly account: EthereumAddress
+  readonly adminRole?: undefined
+}
+interface RoleAdminChangedLog {
+  readonly type: 'RoleAdminChanged'
+  readonly role: string
+  readonly adminRole: string
+  readonly account?: undefined
+}
+interface AccessChangeLog {
+  readonly type: 'GrantAccess' | 'RevokeAccess'
+  readonly role: string
+  readonly target: EthereumAddress
+  readonly selectors: string[]
+}
+function parseRoleLog(
+  log: providers.Log,
+): RoleChangeLog | RoleAdminChangedLog | AccessChangeLog {
   const event = abi.parseLog(log)
   if (event.name === 'RoleGranted' || event.name === 'RoleRevoked') {
     return {
