@@ -240,6 +240,7 @@ describe(ProviderWithCache.name, () => {
           reorgSafeDepth: 1000, // Doesn't matter
         })
 
+      // Force cache-miss to trigger getTransaction
       mockCache.get = mockFn().resolvesToOnce(undefined)
       mockProvider.getTransaction = mockFn().resolvesTo(nonMinedTransactions)
 
