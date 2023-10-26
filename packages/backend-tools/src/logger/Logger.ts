@@ -42,6 +42,9 @@ export interface LogEntry {
   parameters?: object
 }
 
+/**
+ * [Read full documentation](https://github.com/l2beat/tools/blob/master/packages/backend-tools/src/logger/docs.md)
+ */
 export class Logger {
   private readonly options: LoggerOptions
   private readonly logLevel: number
@@ -222,7 +225,7 @@ export class Logger {
       error: entry.resolvedError,
     }
     try {
-      return toJSON({ ...core, ...entry.parameters })
+      return toJSON({ ...core, parameters: entry.parameters })
     } catch (e) {
       this.error('Unable to log', e)
       return JSON.stringify(core)

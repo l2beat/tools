@@ -37,8 +37,10 @@ describe(Logger.name, () => {
       JSON.stringify({
         time: '1970-01-01T00:00:00.000Z',
         level: 'INFO',
-        foo: '123',
-        bar: ['4', '56'],
+        parameters: {
+          foo: '123',
+          bar: ['4', '56'],
+        },
       }),
     )
   })
