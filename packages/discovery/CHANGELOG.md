@@ -1,5 +1,30 @@
 # @l2beat/discovery
 
+## 0.21.0
+
+### Minor Changes
+
+- Skip functions with no outputs during discovery
+
+## 0.20.0
+
+### Minor Changes
+
+- Sort discovery output values by keys
+
+## 0.19.2
+
+### Patch Changes
+
+- Properly decode tuples from multicall
+
+## 0.19.1
+
+### Patch Changes
+
+- Use config.json names entry in naming EOAs in the mermaid diagram
+- Minimized proxy detection calls in scroll access control
+
 ## 0.19.0
 
 ### Minor Changes
