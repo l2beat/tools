@@ -1,4 +1,4 @@
-import { expect, mockFn } from 'earl'
+import { expect, formatCompact, mockFn } from 'earl'
 
 import { LogEntry, Logger } from './Logger'
 
@@ -295,8 +295,8 @@ describe(Logger.name, () => {
         ],
       ]
 
-      for (const [i, [args, expected]] of patterns.entries()) {
-        it(`pattern #${i}`, () => {
+      for (const [args, expected] of patterns) {
+        it(`supports ${formatCompact(args, 60)}`, () => {
           const mockReportError = mockFn((_: unknown) => {})
           const logger = new Logger({ reportError: mockReportError })
 
