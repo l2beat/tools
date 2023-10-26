@@ -28,7 +28,7 @@ export interface LoggerOptions {
   colors: boolean
   cwd: string
   getTime: () => Date
-  reportError: (item: LogEntry) => void
+  reportError: (entry: LogEntry) => void
   backend: LoggerBackend
 }
 
