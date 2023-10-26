@@ -125,49 +125,43 @@ export class Logger {
   }
 
   critical(...args: unknown[]): void {
-    if (this.logLevel < LEVEL.CRITICAL) {
-      return
+    if (this.logLevel >= LEVEL.CRITICAL) {
+      const parsed = this.parseEntry('CRITICAL', args)
+      this.print(parsed)
+      this.options.reportError(parsed)
     }
-    const parsed = this.parseEntry('CRITICAL', args)
-    this.print(parsed)
-    this.options.reportError(parsed)
   }
 
   error(...args: unknown[]): void {
-    if (this.logLevel < LEVEL.ERROR) {
-      return
+    if (this.logLevel >= LEVEL.ERROR) {
+      const entry = this.parseEntry('ERROR', args)
+      this.print(entry)
+      this.options.reportError(entry)
     }
-    const entry = this.parseEntry('ERROR', args)
-    this.print(entry)
-    this.options.reportError(entry)
   }
 
   warn(...args: unknown[]): void {
-    if (this.logLevel < LEVEL.WARN) {
-      return
+    if (this.logLevel >= LEVEL.WARN) {
+      this.print(this.parseEntry('WARN', args))
     }
-    this.print(this.parseEntry('WARN', args))
   }
 
   info(...args: unknown[]): void {
-    if (this.logLevel < LEVEL.INFO) {
-      return
+    if (this.logLevel >= LEVEL.INFO) {
+      this.print(this.parseEntry('INFO', args))
     }
-    this.print(this.parseEntry('INFO', args))
   }
 
   debug(...args: unknown[]): void {
-    if (this.logLevel < LEVEL.DEBUG) {
-      return
+    if (this.logLevel >= LEVEL.DEBUG) {
+      this.print(this.parseEntry('DEBUG', args))
     }
-    this.print(this.parseEntry('DEBUG', args))
   }
 
   trace(...args: unknown[]): void {
-    if (this.logLevel < LEVEL.TRACE) {
-      return
+    if (this.logLevel >= LEVEL.TRACE) {
+      this.print(this.parseEntry('TRACE', args))
     }
-    this.print(this.parseEntry('TRACE', args))
   }
 
   private parseEntry(level: LogLevel, args: unknown[]): LogEntry {
