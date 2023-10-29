@@ -15,7 +15,7 @@ import { discover as discovery } from './discovery/runDiscovery'
 import { EtherscanLikeClient } from './utils/EtherscanLikeClient'
 import { HttpClient } from './utils/HttpClient'
 
-export async function singleDiscovery(
+export async function singleDiscoveryCommand(
   config: DiscoveryCliConfig,
   logger: Logger,
 ): Promise<void> {

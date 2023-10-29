@@ -10,7 +10,7 @@ import {
 import { ConfigReader } from './discovery/config/ConfigReader'
 import { dryRunDiscovery, runDiscovery } from './discovery/runDiscovery'
 import { runInversion } from './inversion/runInversion'
-import { singleDiscovery } from './singleDiscovery'
+import { singleDiscoveryCommand } from './singleDiscovery'
 import { ChainId } from './utils/ChainId'
 import { EtherscanLikeClient } from './utils/EtherscanLikeClient'
 import { HttpClient } from './utils/HttpClient'
@@ -25,12 +25,12 @@ async function main(): Promise<void> {
   const config = getDiscoveryCliConfig(cli)
   const logger = Logger.DEBUG
 
-  await discover(config, logger)
-  await invert(config, logger)
-  await singleDiscovery(config, logger)
+  await discoverCommand(config, logger)
+  await invertCommand(config, logger)
+  await singleDiscoveryCommand(config, logger)
 }
 
-export async function discoveryCli(
+export async function discover(
   config: DiscoveryModuleConfig,
   logger: Logger = Logger.DEBUG,
 ): Promise<void> {
@@ -45,10 +45,10 @@ export async function discoveryCli(
     blockNumber: config.blockNumber,
   })
 
-  await discover(cliConfig, logger)
+  await discoverCommand(cliConfig, logger)
 }
 
-async function discover(
+async function discoverCommand(
   config: DiscoveryCliConfig,
   logger: Logger,
 ): Promise<void> {
@@ -100,7 +100,7 @@ async function discover(
   )
 }
 
-async function invert(
+async function invertCommand(
   config: DiscoveryCliConfig,
   logger: Logger,
 ): Promise<void> {
