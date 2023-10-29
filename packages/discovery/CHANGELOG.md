@@ -1,5 +1,11 @@
 # @l2beat/discovery
 
+## 0.21.2
+
+### Patch Changes
+
+- Export discoveryCli as a js callable alternative to `discovery discover` command
+
 ## 0.21.1
 
 ### Patch Changes
