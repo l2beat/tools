@@ -4,6 +4,7 @@ import { providers } from 'ethers'
 import { handleCli } from './cli/handleCli'
 import {
   DiscoveryCliConfig,
+  DiscoveryModuleConfig,
   getDiscoveryCliConfig,
 } from './config/config.discovery'
 import { ConfigReader } from './discovery/config/ConfigReader'
@@ -27,6 +28,24 @@ async function main(): Promise<void> {
   await discover(config, logger)
   await invert(config, logger)
   await singleDiscovery(config, logger)
+}
+
+export async function discoveryCli(
+  config: DiscoveryModuleConfig,
+  logger: Logger = Logger.DEBUG,
+): Promise<void> {
+  const cliConfig = getDiscoveryCliConfig({
+    mode: 'discover',
+    project: config.project,
+    chain: config.chainId,
+    dryRun: config.dryRun === true,
+    dev: config.dev === true,
+    sourcesFolder: config.sourcesFolder,
+    discoveryFilename: config.discoveryFilename,
+    blockNumber: config.blockNumber,
+  })
+
+  await discover(cliConfig, logger)
 }
 
 async function discover(
