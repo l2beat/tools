@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- Export discoveryCli as a js callable alternative to `discovery discover` command
+- Export discover method to allow running `discovery discover` command directy from the package
 
 ## 0.21.1
 
