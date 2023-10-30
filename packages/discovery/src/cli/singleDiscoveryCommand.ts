@@ -6,14 +6,14 @@ import { mkdirp } from 'mkdirp'
 import { dirname } from 'path'
 import { rimraf } from 'rimraf'
 
-import { DiscoveryCliConfig } from './config/config.discovery'
-import { DiscoveryConfig } from './discovery/config/DiscoveryConfig'
-import { DiscoveryLogger } from './discovery/DiscoveryLogger'
-import { getSourceName } from './discovery/output/saveDiscoveryResult'
-import { toDiscoveryOutput } from './discovery/output/toDiscoveryOutput'
-import { discover as discovery } from './discovery/runDiscovery'
-import { EtherscanLikeClient } from './utils/EtherscanLikeClient'
-import { HttpClient } from './utils/HttpClient'
+import { DiscoveryCliConfig } from '../config/config.discovery'
+import { DiscoveryConfig } from '../discovery/config/DiscoveryConfig'
+import { DiscoveryLogger } from '../discovery/DiscoveryLogger'
+import { getSourceName } from '../discovery/output/saveDiscoveryResult'
+import { toDiscoveryOutput } from '../discovery/output/toDiscoveryOutput'
+import { discover as discovery } from '../discovery/runDiscovery'
+import { EtherscanLikeClient } from '../utils/EtherscanLikeClient'
+import { HttpClient } from '../utils/HttpClient'
 
 export async function singleDiscoveryCommand(
   config: DiscoveryCliConfig,
