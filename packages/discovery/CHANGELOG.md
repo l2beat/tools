@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- Export discover method to allow running `discovery discover` command directy from the package
+- Cache getCode() with blockNumber because the code can change
 
 ## 0.21.1
 
