@@ -68,7 +68,7 @@ export async function detectGnosisSafe(
 
   return {
     implementations: [masterCopy],
-    relatives: [],
+    relatives: modules,
     upgradeability: {
       type: 'gnosis safe',
       masterCopy,
