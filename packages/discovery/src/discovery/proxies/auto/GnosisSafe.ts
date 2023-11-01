@@ -1,3 +1,4 @@
+import { assert } from '@l2beat/backend-tools'
 import { ProxyDetails } from '@l2beat/discovery-types'
 
 import { EthereumAddress } from '../../../utils/EthereumAddress'
@@ -26,6 +27,34 @@ async function getMasterCopy(
   }
 }
 
+async function getModules(
+  provider: DiscoveryProvider,
+  address: EthereumAddress,
+  blockNumber: number,
+): Promise<EthereumAddress[]> {
+  const SENTINEL_MODULES = '0x0000000000000000000000000000000000000001'
+  const PAGINATION_SIZE = 10
+
+  let next = SENTINEL_MODULES
+  const modules: EthereumAddress[] = []
+  do {
+    const result = await getCallResult<[string[], string]>(
+      provider,
+      address,
+      'function getModulesPaginated(address start, uint256 pageSize) view returns (address[] array, address next)',
+      [next, PAGINATION_SIZE],
+      blockNumber,
+      2, // Result length 2, [modules[], next]
+    )
+
+    assert(result, 'Failed to get modules')
+
+    result[0].forEach((module) => modules.push(EthereumAddress(module)))
+    next = result[1]
+  } while (next !== SENTINEL_MODULES)
+  return modules
+}
+
 export async function detectGnosisSafe(
   provider: DiscoveryProvider,
   address: EthereumAddress,
@@ -35,12 +64,15 @@ export async function detectGnosisSafe(
   if (!masterCopy) {
     return
   }
+  const modules = await getModules(provider, address, blockNumber)
+
   return {
     implementations: [masterCopy],
     relatives: [],
     upgradeability: {
       type: 'gnosis safe',
       masterCopy,
+      modules,
     },
   }
 }
