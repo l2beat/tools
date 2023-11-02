@@ -32,6 +32,9 @@ async function getModules(
   address: EthereumAddress,
   blockNumber: number,
 ): Promise<EthereumAddress[]> {
+  // Sentinel value used by Gnosis Safe to indicate the beginning and
+  // the end of the circular linked list.
+  // https://github.com/safe-global/safe-contracts/blob/52ce39c89cc3e3529963100dd774a6a03c098792/contracts/base/ModuleManager.sol#L23C35-L23C35
   const SENTINEL_MODULES = '0x0000000000000000000000000000000000000001'
   const PAGINATION_SIZE = 10
 
