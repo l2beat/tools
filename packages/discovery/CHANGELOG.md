@@ -1,5 +1,17 @@
 # @l2beat/discovery
 
+## 0.21.4
+
+### Patch Changes
+
+- Export discover method to allow running `discovery discover` command directy from the package
+
+## 0.21.3
+
+### Patch Changes
+
+- Fix dependency error when value is 0
+
 ## 0.21.2
 
 ### Patch Changes
