@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- Export discover method to allow running `discovery discover` command directy from the package
+- Fix dependency error when value is 0
 
 ## 0.21.2
 
