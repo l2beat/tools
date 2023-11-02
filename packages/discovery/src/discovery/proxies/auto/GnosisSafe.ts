@@ -38,13 +38,14 @@ async function getModules(
   let next = SENTINEL_MODULES
   const modules: EthereumAddress[] = []
   do {
+    // Result: [modules[], next]
     const result = await getCallResult<[string[], string]>(
       provider,
       address,
       'function getModulesPaginated(address start, uint256 pageSize) view returns (address[] array, address next)',
       [next, PAGINATION_SIZE],
       blockNumber,
-      2, // Result length 2, [modules[], next]
+      true,
     )
 
     assert(result, 'Failed to get modules')
