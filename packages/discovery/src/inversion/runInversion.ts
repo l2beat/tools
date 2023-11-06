@@ -79,7 +79,9 @@ export function calculateInversion(
       details = {
         name:
           discovery.contracts.find((x) => x.address.toString() === address)
-            ?.name ?? config?.names[address] ?? address,
+            ?.name ??
+          config?.names[address] ??
+          address,
         address,
         roles: [],
       }
