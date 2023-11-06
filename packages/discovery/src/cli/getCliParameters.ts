@@ -112,27 +112,18 @@ export function getCliParameters(args = process.argv.slice(2)): CliParameters {
 
     assert(remaining[0] && remaining[1], 'Not enough arguments despite length')
 
-    let chain
-    try {
-      chain = ChainId.fromName(remaining[0])
-    } catch (e) {
-      return {
-        mode: 'help',
-        error: `Argument provided ${remaining[0]} could not be linked to any of the known chain names`,
-      }
-    }
-
-    const result: DiscoverCliParameters = {
-      mode: 'discover',
-      chain,
-      project: remaining[1],
-      dryRun,
-      dev,
-      sourcesFolder,
-      discoveryFilename,
-      blockNumber,
-    }
-    return result
+    return resolveAndAddChain(
+      {
+        mode: 'discover',
+        project: remaining[1],
+        dryRun,
+        dev,
+        sourcesFolder,
+        discoveryFilename,
+        blockNumber,
+      },
+      remaining[0],
+    ) as DiscoverCliParameters
   }
 
   if (args[0] === 'invert') {
@@ -154,23 +145,14 @@ export function getCliParameters(args = process.argv.slice(2)): CliParameters {
 
     assert(remaining[0] && remaining[1], 'Not enough arguments despite length')
 
-    let chain
-    try {
-      chain = ChainId.fromName(remaining[0])
-    } catch (e) {
-      return {
-        mode: 'help',
-        error: `Argument provided ${remaining[0]} could not be linked to any of the known chain names`,
-      }
-    }
-
-    const result: InvertCliParameters = {
-      mode: 'invert',
-      chain,
-      project: remaining[1],
-      useMermaidMarkup,
-    }
-    return result
+    return resolveAndAddChain(
+      {
+        mode: 'invert',
+        project: remaining[1],
+        useMermaidMarkup,
+      },
+      remaining[0],
+    ) as InvertCliParameters
   }
 
   if (args[0] === 'single-discovery') {
@@ -184,22 +166,13 @@ export function getCliParameters(args = process.argv.slice(2)): CliParameters {
     }
     assert(remaining[0] && remaining[1], 'Not enough arguments despite length')
 
-    let chain
-    try {
-      chain = ChainId.fromName(remaining[0])
-    } catch (e) {
-      return {
-        mode: 'help',
-        error: `Argument provided ${remaining[0]} could not be linked to any of the known chain names`,
-      }
-    }
-
-    const result: SingleDiscoveryCliParameters = {
-      mode: 'single-discovery',
-      chain,
-      address: EthereumAddress(remaining[1]),
-    }
-    return result
+    return resolveAndAddChain(
+      {
+        mode: 'single-discovery',
+        address: EthereumAddress(remaining[1]),
+      },
+      remaining[0],
+    ) as SingleDiscoveryCliParameters
   }
 
   const mode = args[0] ?? '<unknown mode>'
@@ -219,4 +192,25 @@ function extractArgWithValue(
     return { found: true, value }
   }
   return { found: false }
+}
+
+type CliParametersWithChain =
+  | DiscoverCliParameters
+  | InvertCliParameters
+  | SingleDiscoveryCliParameters
+function resolveAndAddChain(
+  cliParameters: Partial<
+    DiscoverCliParameters | InvertCliParameters | SingleDiscoveryCliParameters
+  >,
+  chainName: string,
+): CliParametersWithChain | HelpCliParameters {
+  try {
+    const chain = ChainId.fromName(chainName)
+    return { ...cliParameters, chain } as CliParametersWithChain
+  } catch (e) {
+    return {
+      mode: 'help',
+      error: `Argument provided ${chainName} could not be linked to any of the known chain names`,
+    }
+  }
 }
