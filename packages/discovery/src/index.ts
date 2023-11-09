@@ -35,3 +35,4 @@ export {
 } from './utils/EtherscanLikeClient'
 export { getErrorMessage } from './utils/getErrorMessage'
 export { HttpClient } from './utils/HttpClient'
+export { type DiscoveryChainConfig, getChainConfig } from './config/config.discovery'

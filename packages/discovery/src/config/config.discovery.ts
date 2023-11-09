@@ -48,7 +48,7 @@ export function getDiscoveryCliConfig(cli: CliParameters): DiscoveryCliConfig {
   }
 }
 
-function getChainConfig(chainId: ChainId): DiscoveryChainConfig {
+export function getChainConfig(chainId: ChainId): DiscoveryChainConfig {
   const env = getEnv()
 
   switch (chainId) {
