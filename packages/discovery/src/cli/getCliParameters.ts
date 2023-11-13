@@ -111,7 +111,11 @@ export function getCliParameters(args = process.argv.slice(2)): CliParameters {
     }
 
     const [chainName, project] = remaining
-    assert(chainName && project, 'Not enough arguments despite length')
+    if (!chainName || !project) {
+      return getHelpCliParameter(
+        'You need to provide arguments for both the chain name and the project',
+      )
+    }
 
     const chain = getChainIdSafe(chainName)
     if (!chain) return createWrongChainNameHelpCli(chainName)
@@ -147,7 +151,11 @@ export function getCliParameters(args = process.argv.slice(2)): CliParameters {
     }
 
     const [chainName, project] = remaining
-    assert(chainName && project, 'Not enough arguments despite length')
+    if (!chainName || !project) {
+      return getHelpCliParameter(
+        'You need to provide arguments for both the chain name and the project',
+      )
+    }
 
     const chain = getChainIdSafe(chainName)
 
@@ -172,7 +180,11 @@ export function getCliParameters(args = process.argv.slice(2)): CliParameters {
       return { mode: 'help', error: 'Too many arguments' }
     }
     const [chainName, address] = remaining
-    assert(chainName && address, 'Not enough arguments despite length')
+    if (!chainName || !address) {
+      return getHelpCliParameter(
+        'You need to provide arguments for both the chain name and the address',
+      )
+    }
 
     const chain = getChainIdSafe(chainName)
     if (!chain) return createWrongChainNameHelpCli(chainName)
@@ -212,9 +224,15 @@ function getChainIdSafe(name: string): ChainId | undefined {
   }
 }
 
-function createWrongChainNameHelpCli(chainName: string): HelpCliParameters {
+function getHelpCliParameter(message: string): HelpCliParameters {
   return {
     mode: 'help',
-    error: `Argument provided ${chainName} could not be linked to any of the known chain names`,
+    error: message,
   }
+}
+
+function createWrongChainNameHelpCli(chainName: string): HelpCliParameters {
+  return getHelpCliParameter(
+    `Argument provided ${chainName} could not be linked to any of the known chain names`,
+  )
 }
