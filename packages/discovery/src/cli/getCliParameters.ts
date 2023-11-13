@@ -110,22 +110,16 @@ export function getCliParameters(args = process.argv.slice(2)): CliParameters {
       return { mode: 'help', error: 'Too many arguments' }
     }
 
-    assert(remaining[0] && remaining[1], 'Not enough arguments despite length')
+    const [chainName, project] = remaining
+    assert(chainName && project, 'Not enough arguments despite length')
 
-    let chain
-    try {
-      chain = ChainId.fromName(remaining[0])
-    } catch (e) {
-      return {
-        mode: 'help',
-        error: `Argument provided ${remaining[0]} could not be linked to any of the known chain names`,
-      }
-    }
+    const chain = getChainIdSafe(chainName)
+    if (!chain) return createWrongChainNameHelpCli(chainName)
 
     const result: DiscoverCliParameters = {
       mode: 'discover',
       chain,
-      project: remaining[1],
+      project,
       dryRun,
       dev,
       sourcesFolder,
@@ -152,22 +146,17 @@ export function getCliParameters(args = process.argv.slice(2)): CliParameters {
       return { mode: 'help', error: 'Too many arguments' }
     }
 
-    assert(remaining[0] && remaining[1], 'Not enough arguments despite length')
+    const [chainName, project] = remaining
+    assert(chainName && project, 'Not enough arguments despite length')
 
-    let chain
-    try {
-      chain = ChainId.fromName(remaining[0])
-    } catch (e) {
-      return {
-        mode: 'help',
-        error: `Argument provided ${remaining[0]} could not be linked to any of the known chain names`,
-      }
-    }
+    const chain = getChainIdSafe(chainName)
+
+    if (!chain) return createWrongChainNameHelpCli(chainName)
 
     const result: InvertCliParameters = {
       mode: 'invert',
       chain,
-      project: remaining[1],
+      project,
       useMermaidMarkup,
     }
     return result
@@ -182,22 +171,16 @@ export function getCliParameters(args = process.argv.slice(2)): CliParameters {
     if (remaining.length > 2) {
       return { mode: 'help', error: 'Too many arguments' }
     }
-    assert(remaining[0] && remaining[1], 'Not enough arguments despite length')
+    const [chainName, address] = remaining
+    assert(chainName && address, 'Not enough arguments despite length')
 
-    let chain
-    try {
-      chain = ChainId.fromName(remaining[0])
-    } catch (e) {
-      return {
-        mode: 'help',
-        error: `Argument provided ${remaining[0]} could not be linked to any of the known chain names`,
-      }
-    }
+    const chain = getChainIdSafe(chainName)
+    if (!chain) return createWrongChainNameHelpCli(chainName)
 
     const result: SingleDiscoveryCliParameters = {
       mode: 'single-discovery',
       chain,
-      address: EthereumAddress(remaining[1]),
+      address: EthereumAddress(address),
     }
     return result
   }
@@ -219,4 +202,19 @@ function extractArgWithValue(
     return { found: true, value }
   }
   return { found: false }
+}
+
+function getChainIdSafe(name: string): ChainId | undefined {
+  try {
+    return ChainId.fromName(name)
+  } catch (e) {
+    return undefined
+  }
+}
+
+function createWrongChainNameHelpCli(chainName: string): HelpCliParameters {
+  return {
+    mode: 'help',
+    error: `Argument provided ${chainName} could not be linked to any of the known chain names`,
+  }
 }
