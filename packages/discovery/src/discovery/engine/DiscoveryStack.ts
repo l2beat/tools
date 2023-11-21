@@ -1,3 +1,4 @@
+import { assert } from '@l2beat/backend-tools'
 import { EthereumAddress } from '../../utils/EthereumAddress'
 
 export interface DiscoveryStackItem {
@@ -29,6 +30,18 @@ export class DiscoveryStack {
 
   isEmpty(): boolean {
     return this.stack.length === 0
+  }
+
+  popAll(): DiscoveryStackItem[] {
+      assert(this.stack.length > 0, "Stack is empty, cannot pop");
+
+      const result = this.stack.map(s => ({
+          ...s,
+          counter: this.counter++,
+      }))
+      this.stack.splice(0, this.stack.length)
+
+      return result
   }
 
   pop(): DiscoveryStackItem {
