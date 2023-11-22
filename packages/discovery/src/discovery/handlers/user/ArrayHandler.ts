@@ -75,18 +75,25 @@ export class ArrayHandler implements ClassicHandler {
       blockNumber,
     )
     if (resolved.indices) {
-      for (const index of resolved.indices) {
-        const current = await callIndex(index)
-        if (current.error) {
-          if (
-            current.error !== 'Execution reverted' ||
-            resolved.length !== undefined
-          ) {
-            return { field: this.field, error: current.error }
+      const results = await Promise.all(
+        resolved.indices.map(async (index) => {
+          const current = await callIndex(index)
+          if (current.error) {
+            if (
+              current.error !== 'Execution reverted' ||
+              resolved.length !== undefined
+            ) {
+              return { field: this.field, error: current.error }
+            }
           }
-        }
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          value.push(current.value!)
+        }),
+      )
+      if (results.some((r) => r?.error)) {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        value.push(current.value!)
+        const errors = results.filter((r) => r?.error).map((r) => r!.error)
+        return { field: this.field, error: errors.join(',') }
       }
     } else {
       for (let i = startIndex; i < maxLength + startIndex; i++) {
@@ -96,8 +103,6 @@ export class ArrayHandler implements ClassicHandler {
             current.error !== 'Execution reverted' ||
             resolved.length !== undefined
           ) {
-            // FIXME: Had no eslint ignore here
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             return { field: this.field, error: current.error }
           }
           break
