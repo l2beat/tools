@@ -21,6 +21,7 @@ import { getOpticsBeaconProxy } from './manual/OpticsBeaconProxy'
 import { getPolygonExtensionProxy } from './manual/PolygonExtensionProxy'
 import { getZkSpaceProxy } from './manual/ZkSpaceProxy'
 import { getZkSyncLiteProxy } from './manual/ZkSyncLiteProxy'
+import { detectGnosisSafeZodiacModule } from './auto/GnosisSafeModule'
 
 export type Detector = (
   provider: DiscoveryProvider,
@@ -36,6 +37,7 @@ const DEFAULT_AUTO_DETECTORS: Detector[] = [
   detectPolygonProxy,
   detectStarkWareProxy,
   detectGnosisSafe,
+  detectGnosisSafeZodiacModule,
   detectEip897Proxy,
   detectZeppelinOSProxy,
   detectEip2535proxy,
