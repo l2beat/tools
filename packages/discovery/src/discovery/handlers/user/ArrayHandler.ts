@@ -14,6 +14,7 @@ import { valueToNumber } from '../utils/valueToNumber'
 export type ArrayHandlerDefinition = z.infer<typeof ArrayHandlerDefinition>
 export const ArrayHandlerDefinition = z.strictObject({
   type: z.literal('array'),
+  indices: z.optional(z.union([z.array(z.number()), z.string()])),
   method: z.optional(z.string()),
   length: z.optional(z.union([z.number().int().nonnegative(), Reference])),
   maxLength: z.optional(z.number().int().nonnegative()),
@@ -36,6 +37,10 @@ export class ArrayHandler implements ClassicHandler {
     const dependency = getReferencedName(definition.length)
     if (dependency) {
       this.dependencies.push(dependency)
+    }
+    const indicesDependency = getReferencedName(definition.indices)
+    if (indicesDependency) {
+      this.dependencies.push(indicesDependency)
     }
     this.fragment = getFunctionFragment(
       definition.method ?? field,
@@ -63,27 +68,43 @@ export class ArrayHandler implements ClassicHandler {
     const value: ContractValue[] = []
     const startIndex = resolved.startIndex
     const maxLength = Math.min(resolved.maxLength, resolved.length ?? Infinity)
-    for (let i = startIndex; i < maxLength + startIndex; i++) {
-      const current = await callMethod(
-        provider,
-        address,
-        this.fragment,
-        [i],
-        blockNumber,
-      )
-      if (current.error) {
-        if (
-          current.error !== 'Execution reverted' ||
-          resolved.length !== undefined
-        ) {
-          // FIXME: Had no eslint ignore here
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          return { field: this.field, error: current.error }
+    const callIndex = createCallIndex(
+      provider,
+      address,
+      this.fragment,
+      blockNumber,
+    )
+    if (resolved.indices) {
+      for (const index of resolved.indices) {
+        const current = await callIndex(index)
+        if (current.error) {
+          if (
+            current.error !== 'Execution reverted' ||
+            resolved.length !== undefined
+          ) {
+            return { field: this.field, error: current.error }
+          }
         }
-        break
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        value.push(current.value!)
       }
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      value.push(current.value!)
+    } else {
+      for (let i = startIndex; i < maxLength + startIndex; i++) {
+        const current = await callIndex(i)
+        if (current.error) {
+          if (
+            current.error !== 'Execution reverted' ||
+            resolved.length !== undefined
+          ) {
+            // FIXME: Had no eslint ignore here
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            return { field: this.field, error: current.error }
+          }
+          break
+        }
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        value.push(current.value!)
+      }
     }
     if (
       value.length === resolved.maxLength &&
@@ -98,6 +119,16 @@ export class ArrayHandler implements ClassicHandler {
     return { field: this.field, value, ignoreRelative: resolved.ignoreRelative }
   }
 }
+function createCallIndex(
+  provider: DiscoveryProvider,
+  address: EthereumAddress,
+  fragment: utils.FunctionFragment,
+  blockNumber: number,
+) {
+  return async (index: number) => {
+    return await callMethod(provider, address, fragment, [index], blockNumber)
+  }
+}
 
 function resolveDependencies(
   definition: ArrayHandlerDefinition,
@@ -105,6 +136,7 @@ function resolveDependencies(
 ): {
   method: string | undefined
   length: number | undefined
+  indices: number[] | undefined
   maxLength: number
   startIndex: number
   ignoreRelative: boolean | undefined
@@ -115,8 +147,27 @@ function resolveDependencies(
     length = valueToNumber(resolved)
   }
 
+  let indices: number[] | undefined
+  if (
+    definition.indices !== undefined &&
+    typeof definition.indices === 'string'
+  ) {
+    const resolved = resolveReference(definition.indices, previousResults)
+    if (!Array.isArray(resolved)) {
+      throw new Error('Expected array of indices')
+    }
+    indices = resolved.map((v) => valueToNumber(v))
+  } else {
+    indices = definition.indices
+  }
+
+  if (indices !== undefined && length !== undefined) {
+    throw new Error('Cannot define both indices and length')
+  }
+
   return {
     method: definition.method,
+    indices,
     length,
     maxLength: definition.maxLength ?? DEFAULT_MAX_LENGTH,
     startIndex: definition.startIndex ?? 0,
