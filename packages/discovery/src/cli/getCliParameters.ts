@@ -7,7 +7,6 @@ export type CliParameters =
   | ServerCliParameters
   | DiscoverCliParameters
   | InvertCliParameters
-  | HelpCliParameters
   | SingleDiscoveryCliParameters
 
 export interface ServerCliParameters {
@@ -35,11 +34,6 @@ export interface SingleDiscoveryCliParameters {
   mode: 'single-discovery'
   address: EthereumAddress
   chain: ChainId
-}
-
-export interface HelpCliParameters {
-  mode: 'help'
-  error?: string
 }
 
 export function getCliParameters(
