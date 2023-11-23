@@ -1,36 +1,18 @@
 import { expect } from 'earl'
 
 import { ChainId } from '../utils/ChainId'
+import { EthereumAddress } from '../utils/EthereumAddress'
 import { getCliParameters } from './getCliParameters'
 
 describe(getCliParameters.name, () => {
-  it('no parameters', () => {
-    const cli = getCliParameters([])
-    expect(cli).toEqual({ mode: 'help', error: 'Not enough arguments' })
-  })
-
-  it('invalid parameter', () => {
-    const cli = getCliParameters(['foo'])
-    expect(cli).toEqual({ mode: 'help', error: 'Unknown mode: foo' })
-  })
-
+  const baseArgs = ['node', 'discovery']
   it('server', () => {
-    const cli = getCliParameters(['server'])
+    const cli = getCliParameters([...baseArgs, 'server'])
     expect(cli).toEqual({ mode: 'server' })
   })
 
-  it('server foo', () => {
-    const cli = getCliParameters(['server', 'foo'])
-    expect(cli).toEqual({ mode: 'help', error: 'Too many arguments' })
-  })
-
-  it('discover', () => {
-    const cli = getCliParameters(['discover'])
-    expect(cli).toEqual({ mode: 'help', error: 'Not enough arguments' })
-  })
-
   it('discover foo', () => {
-    const cli = getCliParameters(['discover', 'ethereum', 'foo'])
+    const cli = getCliParameters([...baseArgs, 'discover', 'ethereum', 'foo'])
     expect(cli).toEqual({
       mode: 'discover',
       chain: ChainId.fromName('ethereum'),
@@ -44,7 +26,13 @@ describe(getCliParameters.name, () => {
   })
 
   it('discover foo --dry-run', () => {
-    const cli = getCliParameters(['discover', 'ethereum', 'foo', '--dry-run'])
+    const cli = getCliParameters([
+      ...baseArgs,
+      'discover',
+      'ethereum',
+      'foo',
+      '--dry-run',
+    ])
     expect(cli).toEqual({
       mode: 'discover',
       chain: ChainId.fromName('ethereum'),
@@ -59,6 +47,7 @@ describe(getCliParameters.name, () => {
 
   it('discover --dev foo --sources-folder=.code@1234 --discovery-filename=discovery@1234.json', () => {
     const cli = getCliParameters([
+      ...baseArgs,
       'discover',
       '--dev',
       'ethereum',
@@ -78,18 +67,9 @@ describe(getCliParameters.name, () => {
     })
   })
 
-  it('discover foo bar', () => {
-    const cli = getCliParameters(['discover', 'foo', 'bar', 'baz'])
-    expect(cli).toEqual({ mode: 'help', error: 'Too many arguments' })
-  })
-
-  it('discover foo bar baz', () => {
-    const cli = getCliParameters(['discover', 'foo', 'bar', 'baz', 'qux'])
-    expect(cli).toEqual({ mode: 'help', error: 'Too many arguments' })
-  })
-
   it('discover ethereum --block-number=5678 foo --dry-run', () => {
     const cli = getCliParameters([
+      ...baseArgs,
       'discover',
       'ethereum',
       '--block-number=5678',
@@ -105,6 +85,38 @@ describe(getCliParameters.name, () => {
       sourcesFolder: undefined,
       discoveryFilename: undefined,
       blockNumber: 5678,
+    })
+  })
+
+  it('invert ethereum --mermaid foo', () => {
+    const cli = getCliParameters([
+      ...baseArgs,
+      'invert',
+      'ethereum',
+      '--mermaid',
+      'foo',
+    ])
+
+    expect(cli).toEqual({
+      mode: 'invert',
+      chain: ChainId.fromName('ethereum'),
+      project: 'foo',
+      useMermaidMarkup: true,
+    })
+  })
+
+  it('single-discovery ethereum 0x77777...77777', () => {
+    const cli = getCliParameters([
+      ...baseArgs,
+      'single-discovery',
+      'ethereum',
+      '0x7777777777777777777777777777777777777777',
+    ])
+
+    expect(cli).toEqual({
+      mode: 'single-discovery',
+      chain: ChainId.fromName('ethereum'),
+      address: EthereumAddress('0x7777777777777777777777777777777777777777'),
     })
   })
 })

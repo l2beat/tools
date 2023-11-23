@@ -1,15 +1,9 @@
+import { assert } from '@l2beat/backend-tools'
+
 import { CliParameters, getCliParameters } from './getCliParameters'
-import { exitWithUsage, printUsage } from './usage'
 
 export function handleCli(): CliParameters {
   const cli = getCliParameters()
-  if (cli.mode === 'help') {
-    if (cli.error) {
-      exitWithUsage(cli.error)
-    } else {
-      printUsage()
-    }
-  }
-
+  assert(cli, 'No CLI parameters found')
   return cli
 }

@@ -1,4 +1,4 @@
-import { assert } from '@l2beat/backend-tools'
+import { Command } from 'commander'
 
 import { ChainId } from '../utils/ChainId'
 import { EthereumAddress } from '../utils/EthereumAddress'
@@ -42,178 +42,119 @@ export interface HelpCliParameters {
   error?: string
 }
 
-export function getCliParameters(args = process.argv.slice(2)): CliParameters {
-  if (args.includes('--help') || args.includes('-h')) {
-    return { mode: 'help' }
-  }
+export function getCliParameters(
+  args = process.argv,
+): CliParameters | undefined {
+  const program = new Command('discovery')
+  program.showHelpAfterError()
 
-  if (args.length === 0) {
-    return { mode: 'help', error: 'Not enough arguments' }
-  }
+  let result: CliParameters | undefined = undefined
 
-  if (args[0] === 'server') {
-    if (args.length !== 1) {
-      return { mode: 'help', error: 'Too many arguments' }
-    }
-    return { mode: 'server' }
-  }
+  program
+    .command('server')
+    .allowExcessArguments(false)
+    .description('Start the server')
+    .action(() => {
+      result = { mode: 'server' }
+    })
 
-  if (args[0] === 'discover') {
-    const remaining = args.slice(1)
+  const chainArguement = program.createArgument('<chain>', 'Target L1 Chain')
+  const projectArguement = program.createArgument('<project>', 'Project name')
 
-    let dryRun = false
-    let dev = false
-    let blockNumber: number | undefined
-    let sourcesFolder: string | undefined
-    let discoveryFilename: string | undefined
-
-    if (remaining.includes('--dry-run')) {
-      dryRun = true
-      remaining.splice(remaining.indexOf('--dry-run'), 1)
-    }
-
-    if (remaining.includes('--dev')) {
-      dev = true
-      remaining.splice(remaining.indexOf('--dev'), 1)
-    }
-
-    const blockNumberArg = extractArgWithValue(remaining, '--block-number')
-    if (blockNumberArg.found) {
-      const blockNumberStr = blockNumberArg.value
-      if (blockNumberStr === undefined) {
-        return { mode: 'help', error: 'Please provide a valid block number' }
+  program
+    .command('discover')
+    .allowExcessArguments(false)
+    .description('Discover a rollup project on a chain')
+    .addArgument(chainArguement)
+    .addArgument(projectArguement)
+    .option('--dry-run', 'Do not write the results to disk', false)
+    .option('--dev', 'Use the development config', false)
+    .option('--block-number <BLOCKNUMBER>', 'Block number to use for discovery')
+    .option('--sources-folder <SOURCE>', 'Folder to read sources from')
+    .option('--discovery-filename <FILENAME>', 'Filename to write discovery to')
+    .action((chain, project, options) => {
+      const {
+        dryRun,
+        dev,
+        blockNumber: blockNumberStr,
+        sourcesFolder,
+        discoveryFilename,
+      } = options as {
+        dryRun: boolean
+        dev: boolean
+        blockNumber?: string
+        sourcesFolder?: string
+        discoveryFilename?: string
       }
-      blockNumber = parseInt(blockNumberStr, 10)
-      assert(
-        blockNumber.toString() === blockNumberStr,
-        `"${blockNumberStr}" is not a valid block number`,
-      )
-    }
 
-    const sourcesFolderArg = extractArgWithValue(remaining, '--sources-folder')
-    if (sourcesFolderArg.found) {
-      sourcesFolder = sourcesFolderArg.value
-    }
+      const chainId = getChainIdSafe(chain as string)
+      if (!chainId) {
+        displayWrongChainNameError(program, chain as string)
+      }
 
-    const discoveryFilenameArg = extractArgWithValue(
-      remaining,
-      '--discovery-filename',
-    )
-    if (discoveryFilenameArg.found) {
-      discoveryFilename = discoveryFilenameArg.value
-    }
+      let blockNumber: number | undefined
+      if (blockNumberStr) {
+        blockNumber = parseInt(blockNumberStr, 10)
+        if (blockNumber.toString() !== blockNumberStr)
+          program.error(`"${blockNumberStr}" is not a valid block number`)
+      }
 
-    if (remaining.length === 0) {
-      return { mode: 'help', error: 'Not enough arguments' }
-    }
-    if (remaining.length > 2) {
-      return { mode: 'help', error: 'Too many arguments' }
-    }
+      result = {
+        mode: 'discover',
+        chain: chainId!,
+        project: project as string,
+        dryRun,
+        dev,
+        sourcesFolder,
+        discoveryFilename,
+        blockNumber,
+      } as DiscoverCliParameters
+    })
 
-    const [chainName, project] = remaining
-    if (!chainName || !project) {
-      return getHelpCliParameter(
-        'You need to provide arguments for both the chain name and the project',
-      )
-    }
+  program
+    .command('invert')
+    .allowExcessArguments(false)
+    .description('Run inversion on discovered data of a project on a chain')
+    .addArgument(chainArguement)
+    .addArgument(projectArguement)
+    .option('--mermaid', 'Generate mermaid diagram', false)
+    .action((chain, project, optionss) => {
+      const { mermaid } = optionss as { mermaid: boolean }
+      const chainId = getChainIdSafe(chain as string)
+      if (!chainId) {
+        displayWrongChainNameError(program, chain as string)
+      }
 
-    const chain = getChainIdSafe(chainName)
-    if (!chain) return createWrongChainNameHelpCli(chainName)
+      result = {
+        mode: 'invert',
+        chain: chainId!,
+        project: project as string,
+        useMermaidMarkup: mermaid,
+      } as InvertCliParameters
+    })
 
-    const result: DiscoverCliParameters = {
-      mode: 'discover',
-      chain,
-      project,
-      dryRun,
-      dev,
-      sourcesFolder,
-      discoveryFilename,
-      blockNumber,
-    }
-    return result
-  }
+  program
+    .command('single-discovery')
+    .allowExcessArguments(false)
+    .description('Discover a single address on a chain')
+    .addArgument(chainArguement)
+    .argument('<address>', 'Address to discover')
+    .action((chain, address) => {
+      const chainId = getChainIdSafe(chain as string)
+      if (!chainId) {
+        displayWrongChainNameError(program, chain as string)
+      }
 
-  if (args[0] === 'invert') {
-    const remaining = args.slice(1)
+      result = {
+        mode: 'single-discovery',
+        chain: chainId!,
+        address: EthereumAddress(address as string),
+      } as SingleDiscoveryCliParameters
+    })
 
-    let useMermaidMarkup = false
+  program.parse(args)
 
-    if (remaining.includes('--mermaid')) {
-      useMermaidMarkup = true
-      remaining.splice(remaining.indexOf('--mermaid'), 1)
-    }
-
-    if (remaining.length === 0) {
-      return { mode: 'help', error: 'Not enough arguments' }
-    }
-    if (remaining.length > 2) {
-      return { mode: 'help', error: 'Too many arguments' }
-    }
-
-    const [chainName, project] = remaining
-    if (!chainName || !project) {
-      return getHelpCliParameter(
-        'You need to provide arguments for both the chain name and the project',
-      )
-    }
-
-    const chain = getChainIdSafe(chainName)
-
-    if (!chain) return createWrongChainNameHelpCli(chainName)
-
-    const result: InvertCliParameters = {
-      mode: 'invert',
-      chain,
-      project,
-      useMermaidMarkup,
-    }
-    return result
-  }
-
-  if (args[0] === 'single-discovery') {
-    const remaining = args.slice(1)
-
-    if (remaining.length === 0) {
-      return { mode: 'help', error: 'Not enough arguments' }
-    }
-    if (remaining.length > 2) {
-      return { mode: 'help', error: 'Too many arguments' }
-    }
-    const [chainName, address] = remaining
-    if (!chainName || !address) {
-      return getHelpCliParameter(
-        'You need to provide arguments for both the chain name and the address',
-      )
-    }
-
-    const chain = getChainIdSafe(chainName)
-    if (!chain) return createWrongChainNameHelpCli(chainName)
-
-    const result: SingleDiscoveryCliParameters = {
-      mode: 'single-discovery',
-      chain,
-      address: EthereumAddress(address),
-    }
-    return result
-  }
-
-  const mode = args[0] ?? '<unknown mode>'
-
-  return { mode: 'help', error: `Unknown mode: ${mode}` }
-}
-
-function extractArgWithValue(
-  args: string[],
-  argName: string,
-): { found: false } | { found: true; value: string | undefined } {
-  assert(argName.startsWith('--'), 'Argument name must start with "--"')
-  const argIndex = args.findIndex((arg) => arg.startsWith(`${argName}=`))
-  if (argIndex !== -1) {
-    const value = args[argIndex]?.split('=')[1]
-    args.splice(argIndex, 1)
-    return { found: true, value }
-  }
-  return { found: false }
+  return result
 }
 
 function getChainIdSafe(name: string): ChainId | undefined {
@@ -224,15 +165,8 @@ function getChainIdSafe(name: string): ChainId | undefined {
   }
 }
 
-function getHelpCliParameter(message: string): HelpCliParameters {
-  return {
-    mode: 'help',
-    error: message,
-  }
-}
-
-function createWrongChainNameHelpCli(chainName: string): HelpCliParameters {
-  return getHelpCliParameter(
+function displayWrongChainNameError(program: Command, chainName: string): void {
+  program.error(
     `Argument provided ${chainName} could not be linked to any of the known chain names`,
   )
 }
