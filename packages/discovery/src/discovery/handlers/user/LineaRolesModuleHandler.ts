@@ -10,6 +10,7 @@ import {
 } from '../../provider/DiscoveryProvider'
 import { ProxyDetector } from '../../proxies/ProxyDetector'
 import { ClassicHandler, HandlerResult } from '../Handler'
+import { zip } from 'lodash'
 
 export type LineaRolesModuleHandlerDefinition = z.infer<
   typeof LineaRolesModuleHandlerDefinition
@@ -33,6 +34,7 @@ const abi = new utils.Interface([
   'event ScopeParameter(uint16 role, address targetAddress, bytes4 functionSig, uint256 index, uint8 paramType, uint8 paramComp, bytes compValue, uint256 resultingScopeConfig)',
   'event ScopeParameterAsOneOf(uint16 role, address targetAddress, bytes4 functionSig, uint256 index, uint8 paramType, bytes[] compValues, uint256 resultingScopeConfig)',
   'event UnscopeParameter(uint16 role, address targetAddress, bytes4 functionSig, uint256 index, uint256 resultingScopeConfig)',
+  'event AssignRoles(address module, uint16[] roles, bool[] memberOf)',
 ])
 
 type ExecutionOptions = 'None' | 'Send' | 'DelegateCall' | 'Both'
@@ -94,6 +96,7 @@ export class LineaRolesModuleHandler implements ClassicHandler {
           abi.getEventTopic('ScopeParameter'),
           abi.getEventTopic('ScopeParameterAsOneOf'),
           abi.getEventTopic('UnscopeParameter'),
+          abi.getEventTopic('AssignRoles'),
         ],
       ],
       0,
@@ -104,7 +107,19 @@ export class LineaRolesModuleHandler implements ClassicHandler {
 
     // TODO(radomski): This should be moved to a class this will handle the
     // selector decoding logic. This will be done together with L2B-2940.
-    const targets = [...new Set(events.map((e) => e.targetAddress))]
+    const targets = [
+      ...new Set(
+        events
+          .map((e) => {
+            if ('targetAddress' in e) {
+              return e.targetAddress
+            } else {
+              return undefined
+            }
+          })
+          .filter(notUndefined),
+      ),
+    ]
     const proxyDetector = new ProxyDetector(provider, DiscoveryLogger.SILENT)
     const implementations: Record<string, EthereumAddress[]> = {}
     const contractMetadata: Record<string, ContractMetadata> = {}
@@ -151,6 +166,23 @@ export class LineaRolesModuleHandler implements ClassicHandler {
     }
 
     for (const event of events) {
+      if (event.type === 'AssignRoles') {
+        zip(event.roles, event.memberOf).forEach(([roleId, memberOf]) => {
+          assert(roleId !== undefined && memberOf !== undefined)
+          roles[roleId] ??= {
+            members: {},
+            targets: {},
+            functions: {},
+            compValues: {},
+            compValuesOneOf: {},
+          }
+          const role = roles[roleId]
+          assert(role !== undefined)
+          role.members[event.module.toString()] = memberOf
+        })
+        continue
+      }
+
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       roles[event.role] ??= {
         members: {},
@@ -454,6 +486,13 @@ interface UnscopeParameterLog {
   readonly resultingScopeConfig: string
 }
 
+interface AssignRolesLog {
+  readonly type: 'AssignRoles'
+  readonly module: EthereumAddress
+  readonly roles: number[]
+  readonly memberOf: boolean[]
+}
+
 function parseRoleLog(
   log: providers.Log,
 ):
@@ -466,7 +505,8 @@ function parseRoleLog(
   | ScopeFunctionExecutionOptionsLog
   | ScopeParameterLog
   | ScopeParameterAsOneOfLog
-  | UnscopeParameterLog {
+  | UnscopeParameterLog
+  | AssignRolesLog {
   const event = abi.parseLog(log)
   if (event.name === 'AllowTarget') {
     return {
@@ -566,7 +606,18 @@ function parseRoleLog(
         event.args.resultingScopeConfig as BigNumber
       ).toString(),
     } as const
+  } else if (event.name === 'AssignRoles') {
+    return {
+      type: event.name,
+      module: EthereumAddress(event.args.module as string),
+      roles: event.args.roles as number[],
+      memberOf: event.args.memberOf as boolean[],
+    } as const
   }
 
   assert(false)
+}
+
+export function notUndefined<T>(value: T | undefined): value is T {
+  return value !== undefined
 }
