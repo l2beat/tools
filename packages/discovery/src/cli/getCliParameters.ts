@@ -95,7 +95,7 @@ export function getCliParameters(
 
       result = {
         mode: 'discover',
-        chain: chainId!,
+        chain: chainId,
         project: project as string,
         dryRun,
         dev,
@@ -121,7 +121,7 @@ export function getCliParameters(
 
       result = {
         mode: 'invert',
-        chain: chainId!,
+        chain: chainId,
         project: project as string,
         useMermaidMarkup: mermaid,
       } as InvertCliParameters
@@ -141,7 +141,7 @@ export function getCliParameters(
 
       result = {
         mode: 'single-discovery',
-        chain: chainId!,
+        chain: chainId,
         address: EthereumAddress(address as string),
       } as SingleDiscoveryCliParameters
     })
