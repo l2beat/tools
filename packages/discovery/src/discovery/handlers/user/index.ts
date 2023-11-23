@@ -38,6 +38,10 @@ import {
   LayerZeroMultisigHandlerDefinition,
 } from './LayerZeroMultisigHandler'
 import {
+  LineaRolesModuleHandler,
+  LineaRolesModuleHandlerDefinition,
+} from './LineaRolesModuleHandler'
+import {
   ScrollAccessControlHandler,
   ScrollAccessControlHandlerDefinition,
 } from './ScrollAccessControlHandler'
@@ -54,10 +58,6 @@ import {
   StateFromEventHandler,
 } from './StateFromEventHandler'
 import { StorageHandler, StorageHandlerDefinition } from './StorageHandler'
-import {
-  LineaRolesModuleHandler,
-  LineaRolesModuleHandlerDefinition,
-} from './LineaRolesModuleHandler'
 
 export type UserHandlerDefinition = z.infer<typeof UserHandlerDefinition>
 export const UserHandlerDefinition = z.union([

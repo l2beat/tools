@@ -4,7 +4,6 @@ import { Bytes } from '../../../utils/Bytes'
 import { EthereumAddress } from '../../../utils/EthereumAddress'
 import { DiscoveryProvider } from '../../provider/DiscoveryProvider'
 import { bytes32ToAddress } from '../../utils/address'
-import { getCallResult } from '../../utils/getCallResult'
 import { getModules } from './GnosisSafe'
 
 const GUARD_SLOT = Bytes.fromHex(
