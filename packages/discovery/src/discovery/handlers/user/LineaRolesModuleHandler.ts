@@ -1,5 +1,6 @@
 import { assert } from '@l2beat/backend-tools'
 import { BigNumber, providers, utils } from 'ethers'
+import { zip } from 'lodash'
 import * as z from 'zod'
 
 import { EthereumAddress } from '../../../utils/EthereumAddress'
@@ -10,7 +11,6 @@ import {
 } from '../../provider/DiscoveryProvider'
 import { ProxyDetector } from '../../proxies/ProxyDetector'
 import { ClassicHandler, HandlerResult } from '../Handler'
-import { zip } from 'lodash'
 
 export type LineaRolesModuleHandlerDefinition = z.infer<
   typeof LineaRolesModuleHandlerDefinition
@@ -35,6 +35,7 @@ const abi = new utils.Interface([
   'event ScopeParameterAsOneOf(uint16 role, address targetAddress, bytes4 functionSig, uint256 index, uint8 paramType, bytes[] compValues, uint256 resultingScopeConfig)',
   'event UnscopeParameter(uint16 role, address targetAddress, bytes4 functionSig, uint256 index, uint256 resultingScopeConfig)',
   'event AssignRoles(address module, uint16[] roles, bool[] memberOf)',
+  'event SetDefaultRole(address module, uint16 defaultRole)',
 ])
 
 type ExecutionOptions = 'None' | 'Send' | 'DelegateCall' | 'Both'
@@ -97,6 +98,7 @@ export class LineaRolesModuleHandler implements ClassicHandler {
           abi.getEventTopic('ScopeParameterAsOneOf'),
           abi.getEventTopic('UnscopeParameter'),
           abi.getEventTopic('AssignRoles'),
+          abi.getEventTopic('SetDefaultRole'),
         ],
       ],
       0,
@@ -104,6 +106,7 @@ export class LineaRolesModuleHandler implements ClassicHandler {
     )
     const events = logs.map(parseRoleLog)
     const roles: Record<number, Role> = {}
+    const defaultRoles: Record<string, number> = {}
 
     // TODO(radomski): This should be moved to a class this will handle the
     // selector decoding logic. This will be done together with L2B-2940.
@@ -169,6 +172,7 @@ export class LineaRolesModuleHandler implements ClassicHandler {
       if (event.type === 'AssignRoles') {
         zip(event.roles, event.memberOf).forEach(([roleId, memberOf]) => {
           assert(roleId !== undefined && memberOf !== undefined)
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
           roles[roleId] ??= {
             members: {},
             targets: {},
@@ -180,6 +184,11 @@ export class LineaRolesModuleHandler implements ClassicHandler {
           assert(role !== undefined)
           role.members[event.module.toString()] = memberOf
         })
+        continue
+      }
+
+      if (event.type === 'SetDefaultRole') {
+        defaultRoles[event.module.toString()] = event.role
         continue
       }
 
@@ -273,33 +282,36 @@ export class LineaRolesModuleHandler implements ClassicHandler {
 
     return {
       field: this.field,
-      value: Object.fromEntries(
-        Object.entries(roles).map(([key, role]) => [
-          key,
-          {
-            members: role.members,
-            targets: Object.fromEntries(
-              Object.entries(role.targets).map(([addr, opt]) => [
-                addr,
-                { ...opt },
-              ]),
-            ),
-            functions: Object.fromEntries(
-              Object.entries(role.functions).map(([addr, config]) => [
-                addr,
-                Object.fromEntries(
-                  Object.entries(config).map(([selector, scopeConfig]) => [
-                    selector,
-                    Object.fromEntries(Object.entries(scopeConfig)),
-                  ]),
-                ),
-              ]),
-            ),
-            compValues: role.compValues,
-            compValuesOneOf: role.compValuesOneOf,
-          },
-        ]),
-      ),
+      value: {
+        defaultRoles,
+        roles: Object.fromEntries(
+          Object.entries(roles).map(([key, role]) => [
+            key,
+            {
+              members: role.members,
+              targets: Object.fromEntries(
+                Object.entries(role.targets).map(([addr, opt]) => [
+                  addr,
+                  { ...opt },
+                ]),
+              ),
+              functions: Object.fromEntries(
+                Object.entries(role.functions).map(([addr, config]) => [
+                  addr,
+                  Object.fromEntries(
+                    Object.entries(config).map(([selector, scopeConfig]) => [
+                      selector,
+                      Object.fromEntries(Object.entries(scopeConfig)),
+                    ]),
+                  ),
+                ]),
+              ),
+              compValues: role.compValues,
+              compValuesOneOf: role.compValuesOneOf,
+            },
+          ]),
+        ),
+      },
       ignoreRelative: this.definition.ignoreRelative,
     }
   }
@@ -493,6 +505,12 @@ interface AssignRolesLog {
   readonly memberOf: boolean[]
 }
 
+interface SetDefaultRoleLog {
+  readonly type: 'SetDefaultRole'
+  readonly module: EthereumAddress
+  readonly role: number
+}
+
 function parseRoleLog(
   log: providers.Log,
 ):
@@ -506,7 +524,8 @@ function parseRoleLog(
   | ScopeParameterLog
   | ScopeParameterAsOneOfLog
   | UnscopeParameterLog
-  | AssignRolesLog {
+  | AssignRolesLog
+  | SetDefaultRoleLog {
   const event = abi.parseLog(log)
   if (event.name === 'AllowTarget') {
     return {
@@ -612,6 +631,12 @@ function parseRoleLog(
       module: EthereumAddress(event.args.module as string),
       roles: event.args.roles as number[],
       memberOf: event.args.memberOf as boolean[],
+    } as const
+  } else if (event.name === 'SetDefaultRole') {
+    return {
+      type: event.name,
+      module: EthereumAddress(event.args.module as string),
+      role: event.args.role as number,
     } as const
   }
 
