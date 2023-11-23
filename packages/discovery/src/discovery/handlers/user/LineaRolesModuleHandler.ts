@@ -1,6 +1,6 @@
 import { assert } from '@l2beat/backend-tools'
 import { BigNumber, providers, utils } from 'ethers'
-import { zip } from 'lodash'
+import { isEmpty, zip } from 'lodash'
 import * as z from 'zod'
 
 import { EthereumAddress } from '../../../utils/EthereumAddress'
@@ -53,7 +53,7 @@ interface ParameterConfig {
   comparisonType: ComparisonType
 }
 
-interface ScopeConfig {
+export interface ScopeConfig {
   options: ExecutionOptions
   wildcarded: boolean
   parameters: ParameterConfig[]
@@ -183,12 +183,17 @@ export class LineaRolesModuleHandler implements ClassicHandler {
           const role = roles[roleId]
           assert(role !== undefined)
           role.members[event.module.toString()] = memberOf
+          if (!memberOf) {
+            // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+            delete role.members[event.module.toString()]
+            deleteRoleIfEmpty(roles, roleId)
+          }
         })
         continue
       }
 
       if (event.type === 'SetDefaultRole') {
-        defaultRoles[event.module.toString()] = event.role
+        defaultRoles[event.module.toString()] = event.defaultRole
         continue
       }
 
@@ -213,10 +218,9 @@ export class LineaRolesModuleHandler implements ClassicHandler {
           break
         }
         case 'RevokeTarget': {
-          role.targets[event.targetAddress.toString()] = {
-            clearance: 'None',
-            options: 'None',
-          }
+          // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+          delete role.targets[event.targetAddress.toString()]
+          deleteRoleIfEmpty(roles, event.role)
           break
         }
         case 'ScopeTarget': {
@@ -227,9 +231,23 @@ export class LineaRolesModuleHandler implements ClassicHandler {
           break
         }
         case 'ScopeAllowFunction':
-        case 'ScopeFunctionExecutionOptions':
+        case 'ScopeFunctionExecutionOptions': {
+          const func = getFunction(role, event)
+          func[decodeSelector(event.targetAddress, event.functionSig)] =
+            decodeScopeConfig(event.resultingScopeConfig)
+          break
+        }
         case 'UnscopeParameter': {
           const func = getFunction(role, event)
+          const compKey = compValueKey(
+            event,
+            decodeSelector(event.targetAddress, event.functionSig),
+            event.index,
+          )
+          // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+          delete role.compValues[compKey]
+          // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+          delete role.compValuesOneOf[compKey]
           func[decodeSelector(event.targetAddress, event.functionSig)] =
             decodeScopeConfig(event.resultingScopeConfig)
           break
@@ -237,6 +255,7 @@ export class LineaRolesModuleHandler implements ClassicHandler {
         case 'ScopeRevokeFunction': {
           // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
           delete role.functions[event.targetAddress.toString()]
+          deleteRoleIfEmpty(roles, event.role)
           break
         }
         case 'ScopeFunction': {
@@ -248,7 +267,11 @@ export class LineaRolesModuleHandler implements ClassicHandler {
           func[selector] = decodeScopeConfig(event.resultingScopeConfig)
 
           event.compValue.forEach((compValue, i) => {
-            role.compValues[compValueKey(event, selector, i)] = compValue
+            const compKey = compValueKey(event, selector, i)
+
+            // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+            delete role.compValuesOneOf[compKey]
+            role.compValues[compKey] = compValue
           })
           break
         }
@@ -258,9 +281,11 @@ export class LineaRolesModuleHandler implements ClassicHandler {
             event.targetAddress,
             event.functionSig,
           )
+          const compKey = compValueKey(event, selector, event.index)
           func[selector] = decodeScopeConfig(event.resultingScopeConfig)
-          role.compValues[compValueKey(event, selector, event.index)] =
-            event.compValue
+          // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+          delete role.compValuesOneOf[compKey]
+          role.compValues[compKey] = event.compValue
           break
         }
         case 'ScopeParameterAsOneOf': {
@@ -269,9 +294,11 @@ export class LineaRolesModuleHandler implements ClassicHandler {
             event.targetAddress,
             event.functionSig,
           )
+          const compKey = compValueKey(event, selector, event.index)
           func[selector] = decodeScopeConfig(event.resultingScopeConfig)
-          role.compValuesOneOf[compValueKey(event, selector, event.index)] =
-            event.compValues
+          // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+          delete role.compValues[compKey]
+          role.compValuesOneOf[compKey] = event.compValues
           break
         }
         default: {
@@ -317,6 +344,18 @@ export class LineaRolesModuleHandler implements ClassicHandler {
   }
 }
 
+function deleteRoleIfEmpty(roles: Record<number, Role>, roleId: number): void {
+  const role = roles[roleId]
+  if (role === undefined) {
+    return
+  }
+
+  if (Object.keys(role).every((k) => isEmpty(role[k as keyof Role]))) {
+    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+    delete roles[roleId]
+  }
+}
+
 function decodeScopeConfig(configStr: string): ScopeConfig {
   const config = BigInt(configStr)
   const leftSide = config >> 240n
@@ -324,13 +363,13 @@ function decodeScopeConfig(configStr: string): ScopeConfig {
   const isWildcarded = (leftSide & 0x2000n) >> 13n
   const length = leftSide & 0xffn
 
-  const parameters: ParameterConfig[] = new Array(Number(length)).map(
-    (_, i) => ({
+  const parameters: ParameterConfig[] = new Array(Number(length))
+    .fill(0)
+    .map((_, i) => ({
       isScoped: maskOffIsScoped(config, i) !== 0,
       type: decodeParameterType(maskOffParameterType(config, i)),
       comparisonType: decodeComparisonType(maskOffComparisonType(config, i)),
-    }),
-  )
+    }))
 
   return {
     options: decodeExecOptions(Number(options)),
@@ -340,15 +379,19 @@ function decodeScopeConfig(configStr: string): ScopeConfig {
 }
 
 function maskOffIsScoped(config: bigint, index: number): number {
-  return Number((1n << (BigInt(index) + 192n)) & config)
+  return Number(
+    ((1n << (BigInt(index) + 192n)) & config) >> (192n + BigInt(index)),
+  )
 }
 
 function maskOffParameterType(config: bigint, index: number): number {
-  return Number((3n << (BigInt(index) * 2n + 96n)) & config)
+  return Number(
+    ((3n << (BigInt(index) * 2n + 96n)) & config) >> (96n + BigInt(index) * 2n),
+  )
 }
 
 function maskOffComparisonType(config: bigint, index: number): number {
-  return Number((3n << (BigInt(index) * 2n)) & config)
+  return Number(((3n << (BigInt(index) * 2n)) & config) >> (BigInt(index) * 2n))
 }
 
 function getFunction(
@@ -508,7 +551,7 @@ interface AssignRolesLog {
 interface SetDefaultRoleLog {
   readonly type: 'SetDefaultRole'
   readonly module: EthereumAddress
-  readonly role: number
+  readonly defaultRole: number
 }
 
 function parseRoleLog(
@@ -636,7 +679,7 @@ function parseRoleLog(
     return {
       type: event.name,
       module: EthereumAddress(event.args.module as string),
-      role: event.args.role as number,
+      defaultRole: event.args.defaultRole as number,
     } as const
   }
 
