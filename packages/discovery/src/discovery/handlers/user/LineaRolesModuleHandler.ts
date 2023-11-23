@@ -200,26 +200,36 @@ export class LineaRolesModuleHandler implements ClassicHandler {
         }
         case 'ScopeFunction': {
           const func = getFunction(role, event)
-          func[decodeSelector(event.targetAddress, event.functionSig)] =
-            decodeScopeConfig(event.resultingScopeConfig)
+          const selector = decodeSelector(
+            event.targetAddress,
+            event.functionSig,
+          )
+          func[selector] = decodeScopeConfig(event.resultingScopeConfig)
 
           event.compValue.forEach((compValue, i) => {
-            role.compValues[compValueKey(event, i)] = compValue
+            role.compValues[compValueKey(event, selector, i)] = compValue
           })
           break
         }
         case 'ScopeParameter': {
           const func = getFunction(role, event)
-          func[decodeSelector(event.targetAddress, event.functionSig)] =
-            decodeScopeConfig(event.resultingScopeConfig)
-          role.compValues[compValueKey(event, event.index)] = event.compValue
+          const selector = decodeSelector(
+            event.targetAddress,
+            event.functionSig,
+          )
+          func[selector] = decodeScopeConfig(event.resultingScopeConfig)
+          role.compValues[compValueKey(event, selector, event.index)] =
+            event.compValue
           break
         }
         case 'ScopeParameterAsOneOf': {
           const func = getFunction(role, event)
-          func[decodeSelector(event.targetAddress, event.functionSig)] =
-            decodeScopeConfig(event.resultingScopeConfig)
-          role.compValuesOneOf[compValueKey(event, event.index)] =
+          const selector = decodeSelector(
+            event.targetAddress,
+            event.functionSig,
+          )
+          func[selector] = decodeScopeConfig(event.resultingScopeConfig)
+          role.compValuesOneOf[compValueKey(event, selector, event.index)] =
             event.compValues
           break
         }
@@ -299,7 +309,7 @@ function maskOffComparisonType(config: bigint, index: number): number {
 
 function getFunction(
   role: Role,
-  arg: Pick<ScopeAllowFunctionLog, 'targetAddress' | 'functionSig'>,
+  arg: Pick<ScopeAllowFunctionLog, 'targetAddress'>,
 ): Record<string, ScopeConfig> {
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   role.functions[arg.targetAddress.toString()] ??= {}
@@ -309,10 +319,11 @@ function getFunction(
 }
 
 function compValueKey(
-  arg: Pick<ScopeAllowFunctionLog, 'targetAddress' | 'functionSig'>,
+  arg: Pick<ScopeAllowFunctionLog, 'targetAddress'>,
+  decodedSelector: string,
   index: number,
 ): string {
-  return `${arg.targetAddress.toString()}:${arg.functionSig}:${index}`
+  return `${arg.targetAddress.toString()}:${decodedSelector}:${index}`
 }
 
 function decodeExecOptions(value: number): TargetAddress['options'] {
