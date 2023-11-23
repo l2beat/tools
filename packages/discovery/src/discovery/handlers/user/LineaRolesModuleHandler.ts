@@ -4,14 +4,8 @@ import * as z from 'zod'
 
 import { EthereumAddress } from '../../../utils/EthereumAddress'
 import { DiscoveryLogger } from '../../DiscoveryLogger'
-import {
-  ContractMetadata,
-  DiscoveryProvider,
-} from '../../provider/DiscoveryProvider'
-import { ProxyDetector } from '../../proxies/ProxyDetector'
+import { DiscoveryProvider } from '../../provider/DiscoveryProvider'
 import { ClassicHandler, HandlerResult } from '../Handler'
-import { solidityPack } from 'ethers/lib/utils'
-import { zip } from 'lodash'
 
 export type LineaRolesModuleHandlerDefinition = z.infer<
   typeof LineaRolesModuleHandlerDefinition
@@ -37,15 +31,31 @@ const abi = new utils.Interface([
   'event UnscopeParameter(uint16 role, address targetAddress, bytes4 functionSig, uint256 index, uint256 resultingScopeConfig)',
 ])
 
+type ExecutionOptions = 'None' | 'Send' | 'DelegateCall' | 'Both'
+type ParameterType = 'Static' | 'Dynamic' | 'Dynamic32'
+type ComparisonType = 'EqualTo' | 'GreaterThan' | 'LessThan' | 'OneOf'
+
 interface TargetAddress {
-  clearance: 'None' | "Target" | "Function"
-  options: "None" | "Send" | "DelegateCall" | "Both"
+  clearance: 'None' | 'Target' | 'Function'
+  options: ExecutionOptions
+}
+
+interface ParameterConfig {
+  isScoped: boolean
+  type: ParameterType
+  comparisonType: ComparisonType
+}
+
+interface ScopeConfig {
+  options: ExecutionOptions
+  wildcarded: boolean
+  parameters: ParameterConfig[]
 }
 
 interface Role {
   members: Record<string, boolean>
   targets: Record<string, TargetAddress>
-  functions: Record<string, string>
+  functions: Record<string, Record<string, ScopeConfig>>
   compValues: Record<string, string>
   compValuesOneOf: Record<string, string[]>
 }
@@ -89,9 +99,9 @@ export class LineaRolesModuleHandler implements ClassicHandler {
     const roles: Record<number, Role> = {}
 
     for (const log of logs) {
-      const result = parseRoleLog(log)
+      const event = parseRoleLog(log)
 
-      roles[result.role] ??= {
+      roles[event.role] ??= {
         members: {},
         targets: {},
         functions: {},
@@ -99,69 +109,82 @@ export class LineaRolesModuleHandler implements ClassicHandler {
         compValuesOneOf: {},
       }
 
-      switch (result.type) {
+      const role = roles[event.role]
+      assert(role !== undefined)
+
+      switch (event.type) {
         case 'AllowTarget': {
-          roles[result.role]!.targets[result.targetAddress.toString()] = {
+          role.targets[event.targetAddress.toString()] = {
             clearance: 'Target',
-            options: result.execOption,
+            options: event.execOption,
           }
           break
         }
         case 'RevokeTarget': {
-          roles[result.role]!.targets[result.targetAddress.toString()] = {
+          role.targets[event.targetAddress.toString()] = {
             clearance: 'None',
             options: 'None',
           }
           break
         }
         case 'ScopeTarget': {
-          roles[result.role]!.targets[result.targetAddress.toString()] = {
+          role.targets[event.targetAddress.toString()] = {
             clearance: 'Function',
             options: 'None',
           }
           break
         }
         case 'ScopeAllowFunction': {
-          const key = functionKey(result)
-          roles[result.role]!.functions[key] = result.resultingScopeConfig
+          const func = getFunction(role, event)
+          func[event.functionSig] = decodeScopeConfig(
+            event.resultingScopeConfig,
+          )
           break
         }
         case 'ScopeRevokeFunction': {
-          const key = functionKey(result)
-          delete roles[result.role]!.functions[key]
+          delete role.functions[event.targetAddress.toString()]
           break
         }
         case 'ScopeFunction': {
-          const key = functionKey(result)
-          roles[result.role]!.functions[key] = result.resultingScopeConfig
-          result.compValue.forEach((compValue, i) => {
-            roles[result.role]!.compValues[compValueKey(result, i)] = compValue
+          const func = getFunction(role, event)
+          func[event.functionSig] = decodeScopeConfig(
+            event.resultingScopeConfig,
+          )
+
+          event.compValue.forEach((compValue, i) => {
+            role.compValues[compValueKey(event, i)] = compValue
           })
           break
         }
         case 'ScopeFunctionExecutionOptions': {
-          const key = functionKey(result)
-          roles[result.role]!.functions[key] = result.resultingScopeConfig
+          const func = getFunction(role, event)
+          func[event.functionSig] = decodeScopeConfig(
+            event.resultingScopeConfig,
+          )
           break
         }
         case 'ScopeParameter': {
-          const key = functionKey(result)
-          roles[result.role]!.functions[key] = result.resultingScopeConfig
-          roles[result.role]!.compValues[compValueKey(result, result.index)] =
-            result.compValue
+          const func = getFunction(role, event)
+          func[event.functionSig] = decodeScopeConfig(
+            event.resultingScopeConfig,
+          )
+          role.compValues[compValueKey(event, event.index)] = event.compValue
           break
         }
         case 'ScopeParameterAsOneOf': {
-          const key = functionKey(result)
-          roles[result.role]!.functions[key] = result.resultingScopeConfig
-          roles[result.role]!.compValuesOneOf[
-            compValueKey(result, result.index)
-          ] = result.compValues
+          const func = getFunction(role, event)
+          func[event.functionSig] = decodeScopeConfig(
+            event.resultingScopeConfig,
+          )
+          role.compValuesOneOf[compValueKey(event, event.index)] =
+            event.compValues
           break
         }
         case 'UnscopeParameter': {
-          const key = functionKey(result)
-          roles[result.role]!.functions[key] = result.resultingScopeConfig
+          const func = getFunction(role, event)
+          func[event.functionSig] = decodeScopeConfig(
+            event.resultingScopeConfig,
+          )
           break
         }
         default: {
@@ -172,22 +195,80 @@ export class LineaRolesModuleHandler implements ClassicHandler {
 
     return {
       field: this.field,
-      value: Object.fromEntries(Object.entries(roles).map(([key, role]) => [key, {
-          members: role.members,
-          targets: Object.fromEntries(Object.entries(role.targets).map(([addr, opt]) => [addr, {...opt}])),
-          functions: role.functions,
-          compValues: role.compValues,
-          compValuesOneOf: role.compValuesOneOf,
-      }])),
+      value: Object.fromEntries(
+        Object.entries(roles).map(([key, role]) => [
+          key,
+          {
+            members: role.members,
+            targets: Object.fromEntries(
+              Object.entries(role.targets).map(([addr, opt]) => [
+                addr,
+                { ...opt },
+              ]),
+            ),
+            functions: Object.fromEntries(
+              Object.entries(role.functions).map(([addr, config]) => [
+                addr,
+                Object.fromEntries(
+                  Object.entries(config).map(([selector, scopeConfig]) => [
+                    selector,
+                    Object.fromEntries(Object.entries(scopeConfig)),
+                  ]),
+                ),
+              ]),
+            ),
+            compValues: role.compValues,
+            compValuesOneOf: role.compValuesOneOf,
+          },
+        ]),
+      ),
       ignoreRelative: this.definition.ignoreRelative,
     }
   }
 }
 
-function functionKey(
+function decodeScopeConfig(configStr: string): ScopeConfig {
+  const config = BigInt(configStr)
+  const leftSide = config >> 240n
+  const options = (leftSide & 0xc000n) >> 14n
+  const isWildcarded = (leftSide & 0x2000n) >> 13n
+  const length = leftSide & 0xffn
+
+  const parameters: ParameterConfig[] = new Array(Number(length)).map(
+    (_, i) => ({
+      isScoped: maskOffIsScoped(config, i) !== 0,
+      type: decodeParameterType(maskOffParameterType(config, i)),
+      comparisonType: decodeComparisonType(maskOffComparisonType(config, i)),
+    }),
+  )
+
+  return {
+    options: decodeExecOptions(Number(options)),
+    wildcarded: isWildcarded !== 0n,
+    parameters,
+  }
+}
+
+function maskOffIsScoped(config: bigint, index: number): number {
+  return Number((1n << (BigInt(index) + 192n)) & config)
+}
+
+function maskOffParameterType(config: bigint, index: number): number {
+  return Number((3n << (BigInt(index) * 2n + 96n)) & config)
+}
+
+function maskOffComparisonType(config: bigint, index: number): number {
+  return Number((3n << (BigInt(index) * 2n)) & config)
+}
+
+function getFunction(
+  role: Role,
   arg: Pick<ScopeAllowFunctionLog, 'targetAddress' | 'functionSig'>,
-): string {
-    return `${arg.targetAddress.toString()}:${arg.functionSig}`
+): Record<string, ScopeConfig> {
+  role.functions[arg.targetAddress.toString()] ??= {}
+  const func = role.functions[arg.targetAddress.toString()]
+  assert(func !== undefined)
+  return func
 }
 
 function compValueKey(
@@ -198,15 +279,41 @@ function compValueKey(
 }
 
 function decodeExecOptions(value: number): TargetAddress['options'] {
-    switch(value) {
-        case 0: { return 'None' }
-        case 1: { return 'Send' }
-        case 2: { return 'DelegateCall' }
-        case 3: { return 'Both' }
-        default: {
-            assert(false && "Invalid execOption value")
-        }
-    }
+  const lookup: Record<number, TargetAddress['options']> = {
+    0: 'None',
+    1: 'Send',
+    2: 'DelegateCall',
+    3: 'Both',
+  }
+
+  const result = lookup[value]
+  assert(result !== undefined, 'Invalid execOption value')
+  return result
+}
+
+function decodeParameterType(value: number): ParameterType {
+  const lookup: Record<number, ParameterType> = {
+    0: 'Static',
+    1: 'Dynamic',
+    2: 'Dynamic32',
+  }
+
+  const result = lookup[value]
+  assert(result !== undefined, 'Invalid parameterType value')
+  return result
+}
+
+function decodeComparisonType(value: number): ComparisonType {
+  const lookup: Record<number, ComparisonType> = {
+    0: 'EqualTo',
+    1: 'GreaterThan',
+    2: 'LessThan',
+    3: 'OneOf',
+  }
+
+  const result = lookup[value]
+  assert(result !== undefined, 'Invalid comparisontype value')
+  return result
 }
 
 interface AllowTargetLog {
