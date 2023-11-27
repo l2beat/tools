@@ -30,6 +30,7 @@
     "node-fetch": "^2.6.7",
     "prettier": "^3.0.3",
     "rimraf": "^5.0.0",
+    "solc": "^0.8.23-fixed",
     "sqlite3": "^5.1.6",
     "zod": "^3.22.2"
   },

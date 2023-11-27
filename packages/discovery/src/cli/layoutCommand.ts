@@ -2,8 +2,14 @@ import { Logger } from '@l2beat/backend-tools'
 
 import { DiscoveryCliConfig } from '../config/config.discovery'
 import { EthereumAddress } from '../utils/EthereumAddress'
-import { EtherscanLikeClient } from '../utils/EtherscanLikeClient'
+import {
+  ContractSource,
+  EtherscanLikeClient,
+} from '../utils/EtherscanLikeClient'
 import { HttpClient } from '../utils/HttpClient'
+
+import { getLayout } from '../layout/getLayout'
+import { existsSync, readFileSync, write, writeFileSync } from 'fs'
 
 export async function layoutCommand(
   config: DiscoveryCliConfig,
@@ -27,10 +33,20 @@ async function runLayout(
   addresses: EthereumAddress[],
   logger: Logger,
 ): Promise<void> {
-  const sources = await Promise.all(
-    addresses.map((a) => etherscanClient.getContractSource(a)),
-  )
+  let sources: ContractSource[] = []
+  if (existsSync('sources.json')) {
+    sources = JSON.parse(
+      readFileSync('sources.json', 'utf-8'),
+    ) as ContractSource[]
+  } else {
+    sources = await Promise.all(
+      addresses.map((a) => etherscanClient.getContractSource(a)),
+    )
+    writeFileSync('sources.json', JSON.stringify(sources))
+  }
   logger.info('Got sources', {
     sources: sources.map((x) => x.SourceCode.length),
   })
+  const layout = getLayout(sources)
+  logger.info('Layout', { layout })
 }
