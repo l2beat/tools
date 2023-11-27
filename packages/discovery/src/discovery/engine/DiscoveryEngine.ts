@@ -27,15 +27,16 @@ export class DiscoveryEngine {
     stack.push(config.initialAddresses, 0)
 
     while (!stack.isEmpty()) {
-      const items = stack.popAll()
-
-      await Promise.all(items.map(async item => {
+      const items = stack.popAll().filter(item => {
           const reason = shouldSkip(item, config)
           if (reason) {
               this.logger.logSkip(item.address, reason)
-              return
+              return false
           }
+          return true
+      })
 
+      await Promise.all(items.map(async item => {
           this.logger.log(`Analyzing ${item.address.toString()}`)
           const { analysis, relatives } = await this.addressAnalyzer.analyze(
               item.address,
