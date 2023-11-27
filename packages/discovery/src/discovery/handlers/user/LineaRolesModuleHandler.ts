@@ -128,7 +128,7 @@ export class LineaRolesModuleHandler implements ClassicHandler {
     const contractMetadata: Record<string, ContractMetadata> = {}
     await Promise.all(
       [...targets].map(async (address) => {
-        const proxy = await proxyDetector.detectProxy(address, blockNumber)
+        const proxy = await proxyDetector.detectProxy(address, blockNumber, this.logger)
         if (proxy) {
           implementations[address.toString()] = proxy.implementations
         }

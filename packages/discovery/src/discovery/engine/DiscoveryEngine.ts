@@ -37,20 +37,24 @@ export class DiscoveryEngine {
       })
 
       await Promise.all(items.map(async item => {
-          this.logger.log(`Analyzing ${item.address.toString()}`)
+          const bufferedLogger = new DiscoveryLogger({ enabled: false, buffered: true })
+
+          bufferedLogger.log(`Analyzing ${item.address.toString()}`)
           const { analysis, relatives } = await this.addressAnalyzer.analyze(
               item.address,
               config.overrides.get(item.address),
               blockNumber,
+              bufferedLogger
           )
           resolved.push(analysis)
 
           const newRelatives = stack.push(relatives, item.depth + 1)
-          this.logger.logRelatives(newRelatives)
+          bufferedLogger.logRelatives(newRelatives)
+          bufferedLogger.flush()
       }))
     }
 
-    this.logger.flush(config.name)
+    this.logger.flushServer(config.name)
 
     this.checkErrors(resolved)
 

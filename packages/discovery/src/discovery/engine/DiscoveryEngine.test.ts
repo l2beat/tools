@@ -23,7 +23,7 @@ describe(DiscoveryEngine.name, () => {
     })
 
     const discoveryLogger = mockObject<DiscoveryLogger>({
-      flush: () => {},
+      flushServer: () => {},
       log: () => {},
       logSkip: () => {},
       logRelatives: () => {},
@@ -61,6 +61,6 @@ describe(DiscoveryEngine.name, () => {
     expect(discoveryLogger.log).toHaveBeenCalledTimes(3)
     expect(discoveryLogger.logSkip).toHaveBeenCalledTimes(1)
     expect(discoveryLogger.logRelatives).toHaveBeenCalledTimes(3)
-    expect(discoveryLogger.flush).toHaveBeenCalledTimes(1)
+    expect(discoveryLogger.flushServer).toHaveBeenCalledTimes(1)
   })
 })

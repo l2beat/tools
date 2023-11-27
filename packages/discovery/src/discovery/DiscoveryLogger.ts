@@ -16,13 +16,18 @@ export class DiscoveryLogger {
   static CLI = new DiscoveryLogger({ enabled: true, buffered: false })
   static SERVER = new DiscoveryLogger({ enabled: false, buffered: true })
 
-  flush(project: string): void {
+  flushServer(project: string): void {
+      this.flush(`Printing discovery logs for [${project}]:`)
+  }
+
+  flush(log?: string): void {
     if (!this.options.buffered) {
       return
     }
-    console.log(
-      `Printing discovery logs for [${project}]:\n` + this.bufferedLogs,
-    )
+    if(log) {
+        console.log(log)
+    }
+    console.log(this.bufferedLogs)
     this.bufferedLogs = ''
   }
 
