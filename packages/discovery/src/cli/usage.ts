@@ -8,6 +8,7 @@ const usage = `Usage:
     yarn invert [chain] [project] ................... print addresses and their functions
     yarn invert [chain] [project] --mermaid ......... print mermaid graph markup
     yarn discover:single [chain] [address] .......... run a discovery on the address (no config needed, useful for experimenting)
+    yarn layout [chain] [address...] ................ (experimental) print storage layout for the address(es)
     yarn <start|discover> --help .................... display this message
 
     supported chains: checkout config.discovery.ts
