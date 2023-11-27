@@ -50,13 +50,15 @@ export class DiscoveryEngine {
 
           const newRelatives = stack.push(relatives, item.depth + 1)
           bufferedLogger.logRelatives(newRelatives)
-          bufferedLogger.flush()
+          bufferedLogger.flushToLogger(this.logger)
       }))
     }
 
     this.logger.flushServer(config.name)
 
     this.checkErrors(resolved)
+
+    this.logger.log(`Address count = ${stack.getAddressCount()}`)
 
     return resolved
   }

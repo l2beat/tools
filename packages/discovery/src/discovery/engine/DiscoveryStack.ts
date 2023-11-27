@@ -52,4 +52,8 @@ export class DiscoveryStack {
     this.counter++
     return { ...item, counter: this.counter }
   }
+
+  getAddressCount(): number {
+      return this.counter
+  }
 }

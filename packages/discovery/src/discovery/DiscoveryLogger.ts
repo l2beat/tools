@@ -20,6 +20,14 @@ export class DiscoveryLogger {
       this.flush(`Printing discovery logs for [${project}]:`)
   }
 
+  flushToLogger(logger: DiscoveryLogger) {
+      if (!this.options.buffered) {
+          return
+      }
+      logger.log(this.bufferedLogs)
+      this.bufferedLogs = ''
+  }
+
   flush(log?: string): void {
     if (!this.options.buffered) {
       return
