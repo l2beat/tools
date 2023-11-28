@@ -1,15 +1,14 @@
 import { Logger } from '@l2beat/backend-tools'
+import { existsSync, readFileSync, writeFileSync } from 'fs'
 
 import { DiscoveryCliConfig } from '../config/config.discovery'
+import { getCombinedLayout } from '../layout/getCombinedLayout'
 import { EthereumAddress } from '../utils/EthereumAddress'
 import {
   ContractSource,
   EtherscanLikeClient,
 } from '../utils/EtherscanLikeClient'
 import { HttpClient } from '../utils/HttpClient'
-
-import { getLayout } from '../layout/getLayout'
-import { existsSync, readFileSync, write, writeFileSync } from 'fs'
 
 export async function layoutCommand(
   config: DiscoveryCliConfig,
@@ -47,6 +46,6 @@ async function runLayout(
   logger.info('Got sources', {
     sources: sources.map((x) => x.SourceCode.length),
   })
-  const layout = getLayout(sources)
+  const layout = getCombinedLayout(sources)
   logger.info('Layout', { layout })
 }
