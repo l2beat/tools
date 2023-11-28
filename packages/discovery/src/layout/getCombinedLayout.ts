@@ -16,7 +16,7 @@ export function getCombinedLayout(sources: ContractSource[]): string {
       const contract = contracts[mainContract]
       if (contract) {
         const output = SolidityStorageLayout.parse(contract.storageLayout)
-        console.log(getLayout(output))
+        console.log(JSON.stringify(getLayout(output), null, 2))
       }
     }
   }

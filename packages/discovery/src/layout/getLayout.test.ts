@@ -230,7 +230,7 @@ describe(getLayout.name, () => {
           {
             name: 'dynArray',
             kind: 'dynamic array',
-            type: 'uint256[2]',
+            type: 'uint256[]',
             slot: 3,
             offset: 0,
             size: 32,

@@ -51,8 +51,8 @@ export interface DynamicArrayItem {
   kind: 'dynamic array'
   type: string
   slot: number
-  offset: 0
-  size: 32
+  offset: number
+  size: number
   item: AnonymousItem
 }
 
@@ -61,8 +61,8 @@ export interface MappingItem {
   kind: 'mapping'
   type: string
   slot: number
-  offset: 0
-  size: 32
+  offset: number
+  size: number
   key: AnonymousItem
   value: AnonymousItem
 }
@@ -72,6 +72,6 @@ export interface DynamicBytesItem {
   kind: 'dynamic bytes'
   type: string
   slot: number
-  offset: 0
-  size: 32
+  offset: number
+  size: number
 }
