@@ -1,5 +1,11 @@
 # @l2beat/discovery
 
+## 0.25.1
+
+### Patch Changes
+
+- Utilized commander package for cli parameter parsing
+
 ## 0.25.0
 
 ### Minor Changes
