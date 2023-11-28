@@ -1,13 +1,10 @@
 import { Logger } from '@l2beat/backend-tools'
-import { existsSync, readFileSync, writeFileSync } from 'fs'
+import { writeFileSync } from 'fs'
 
 import { DiscoveryCliConfig } from '../config/config.discovery'
-import { getCombinedLayout } from '../layout/getCombinedLayout'
+import { parseAndGetLayout } from '../layout/parseAndGetLayout'
 import { EthereumAddress } from '../utils/EthereumAddress'
-import {
-  ContractSource,
-  EtherscanLikeClient,
-} from '../utils/EtherscanLikeClient'
+import { EtherscanLikeClient } from '../utils/EtherscanLikeClient'
 import { HttpClient } from '../utils/HttpClient'
 
 export async function layoutCommand(
@@ -24,28 +21,19 @@ export async function layoutCommand(
     config.chain.etherscanApiKey,
     config.chain.etherscanUnsupported,
   )
-  await runLayout(etherscanClient, config.layout.addresses, logger)
+  await runLayout(etherscanClient, config.layout.address, logger)
 }
 
 async function runLayout(
   etherscanClient: EtherscanLikeClient,
-  addresses: EthereumAddress[],
+  address: EthereumAddress,
   logger: Logger,
 ): Promise<void> {
-  let sources: ContractSource[] = []
-  if (existsSync('sources.json')) {
-    sources = JSON.parse(
-      readFileSync('sources.json', 'utf-8'),
-    ) as ContractSource[]
-  } else {
-    sources = await Promise.all(
-      addresses.map((a) => etherscanClient.getContractSource(a)),
-    )
-    writeFileSync('sources.json', JSON.stringify(sources))
-  }
+  const source = await etherscanClient.getContractSource(address)
   logger.info('Got sources', {
-    sources: sources.map((x) => x.SourceCode.length),
+    length: source.SourceCode.length,
   })
-  const layout = getCombinedLayout(sources)
-  logger.info('Layout', { layout })
+  const layout = parseAndGetLayout(source)
+  writeFileSync('layout.json', JSON.stringify(layout, null, 2))
+  logger.info('Saved layout', { filename: 'layout.json', items: layout.length })
 }

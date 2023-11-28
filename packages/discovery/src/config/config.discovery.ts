@@ -47,7 +47,7 @@ export function getDiscoveryCliConfig(cli: CliParameters): DiscoveryCliConfig {
       chainId: cli.chain,
     },
     layout: layoutEnabled && {
-      addresses: cli.addresses,
+      address: cli.address,
       chainId: cli.chain,
     },
     chain,
@@ -232,6 +232,6 @@ export interface InversionConfig {
 }
 
 export interface LayoutConfig {
-  readonly addresses: EthereumAddress[]
+  readonly address: EthereumAddress
   readonly chainId: ChainId
 }

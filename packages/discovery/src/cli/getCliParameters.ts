@@ -41,7 +41,7 @@ export interface SingleDiscoveryCliParameters {
 
 export interface LayoutCliParameters {
   mode: 'layout'
-  addresses: EthereumAddress[]
+  address: EthereumAddress
   chain: ChainId
 }
 
@@ -207,14 +207,9 @@ export function getCliParameters(args = process.argv.slice(2)): CliParameters {
 
   if (args[0] === 'layout') {
     const remaining = args.slice(1)
-    if (remaining.length === 0) {
+    const [chainName, address] = remaining
+    if (remaining.length < 2 || !chainName || !address) {
       return { mode: 'help', error: 'Not enough arguments' }
-    }
-    const [chainName, ...addresses] = remaining
-    if (!chainName || addresses.length === 0) {
-      return getHelpCliParameter(
-        'You need to provide arguments for both the chain name and the address',
-      )
     }
 
     const chain = getChainIdSafe(chainName)
@@ -222,7 +217,7 @@ export function getCliParameters(args = process.argv.slice(2)): CliParameters {
 
     const result: LayoutCliParameters = {
       mode: 'layout',
-      addresses: addresses.map((address) => EthereumAddress(address)),
+      address: EthereumAddress(address),
       chain,
     }
     return result
