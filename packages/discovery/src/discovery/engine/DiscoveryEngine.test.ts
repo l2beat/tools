@@ -33,17 +33,17 @@ describe(DiscoveryEngine.name, () => {
       analyze: mockFn(),
     })
     addressAnalyzer.analyze
-      .given(A, config.overrides.get(A), BLOCK_NUMBER)
+      .given(A, config.overrides.get(A), BLOCK_NUMBER, DiscoveryLogger.SILENT)
       .resolvesToOnce({
         analysis: { type: 'EOA', address: A },
         relatives: [B, C],
       })
-      .given(C, config.overrides.get(C), BLOCK_NUMBER)
+      .given(C, config.overrides.get(C), BLOCK_NUMBER, DiscoveryLogger.SILENT)
       .resolvesToOnce({
         analysis: { type: 'EOA', address: C },
         relatives: [B, D],
       })
-      .given(D, config.overrides.get(D), BLOCK_NUMBER)
+      .given(D, config.overrides.get(D), BLOCK_NUMBER, DiscoveryLogger.SILENT)
       .resolvesToOnce({
         analysis: { type: 'EOA', address: D },
         relatives: [],
