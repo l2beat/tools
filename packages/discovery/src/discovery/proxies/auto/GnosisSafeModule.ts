@@ -5,7 +5,7 @@ import { EthereumAddress } from '../../../utils/EthereumAddress'
 import { DiscoveryProvider } from '../../provider/DiscoveryProvider'
 import { bytes32ToAddress } from '../../utils/address'
 import { getCallResult } from '../../utils/getCallResult'
-import { getModules } from './GnosisSafe'
+import { getModules } from '../../utils/getSafeModules'
 
 const AVATAR_SLOT = Bytes.fromHex(
   '0x0000000000000000000000000000000000000000000000000000000000000066',
@@ -70,7 +70,7 @@ export async function detectGnosisSafeZodiacModule(
 
   return {
     implementations: [],
-    relatives: modules,
+    relatives: modules ?? [],
     upgradeability: {
       type: 'gnosis safe zodiac module',
       avatar,

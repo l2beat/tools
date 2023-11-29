@@ -9,6 +9,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+    "build:dependencies": "cd ../.. && yarn build:dependencies",
     "clean": "rm -rf dist",
     "format:fix": "prettier --write .",
     "format": "prettier --check .",
