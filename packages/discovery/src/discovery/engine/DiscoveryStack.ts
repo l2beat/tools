@@ -1,4 +1,5 @@
 import { assert } from '@l2beat/backend-tools'
+
 import { EthereumAddress } from '../../utils/EthereumAddress'
 
 export interface DiscoveryStackItem {
@@ -33,15 +34,15 @@ export class DiscoveryStack {
   }
 
   popAll(): DiscoveryStackItem[] {
-      assert(this.stack.length > 0, "Stack is empty, cannot pop");
+    assert(this.stack.length > 0, 'Stack is empty, cannot pop')
 
-      const result = this.stack.map(s => ({
-          ...s,
-          counter: this.counter++,
-      }))
-      this.stack.splice(0, this.stack.length)
+    const result = this.stack.map((s) => ({
+      ...s,
+      counter: this.counter++,
+    }))
+    this.stack.splice(0, this.stack.length)
 
-      return result
+    return result
   }
 
   pop(): DiscoveryStackItem {
@@ -54,6 +55,6 @@ export class DiscoveryStack {
   }
 
   getAddressCount(): number {
-      return this.counter
+    return this.counter
   }
 }

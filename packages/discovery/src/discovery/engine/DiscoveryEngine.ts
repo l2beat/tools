@@ -27,31 +27,36 @@ export class DiscoveryEngine {
     stack.push(config.initialAddresses, 0)
 
     while (!stack.isEmpty()) {
-      const items = stack.popAll().filter(item => {
-          const reason = shouldSkip(item, config)
-          if (reason) {
-              this.logger.logSkip(item.address, reason)
-              return false
-          }
-          return true
+      const items = stack.popAll().filter((item) => {
+        const reason = shouldSkip(item, config)
+        if (reason) {
+          this.logger.logSkip(item.address, reason)
+          return false
+        }
+        return true
       })
 
-      await Promise.all(items.map(async item => {
-          const bufferedLogger = new DiscoveryLogger({ enabled: false, buffered: true })
+      await Promise.all(
+        items.map(async (item) => {
+          const bufferedLogger = new DiscoveryLogger({
+            enabled: false,
+            buffered: true,
+          })
 
           bufferedLogger.log(`Analyzing ${item.address.toString()}`)
           const { analysis, relatives } = await this.addressAnalyzer.analyze(
-              item.address,
-              config.overrides.get(item.address),
-              blockNumber,
-              bufferedLogger
+            item.address,
+            config.overrides.get(item.address),
+            blockNumber,
+            bufferedLogger,
           )
           resolved.push(analysis)
 
           const newRelatives = stack.push(relatives, item.depth + 1)
           bufferedLogger.logRelatives(newRelatives)
           bufferedLogger.flushToLogger(this.logger)
-      }))
+        }),
+      )
     }
 
     this.logger.flushServer(config.name)

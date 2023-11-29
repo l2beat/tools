@@ -22,7 +22,7 @@ export class HandlerExecutor {
     abi: string[],
     overrides: ContractOverrides | undefined,
     blockNumber: number,
-    logger: DiscoveryLogger
+    logger: DiscoveryLogger,
   ): Promise<{
     results: HandlerResult[]
     values: Record<string, ContractValue> | undefined

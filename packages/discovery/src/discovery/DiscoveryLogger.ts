@@ -17,23 +17,23 @@ export class DiscoveryLogger {
   static SERVER = new DiscoveryLogger({ enabled: false, buffered: true })
 
   flushServer(project: string): void {
-      this.flush(`Printing discovery logs for [${project}]:`)
+    this.flush(`Printing discovery logs for [${project}]:`)
   }
 
-  flushToLogger(logger: DiscoveryLogger) {
-      if (!this.options.buffered) {
-          return
-      }
-      logger.log(this.bufferedLogs)
-      this.bufferedLogs = ''
+  flushToLogger(logger: DiscoveryLogger): void {
+    if (!this.options.buffered) {
+      return
+    }
+    logger.log(this.bufferedLogs)
+    this.bufferedLogs = ''
   }
 
   flush(log?: string): void {
     if (!this.options.buffered) {
       return
     }
-    if(log) {
-        console.log(log)
+    if (log) {
+      console.log(log)
     }
     console.log(this.bufferedLogs)
     this.bufferedLogs = ''
