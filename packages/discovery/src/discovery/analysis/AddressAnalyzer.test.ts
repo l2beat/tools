@@ -32,7 +32,7 @@ describe(AddressAnalyzer.name, () => {
         address,
         undefined,
         BLOCK_NUMBER,
-        DiscoveryLogger.SILENT
+        DiscoveryLogger.SILENT,
       )
 
       expect(result).toEqual({
@@ -97,7 +97,7 @@ describe(AddressAnalyzer.name, () => {
         address,
         undefined,
         BLOCK_NUMBER,
-        DiscoveryLogger.SILENT
+        DiscoveryLogger.SILENT,
       )
 
       expect(result).toEqual({
@@ -172,7 +172,7 @@ describe(AddressAnalyzer.name, () => {
         address,
         undefined,
         BLOCK_NUMBER,
-        DiscoveryLogger.SILENT
+        DiscoveryLogger.SILENT,
       )
 
       expect(result).toEqual({
@@ -248,7 +248,7 @@ describe(AddressAnalyzer.name, () => {
         address,
         undefined,
         BLOCK_NUMBER,
-        DiscoveryLogger.SILENT
+        DiscoveryLogger.SILENT,
       )
 
       expect(result).toEqual({
