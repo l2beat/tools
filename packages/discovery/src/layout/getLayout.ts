@@ -39,16 +39,23 @@ function parseType(
     size: parseInt(type.numberOfBytes, 10),
   }
 
+  if (type.encoding === 'inplace' && !type.base && !type.members) {
+    return { kind: 'static', ...typeBase }
+  }
+
+  if (type.encoding === 'bytes') {
+    return {
+      kind: 'dynamic bytes',
+      ...typeBase,
+    }
+  }
+
   if (depth >= MAX_DEPTH) {
     return {
       kind: 'static',
       ...typeBase,
       type: 'Error: Maximum depth exceeded',
     }
-  }
-
-  if (type.encoding === 'inplace' && !type.base && !type.members) {
-    return { kind: 'static', ...typeBase }
   }
 
   if (type.encoding === 'inplace' && type.members) {
@@ -85,13 +92,6 @@ function parseType(
       ...typeBase,
       key: parseType(type.key, types, depth + 1),
       value: parseType(type.value, types, depth + 1),
-    }
-  }
-
-  if (type.encoding === 'bytes') {
-    return {
-      kind: 'dynamic bytes',
-      ...typeBase,
     }
   }
 

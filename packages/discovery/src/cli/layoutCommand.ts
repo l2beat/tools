@@ -2,6 +2,7 @@ import { Logger } from '@l2beat/backend-tools'
 import { writeFileSync } from 'fs'
 
 import { DiscoveryCliConfig } from '../config/config.discovery'
+import { flattenLayout } from '../layout/flattenLayout'
 import { parseAndGetLayout } from '../layout/parseAndGetLayout'
 import { EthereumAddress } from '../utils/EthereumAddress'
 import { EtherscanLikeClient } from '../utils/EtherscanLikeClient'
@@ -33,7 +34,7 @@ async function runLayout(
   logger.info('Got sources', {
     length: source.SourceCode.length,
   })
-  const layout = parseAndGetLayout(source)
+  const layout = flattenLayout(parseAndGetLayout(source))
   writeFileSync('layout.json', JSON.stringify(layout, null, 2))
   logger.info('Saved layout', { filename: 'layout.json', items: layout.length })
 }
