@@ -1,5 +1,11 @@
 # @l2beat/discovery
 
+## 0.26.0
+
+### Minor Changes
+
+- Add an experimental layout command
+
 ## 0.25.0
 
 ### Minor Changes

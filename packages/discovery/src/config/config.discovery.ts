@@ -14,7 +14,8 @@ export function getDiscoveryCliConfig(cli: CliParameters): DiscoveryCliConfig {
   if (
     cli.mode !== 'invert' &&
     cli.mode !== 'discover' &&
-    cli.mode !== 'single-discovery'
+    cli.mode !== 'single-discovery' &&
+    cli.mode !== 'layout'
   ) {
     throw new Error(`No local config for mode: ${cli.mode}`)
   }
@@ -22,6 +23,7 @@ export function getDiscoveryCliConfig(cli: CliParameters): DiscoveryCliConfig {
   const discoveryEnabled = cli.mode === 'discover'
   const singleDiscoveryEnabled = cli.mode === 'single-discovery'
   const invertEnabled = cli.mode === 'invert'
+  const layoutEnabled = cli.mode === 'layout'
   const chain = getChainConfig(cli.chain)
 
   return {
@@ -42,6 +44,10 @@ export function getDiscoveryCliConfig(cli: CliParameters): DiscoveryCliConfig {
     },
     singleDiscovery: singleDiscoveryEnabled && {
       address: cli.address,
+      chainId: cli.chain,
+    },
+    layout: layoutEnabled && {
+      addresses: cli.addresses,
       chainId: cli.chain,
     },
     chain,
@@ -190,6 +196,7 @@ export interface DiscoveryCliConfig {
   singleDiscovery: SingleDiscoveryModuleConfig | false
   chain: DiscoveryChainConfig
   invert: InversionConfig | false
+  layout: LayoutConfig | false
 }
 
 export interface DiscoveryModuleConfig {
@@ -221,5 +228,10 @@ export interface DiscoveryChainConfig {
 export interface InversionConfig {
   readonly project: string
   readonly useMermaidMarkup: boolean
+  readonly chainId: ChainId
+}
+
+export interface LayoutConfig {
+  readonly addresses: EthereumAddress[]
   readonly chainId: ChainId
 }

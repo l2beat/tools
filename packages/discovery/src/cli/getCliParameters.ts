@@ -7,8 +7,9 @@ export type CliParameters =
   | ServerCliParameters
   | DiscoverCliParameters
   | InvertCliParameters
-  | HelpCliParameters
   | SingleDiscoveryCliParameters
+  | LayoutCliParameters
+  | HelpCliParameters
 
 export interface ServerCliParameters {
   mode: 'server'
@@ -31,9 +32,16 @@ export interface InvertCliParameters {
   chain: ChainId
   useMermaidMarkup: boolean
 }
+
 export interface SingleDiscoveryCliParameters {
   mode: 'single-discovery'
   address: EthereumAddress
+  chain: ChainId
+}
+
+export interface LayoutCliParameters {
+  mode: 'layout'
+  addresses: EthereumAddress[]
   chain: ChainId
 }
 
@@ -193,6 +201,24 @@ export function getCliParameters(args = process.argv.slice(2)): CliParameters {
       mode: 'single-discovery',
       chain,
       address: EthereumAddress(address),
+    }
+    return result
+  }
+
+  if (args[0] === 'layout') {
+    const remaining = args.slice(1)
+    const [chainName, ...addresses] = remaining
+    if (remaining.length < 2 || !chainName) {
+      return { mode: 'help', error: 'Not enough arguments' }
+    }
+
+    const chain = getChainIdSafe(chainName)
+    if (!chain) return createWrongChainNameHelpCli(chainName)
+
+    const result: LayoutCliParameters = {
+      mode: 'layout',
+      addresses: addresses.map((a) => EthereumAddress(a)),
+      chain,
     }
     return result
   }

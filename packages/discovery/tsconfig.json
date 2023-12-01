@@ -4,5 +4,8 @@
     "outDir": "dist",
     "incremental": true
   },
-  "include": ["src"]
+  "include": ["src", "src/layout/solc.d.ts"],
+  "ts-node": {
+    "files": true
+  }
 }
