@@ -1,11 +1,12 @@
-import { expect, mockFn, mockObject } from 'earl'
-import { FunctionSelectorDecoder } from './FunctionSelectorDecoder'
-import { DiscoveryProvider } from '../provider/DiscoveryProvider'
-import { EthereumAddress } from '../../utils/EthereumAddress'
-import { Bytes } from '../../utils/Bytes'
-import { addressToBytes32 } from './address'
-import { utils } from 'ethers'
 import { assert } from '@l2beat/backend-tools'
+import { expect, mockFn, mockObject } from 'earl'
+import { utils } from 'ethers'
+
+import { Bytes } from '../../utils/Bytes'
+import { EthereumAddress } from '../../utils/EthereumAddress'
+import { DiscoveryProvider } from '../provider/DiscoveryProvider'
+import { addressToBytes32 } from './address'
+import { FunctionSelectorDecoder } from './FunctionSelectorDecoder'
 
 describe(FunctionSelectorDecoder.name, () => {
   const EIP2535_CALLDATA = Bytes.fromHex('0x52ef6b2c')

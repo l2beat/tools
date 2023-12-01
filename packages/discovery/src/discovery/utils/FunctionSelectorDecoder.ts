@@ -1,13 +1,13 @@
-import { EthereumAddress } from '../../utils/EthereumAddress'
+import { assert } from '@l2beat/backend-tools'
 import { utils } from 'ethers'
+
+import { EthereumAddress } from '../../utils/EthereumAddress'
 import { DiscoveryLogger } from '../DiscoveryLogger'
 import {
   ContractMetadata,
   DiscoveryProvider,
 } from '../provider/DiscoveryProvider'
 import { ProxyDetector } from '../proxies/ProxyDetector'
-import { assert } from '@l2beat/backend-tools'
-import { notUndefined } from '../handlers/user/LineaRolesModuleHandler'
 
 export class FunctionSelectorDecoder {
   readonly proxyDetector: ProxyDetector
@@ -89,4 +89,8 @@ export class FunctionSelectorDecoder {
 
     return selector
   }
+}
+
+function notUndefined<T>(value: T | undefined): value is T {
+  return value !== undefined
 }
