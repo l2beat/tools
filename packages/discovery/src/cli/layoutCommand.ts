@@ -3,6 +3,7 @@ import { writeFileSync } from 'fs'
 
 import { DiscoveryCliConfig } from '../config/config.discovery'
 import { flattenLayout } from '../layout/flattenLayout'
+import { mergeFlatLayouts } from '../layout/mergeFlatLayouts'
 import { parseAndGetLayout } from '../layout/parseAndGetLayout'
 import { EthereumAddress } from '../utils/EthereumAddress'
 import { EtherscanLikeClient } from '../utils/EtherscanLikeClient'
@@ -22,19 +23,23 @@ export async function layoutCommand(
     config.chain.etherscanApiKey,
     config.chain.etherscanUnsupported,
   )
-  await runLayout(etherscanClient, config.layout.address, logger)
+  await runLayout(etherscanClient, config.layout.addresses, logger)
 }
 
 async function runLayout(
   etherscanClient: EtherscanLikeClient,
-  address: EthereumAddress,
+  addresses: EthereumAddress[],
   logger: Logger,
 ): Promise<void> {
-  const source = await etherscanClient.getContractSource(address)
+  const sources = await Promise.all(
+    addresses.map((address) => etherscanClient.getContractSource(address)),
+  )
   logger.info('Got sources', {
-    length: source.SourceCode.length,
+    lengths: sources.map((source) => source.SourceCode.length),
   })
-  const layout = flattenLayout(parseAndGetLayout(source))
+  const layout = mergeFlatLayouts(
+    sources.map((s) => flattenLayout(parseAndGetLayout(s))),
+  )
   writeFileSync('layout.json', JSON.stringify(layout, null, 2))
   logger.info('Saved layout', { filename: 'layout.json', items: layout.length })
 }
