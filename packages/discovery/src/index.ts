@@ -29,9 +29,11 @@ export {
   type InvertedAddresses,
 } from './inversion/runInversion'
 export { ChainId } from './utils/ChainId'
+export { EtherscanClient } from './utils/explorers/EtherscanClient'
 export {
   EtherscanLikeClient,
   tryParseEtherscanResponse,
-} from './utils/EtherscanLikeClient'
+} from './utils/explorers/EtherscanLikeClient'
+export type { ExplorerClient } from './utils/explorers/ExplorerClient'
 export { getErrorMessage } from './utils/getErrorMessage'
 export { HttpClient } from './utils/HttpClient'

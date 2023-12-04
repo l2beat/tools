@@ -1,15 +1,18 @@
 import { assert, Logger, RateLimiter } from '@l2beat/backend-tools'
 import { z } from 'zod'
 
-import { stringAs, stringAsInt } from './Branded'
-import { EthereumAddress } from './EthereumAddress'
-import { EtherscanResponse, parseEtherscanResponse } from './EtherscanModels'
-import { getErrorMessage } from './getErrorMessage'
-import { Hash256 } from './Hash256'
-import { HttpClient } from './HttpClient'
-import { UnixTime } from './UnixTime'
-
-class EtherscanError extends Error {}
+import { stringAs, stringAsInt } from '../Branded'
+import { EthereumAddress } from '../EthereumAddress'
+import { EtherscanResponse, parseEtherscanResponse } from '../EtherscanModels'
+import { getErrorMessage } from '../getErrorMessage'
+import { Hash256 } from '../Hash256'
+import { HttpClient } from '../HttpClient'
+import { UnixTime } from '../UnixTime'
+import {
+  ContractSourceData,
+  ExplorerClient,
+  ExplorerError,
+} from './ExplorerClient'
 
 // If a given instance of Etherscan does not support some endpoint set a
 // corresponding variable to true, otherwise do not set to anything -
@@ -18,7 +21,7 @@ export interface EtherscanUnsupportedMethods {
   getContractCreation?: boolean
 }
 
-export class EtherscanLikeClient {
+export class EtherscanLikeClient implements ExplorerClient {
   protected readonly rateLimiter = new RateLimiter({
     callsPerMinute: 150,
   })
@@ -43,7 +46,7 @@ export class EtherscanLikeClient {
     url: string,
     apiKey: string,
     unsupportedMethods: EtherscanUnsupportedMethods = {},
-  ): EtherscanLikeClient {
+  ): ExplorerClient {
     return new EtherscanLikeClient(
       httpClient,
       url,
@@ -78,7 +81,7 @@ export class EtherscanLikeClient {
           throw new Error(errorString)
         }
 
-        const errorObject = error as EtherscanError
+        const errorObject = error as ExplorerError
         if (!errorObject.message.includes('No closest block found')) {
           throw new Error(errorObject.message)
         }
@@ -90,7 +93,9 @@ export class EtherscanLikeClient {
     throw new Error('Could not fetch block number')
   }
 
-  async getContractSource(address: EthereumAddress): Promise<ContractSource> {
+  async getContractSource(
+    address: EthereumAddress,
+  ): Promise<ContractSourceData> {
     const response = await this.call('contract', 'getsourcecode', {
       address: address.toString(),
     })
@@ -99,7 +104,13 @@ export class EtherscanLikeClient {
 
     assert(source[0])
 
-    return source[0]
+    return {
+      isVerified: source[0].ABI !== 'Contract source code not verified',
+      abi: source[0].ABI,
+      sourceCode: source[0].SourceCode,
+      contractName: source[0].ContractName,
+      ctorArgs: source[0].ConstructorArguments,
+    }
   }
 
   // Returns undefined if the method is not supported by API.
@@ -183,7 +194,7 @@ export class EtherscanLikeClient {
 
     if (etherscanResponse.message !== 'OK') {
       this.recordError(module, action, timeMs, etherscanResponse.result)
-      throw new EtherscanError(etherscanResponse.result)
+      throw new ExplorerError(etherscanResponse.result)
     }
 
     this.logger.debug({ type: 'success', timeMs, module, action })

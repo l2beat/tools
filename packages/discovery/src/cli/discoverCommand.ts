@@ -9,7 +9,7 @@ import {
 import { ConfigReader } from '../discovery/config/ConfigReader'
 import { dryRunDiscovery, runDiscovery } from '../discovery/runDiscovery'
 import { ChainId } from '../utils/ChainId'
-import { EtherscanLikeClient } from '../utils/EtherscanLikeClient'
+import { EtherscanLikeClient } from '../utils/explorers/EtherscanLikeClient'
 import { HttpClient } from '../utils/HttpClient'
 
 export async function discoverCommand(
@@ -29,7 +29,7 @@ export async function discoverCommand(
 
   const http = new HttpClient()
   const provider = new providers.StaticJsonRpcProvider(chainConfig.rpcUrl)
-  const etherscanClient = EtherscanLikeClient.createForDiscovery(
+  const explorerClient = EtherscanLikeClient.createForDiscovery(
     http,
     chainConfig.etherscanUrl,
     chainConfig.etherscanApiKey,
@@ -43,7 +43,7 @@ export async function discoverCommand(
 
     await dryRunDiscovery(
       provider,
-      etherscanClient,
+      explorerClient,
       config.chain.multicall,
       configReader,
       discoverConfig,
@@ -57,7 +57,7 @@ export async function discoverCommand(
   logger.info(`Chain: ${ChainId.getName(discoverConfig.chainId)}\n`)
   await runDiscovery(
     provider,
-    etherscanClient,
+    explorerClient,
     config.chain.multicall,
     configReader,
     discoverConfig,

@@ -3,7 +3,7 @@ import { providers } from 'ethers'
 
 import { Bytes } from '../../utils/Bytes'
 import { EthereumAddress } from '../../utils/EthereumAddress'
-import { EtherscanLikeClient } from '../../utils/EtherscanLikeClient'
+import { ExplorerClient } from '../../utils/explorers/ExplorerClient'
 import { Hash256 } from '../../utils/Hash256'
 import { UnixTime } from '../../utils/UnixTime'
 import { DiscoveryLogger } from '../DiscoveryLogger'
@@ -30,7 +30,7 @@ export interface ContractMetadata {
 export class DiscoveryProvider {
   constructor(
     private readonly provider: providers.Provider | RateLimitedProvider,
-    private readonly etherscanLikeClient: EtherscanLikeClient,
+    private readonly explorerClient: ExplorerClient,
     private readonly logger: DiscoveryLogger,
     private readonly getLogsMaxRange?: number,
   ) {}
@@ -132,26 +132,25 @@ export class DiscoveryProvider {
   }
 
   async getMetadata(address: EthereumAddress): Promise<ContractMetadata> {
-    const result = await this.etherscanLikeClient.getContractSource(address)
-    const isVerified = result.ABI !== 'Contract source code not verified'
+    const result = await this.explorerClient.getContractSource(address)
 
     return {
-      name: result.ContractName.trim(),
-      isVerified,
-      abi: isVerified ? jsonToHumanReadableAbi(result.ABI) : [],
-      source: result.SourceCode,
+      name: result.contractName.trim(),
+      isVerified: result.isVerified,
+      abi: result.isVerified ? jsonToHumanReadableAbi(result.abi) : [],
+      source: result.sourceCode,
     }
   }
 
   async getConstructorArgs(address: EthereumAddress): Promise<string> {
-    const result = await this.etherscanLikeClient.getContractSource(address)
-    return result.ConstructorArguments
+    const result = await this.explorerClient.getContractSource(address)
+    return result.ctorArgs
   }
 
   async getContractDeploymentTx(
     address: EthereumAddress,
   ): Promise<Hash256 | undefined> {
-    return this.etherscanLikeClient.getContractDeploymentTx(address)
+    return this.explorerClient.getContractDeploymentTx(address)
   }
 
   async getDeployer(
@@ -168,7 +167,7 @@ export class DiscoveryProvider {
   }
 
   async getFirstTxTimestamp(address: EthereumAddress): Promise<UnixTime> {
-    return this.etherscanLikeClient.getFirstTxTimestamp(address)
+    return this.explorerClient.getFirstTxTimestamp(address)
   }
 
   async getDeploymentInfo(address: EthereumAddress): Promise<

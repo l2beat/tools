@@ -12,7 +12,7 @@ import { DiscoveryLogger } from '../discovery/DiscoveryLogger'
 import { getSourceName } from '../discovery/output/saveDiscoveryResult'
 import { toDiscoveryOutput } from '../discovery/output/toDiscoveryOutput'
 import { discover as discovery } from '../discovery/runDiscovery'
-import { EtherscanLikeClient } from '../utils/EtherscanLikeClient'
+import { EtherscanLikeClient } from '../utils/explorers/EtherscanLikeClient'
 import { HttpClient } from '../utils/HttpClient'
 
 export async function singleDiscoveryCommand(
@@ -32,7 +32,7 @@ export async function singleDiscoveryCommand(
 
   const http = new HttpClient()
   const provider = new providers.StaticJsonRpcProvider(chainConfig.rpcUrl)
-  const etherscanClient = EtherscanLikeClient.createForDiscovery(
+  const explorerClient = EtherscanLikeClient.createForDiscovery(
     http,
     chainConfig.etherscanUrl,
     chainConfig.etherscanApiKey,
@@ -45,7 +45,7 @@ export async function singleDiscoveryCommand(
 
   const results = await discovery(
     provider,
-    etherscanClient,
+    explorerClient,
     chainConfig.multicall,
     projectConfig,
     DiscoveryLogger.CLI,

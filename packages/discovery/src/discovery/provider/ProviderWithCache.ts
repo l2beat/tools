@@ -5,7 +5,7 @@ import { providers } from 'ethers'
 import { Bytes } from '../../utils/Bytes'
 import { ChainId } from '../../utils/ChainId'
 import { EthereumAddress } from '../../utils/EthereumAddress'
-import { EtherscanLikeClient } from '../../utils/EtherscanLikeClient'
+import { ExplorerClient } from '../../utils/explorers/ExplorerClient'
 import { Hash256 } from '../../utils/Hash256'
 import { DiscoveryLogger } from '../DiscoveryLogger'
 import { isRevert } from '../utils/isRevert'
@@ -36,14 +36,14 @@ export class ProviderWithCache extends DiscoveryProvider {
 
   constructor(
     provider: providers.Provider | RateLimitedProvider,
-    etherscanLikeClient: EtherscanLikeClient,
+    explorerClient: ExplorerClient,
     logger: DiscoveryLogger,
     private readonly chainId: ChainId,
     private readonly cache: DiscoveryCache,
     getLogsMaxRange?: number,
     readonly reorgSafeDepth?: number,
   ) {
-    super(provider, etherscanLikeClient, logger, getLogsMaxRange)
+    super(provider, explorerClient, logger, getLogsMaxRange)
   }
 
   public async cacheOrFetch<R>(

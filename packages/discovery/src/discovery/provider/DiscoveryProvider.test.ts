@@ -2,7 +2,7 @@ import { expect, mockFn, MockObject, mockObject } from 'earl'
 import { providers } from 'ethers'
 
 import { EthereumAddress } from '../../utils/EthereumAddress'
-import { EtherscanLikeClient } from '../../utils/EtherscanLikeClient'
+import { EtherscanLikeClient } from '../../utils/explorers/EtherscanLikeClient'
 import { DiscoveryLogger } from '../DiscoveryLogger'
 import { DiscoveryProvider } from './DiscoveryProvider'
 

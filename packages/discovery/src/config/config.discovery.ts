@@ -6,7 +6,7 @@ import { multicallConfig } from '../discovery/provider/multicall/MulticallConfig
 import { MulticallConfig } from '../discovery/provider/multicall/types'
 import { ChainId } from '../utils/ChainId'
 import { EthereumAddress } from '../utils/EthereumAddress'
-import { EtherscanUnsupportedMethods } from '../utils/EtherscanLikeClient'
+import { EtherscanUnsupportedMethods } from '../utils/explorers/EtherscanLikeClient'
 
 export function getDiscoveryCliConfig(cli: CliParameters): DiscoveryCliConfig {
   dotenv()

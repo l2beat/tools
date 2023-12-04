@@ -2,7 +2,7 @@ import { DiscoveryOutput } from '@l2beat/discovery-types'
 import { providers } from 'ethers'
 
 import { DiscoveryModuleConfig } from '../config/config.discovery'
-import { EtherscanLikeClient } from '../utils/EtherscanLikeClient'
+import { ExplorerClient } from '../utils/explorers/ExplorerClient'
 import { AddressAnalyzer, Analysis } from './analysis/AddressAnalyzer'
 import { ConfigReader } from './config/ConfigReader'
 import { DiscoveryConfig } from './config/DiscoveryConfig'
@@ -21,7 +21,7 @@ import { SourceCodeService } from './source/SourceCodeService'
 
 export async function runDiscovery(
   provider: providers.StaticJsonRpcProvider,
-  etherscanClient: EtherscanLikeClient,
+  explorerClient: ExplorerClient,
   multicallConfig: MulticallConfig,
   configReader: ConfigReader,
   config: DiscoveryModuleConfig,
@@ -41,7 +41,7 @@ export async function runDiscovery(
   const logger = DiscoveryLogger.CLI
   const result = await discover(
     provider,
-    etherscanClient,
+    explorerClient,
     multicallConfig,
     projectConfig,
     logger,
@@ -61,7 +61,7 @@ export async function runDiscovery(
 
 export async function dryRunDiscovery(
   provider: providers.StaticJsonRpcProvider,
-  etherscanClient: EtherscanLikeClient,
+  explorerClient: ExplorerClient,
   multicallConfig: MulticallConfig,
   configReader: ConfigReader,
   config: DiscoveryModuleConfig,
@@ -78,7 +78,7 @@ export async function dryRunDiscovery(
   const [discovered, discoveredYesterday] = await Promise.all([
     justDiscover(
       provider,
-      etherscanClient,
+      explorerClient,
       multicallConfig,
       projectConfig,
       blockNumber,
@@ -86,7 +86,7 @@ export async function dryRunDiscovery(
     ),
     justDiscover(
       provider,
-      etherscanClient,
+      explorerClient,
       multicallConfig,
       projectConfig,
       blockNumberYesterday,
@@ -109,7 +109,7 @@ export async function dryRunDiscovery(
 
 export async function justDiscover(
   provider: providers.StaticJsonRpcProvider,
-  etherscanClient: EtherscanLikeClient,
+  explorerClient: ExplorerClient,
   multicallConfig: MulticallConfig,
   config: DiscoveryConfig,
   blockNumber: number,
@@ -117,7 +117,7 @@ export async function justDiscover(
 ): Promise<DiscoveryOutput> {
   const result = await discover(
     provider,
-    etherscanClient,
+    explorerClient,
     multicallConfig,
     config,
     DiscoveryLogger.CLI,
@@ -142,7 +142,7 @@ export async function justDiscover(
 
 export async function discover(
   provider: providers.StaticJsonRpcProvider,
-  etherscanClient: EtherscanLikeClient,
+  explorerClient: ExplorerClient,
   multicallConfig: MulticallConfig,
   config: DiscoveryConfig,
   logger: DiscoveryLogger,
@@ -154,7 +154,7 @@ export async function discover(
 
   const discoveryProvider = new ProviderWithCache(
     provider,
-    etherscanClient,
+    explorerClient,
     logger,
     config.chainId,
     sqliteCache,
