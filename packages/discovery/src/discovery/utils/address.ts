@@ -6,5 +6,5 @@ export function bytes32ToAddress(bytes32: Bytes): EthereumAddress {
 }
 
 export function addressToBytes32(address: EthereumAddress): Bytes {
-  return Bytes.fromHex(`000000000000000000000000${address.toString().slice(2)}`)
+  return Bytes.fromHex(address.toString().slice(2).padStart(64, '0'))
 }
