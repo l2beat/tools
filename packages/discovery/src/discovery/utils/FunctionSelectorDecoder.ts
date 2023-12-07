@@ -31,6 +31,7 @@ export class FunctionSelectorDecoder {
         const proxy = await this.proxyDetector.detectProxy(
           address,
           this.blockNumber,
+          DiscoveryLogger.SILENT,
         )
 
         if (proxy) {
