@@ -15,6 +15,7 @@ export type StateFromEventDefinition = z.infer<typeof StateFromEventDefinition>
 export const StateFromEventDefinition = z.strictObject({
   type: z.literal('stateFromEvent'),
   event: z.string(),
+  topic1: z.optional(z.string()),
   returnParams: z.array(z.string()),
   groupBy: z.optional(z.string()),
   onlyValue: z.optional(z.boolean()),
@@ -47,12 +48,11 @@ export class StateFromEventHandler implements ClassicHandler {
     blockNumber: number,
   ): Promise<HandlerResult> {
     this.logger.logExecution(this.field, ['Querying ', this.fragment.name])
-    const logs = await provider.getLogs(
-      address,
-      [this.abi.getEventTopic(this.fragment)],
-      0,
-      blockNumber,
-    )
+    const topic0 = this.abi.getEventTopic(this.fragment)
+    const topics = this.definition.topic1
+      ? [topic0, utils.hexZeroPad(this.definition.topic1, 32)]
+      : [topic0]
+    const logs = await provider.getLogs(address, topics, 0, blockNumber)
 
     const values = new Set<ContractValue>()
     for (const log of logs) {
