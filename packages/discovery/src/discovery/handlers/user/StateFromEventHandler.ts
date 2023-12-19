@@ -10,12 +10,13 @@ import { DiscoveryProvider } from '../../provider/DiscoveryProvider'
 import { ClassicHandler, HandlerResult } from '../Handler'
 import { getEventFragment } from '../utils/getEventFragment'
 import { toContractValue } from '../utils/toContractValue'
+import { toTopics } from '../utils/toTopics'
 
 export type StateFromEventDefinition = z.infer<typeof StateFromEventDefinition>
 export const StateFromEventDefinition = z.strictObject({
   type: z.literal('stateFromEvent'),
   event: z.string(),
-  topic1: z.optional(z.string()),
+  topics: z.optional(z.array(z.union([z.string(), z.null()]))),
   returnParams: z.array(z.string()),
   groupBy: z.optional(z.string()),
   onlyValue: z.optional(z.boolean()),
@@ -48,10 +49,7 @@ export class StateFromEventHandler implements ClassicHandler {
     blockNumber: number,
   ): Promise<HandlerResult> {
     this.logger.logExecution(this.field, ['Querying ', this.fragment.name])
-    const topic0 = this.abi.getEventTopic(this.fragment)
-    const topics = this.definition.topic1
-      ? [topic0, utils.hexZeroPad(this.definition.topic1, 32)]
-      : [topic0]
+    const topics = toTopics(this.abi, this.fragment, this.definition.topics)
     const logs = await provider.getLogs(address, topics, 0, blockNumber)
 
     const values = new Set<ContractValue>()

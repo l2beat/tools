@@ -233,7 +233,7 @@ describe(StateFromEventHandler.name, () => {
         {
           type: 'stateFromEvent',
           event,
-          topic1: Alice.toString(),
+          topics: [Alice.toString()],
           returnParams: ['account', 'status'],
         },
         [],
