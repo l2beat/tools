@@ -1,5 +1,11 @@
 # @l2beat/discovery
 
+## 0.28.0
+
+### Minor Changes
+
+- Enable filtering events by topics
+
 ## 0.27.2
 
 ### Patch Changes
