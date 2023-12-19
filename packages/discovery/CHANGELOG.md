@@ -4,7 +4,7 @@
 
 ### Minor Changes
 
-- Enable filtering events by topics
+- Enable filtering events by topics in handlers
 
 ## 0.27.2
 
