@@ -37,15 +37,23 @@ export async function saveDiscoveryResult(
 
   sourcesFolder ??= '.code'
   const sourcesPath = `${root}/${sourcesFolder}`
+  const allContractNames = results.map((c) =>
+    c.type !== 'EOA' ? c.name : 'EOA',
+  )
   await rimraf(sourcesPath)
   for (const result of results) {
     if (result.type === 'EOA') {
       continue
     }
     for (const [i, files] of result.sources.entries()) {
+      // If there are multiple different contracts discovered with the same
+      // name, append their address to the folder name.
+      const hasNameClash =
+        allContractNames.filter((n) => n === result.name).length > 1
       for (const [file, content] of Object.entries(files)) {
         const codebase = getSourceName(i, result.sources.length)
-        const path = `${sourcesPath}/${result.name}${codebase}/${file}`
+        const folderSuffix = hasNameClash ? `-${result.address.toString()}` : ''
+        const path = `${sourcesPath}/${result.name}${folderSuffix}${codebase}/${file}`
         await mkdirp(dirname(path))
         await writeFile(path, content)
       }
