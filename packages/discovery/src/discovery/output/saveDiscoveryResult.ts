@@ -1,11 +1,10 @@
 import { writeFile } from 'fs/promises'
 import { mkdirp } from 'mkdirp'
-import { dirname } from 'path'
+import path, { dirname } from 'path'
 import { rimraf } from 'rimraf'
 
 import { ChainId } from '../../utils/ChainId'
 import { EthereumAddress } from '../../utils/EthereumAddress'
-import { Hash256 } from '../../utils/Hash256'
 import { Analysis } from '../analysis/AddressAnalyzer'
 import { DiscoveryConfig } from '../config/DiscoveryConfig'
 import { toDiscoveryOutput } from './toDiscoveryOutput'
@@ -15,29 +14,32 @@ export async function saveDiscoveryResult(
   results: Analysis[],
   config: DiscoveryConfig,
   blockNumber: number,
-  configHash: Hash256,
-  chain: ChainId,
-  sourcesFolder?: string,
-  discoveryFilename?: string,
+  options: {
+    rootFolder?: string
+    sourcesFolder?: string
+    discoveryFilename?: string
+  },
 ): Promise<void> {
   const project = toDiscoveryOutput(
     config.name,
     config.chainId,
-    configHash,
+    config.hash,
     blockNumber,
     results,
   )
   const json = await toPrettyJson(project)
 
-  const chainName = ChainId.getName(chain).toString()
+  const chainName = ChainId.getName(config.chainId).toString()
 
-  const root = `discovery/${config.name}/${chainName}`
+  const root =
+    options.rootFolder ?? path.join('discovery', config.name, chainName)
+  await mkdirp(root)
 
-  discoveryFilename ??= 'discovered.json'
-  await writeFile(`${root}/${discoveryFilename}`, json)
+  const discoveryFilename = options.discoveryFilename ?? 'discovered.json'
+  await writeFile(path.join(root, discoveryFilename), json)
 
-  sourcesFolder ??= '.code'
-  const sourcesPath = `${root}/${sourcesFolder}`
+  const sourcesFolder = options.sourcesFolder ?? '.code'
+  const sourcesPath = path.join(root, sourcesFolder)
   const allContractNames = results.map((c) =>
     c.type !== 'EOA' ? c.name : 'EOA',
   )
@@ -79,23 +81,29 @@ export function getSourceOutputPath(
     allContractNames.filter((n) => n === contractName).length > 1
   const uniquenessSuffix = hasNameClash ? `-${contractAddress.toString()}` : ''
 
-  const implementationSuffix = getSourceName(fileIndex, filesCount)
+  const implementationFolder = getImplementationFolder(fileIndex, filesCount)
 
-  return `${root}/${contractName}${uniquenessSuffix}${implementationSuffix}/${fileName}`
+  return path.join(
+    root,
+    `${contractName}${uniquenessSuffix}`,
+    implementationFolder,
+    fileName,
+  )
 }
 
 /**
  * Returns the name of the folder under which to save the source code.
- * /.code/[getSourceName(...)]/[file]
- *
  * If there is only one source, it returns '', meaning that the source code
- * will be saved under /.code/[file].
+ * will be saved at current folder level.
  *
  * If there are 2 sources, it returns '/proxy' or '/implementation'.
- *
- * If there are more it returns '/proxy', '/implementation-1', '/implementation-2', etc.
+ * If there are more it returns
+ * '/proxy', '/implementation-1', '/implementation-2', etc.
  */
-export function getSourceName(i: number, sourcesCount: number): string {
+export function getImplementationFolder(
+  i: number,
+  sourcesCount: number,
+): string {
   let name = ''
   if (sourcesCount > 1) {
     name = i === 0 ? 'proxy' : 'implementation'
