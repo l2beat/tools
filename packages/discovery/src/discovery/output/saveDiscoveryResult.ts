@@ -4,6 +4,7 @@ import { dirname } from 'path'
 import { rimraf } from 'rimraf'
 
 import { ChainId } from '../../utils/ChainId'
+import { EthereumAddress } from '../../utils/EthereumAddress'
 import { Hash256 } from '../../utils/Hash256'
 import { Analysis } from '../analysis/AddressAnalyzer'
 import { DiscoveryConfig } from '../config/DiscoveryConfig'
@@ -41,24 +42,46 @@ export async function saveDiscoveryResult(
     c.type !== 'EOA' ? c.name : 'EOA',
   )
   await rimraf(sourcesPath)
-  for (const result of results) {
-    if (result.type === 'EOA') {
+  for (const contract of results) {
+    if (contract.type === 'EOA') {
       continue
     }
-    for (const [i, files] of result.sources.entries()) {
-      // If there are multiple different contracts discovered with the same
-      // name, append their address to the folder name.
-      const hasNameClash =
-        allContractNames.filter((n) => n === result.name).length > 1
-      for (const [file, content] of Object.entries(files)) {
-        const codebase = getSourceName(i, result.sources.length)
-        const folderSuffix = hasNameClash ? `-${result.address.toString()}` : ''
-        const path = `${sourcesPath}/${result.name}${folderSuffix}${codebase}/${file}`
+    for (const [i, files] of contract.sources.entries()) {
+      for (const [fileName, content] of Object.entries(files)) {
+        const path = getSourceOutputPath(
+          fileName,
+          i,
+          contract.sources.length,
+          contract.name,
+          contract.address,
+          sourcesPath,
+          allContractNames,
+        )
         await mkdirp(dirname(path))
         await writeFile(path, content)
       }
     }
   }
+}
+
+export function getSourceOutputPath(
+  fileName: string,
+  fileIndex: number,
+  filesCount: number,
+  contractName: string,
+  contractAddress: EthereumAddress,
+  root: string,
+  allContractNames: string[],
+): string {
+  // If there are multiple different contracts discovered with the same
+  // name, append their address to the folder name.
+  const hasNameClash =
+    allContractNames.filter((n) => n === contractName).length > 1
+  const uniquenessSuffix = hasNameClash ? `-${contractAddress.toString()}` : ''
+
+  const implementationSuffix = getSourceName(fileIndex, filesCount)
+
+  return `${root}/${contractName}${uniquenessSuffix}${implementationSuffix}/${fileName}`
 }
 
 /**
@@ -72,12 +95,12 @@ export async function saveDiscoveryResult(
  *
  * If there are more it returns '/proxy', '/implementation-1', '/implementation-2', etc.
  */
-export function getSourceName(i: number, length: number): string {
+export function getSourceName(i: number, sourcesCount: number): string {
   let name = ''
-  if (length > 1) {
+  if (sourcesCount > 1) {
     name = i === 0 ? 'proxy' : 'implementation'
   }
-  if (length > 2 && i > 0) {
+  if (sourcesCount > 2 && i > 0) {
     name += `-${i}`
   }
   if (name) {
