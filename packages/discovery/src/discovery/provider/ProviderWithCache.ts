@@ -35,7 +35,7 @@ export class ProviderWithCache extends DiscoveryProvider {
   private lastCurBlockCheckTime?: number
 
   constructor(
-    provider: providers.Provider | RateLimitedProvider,
+    provider: providers.JsonRpcProvider | RateLimitedProvider,
     etherscanLikeClient: EtherscanLikeClient,
     logger: DiscoveryLogger,
     private readonly chainId: ChainId,
