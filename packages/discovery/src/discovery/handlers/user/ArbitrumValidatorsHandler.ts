@@ -1,4 +1,4 @@
-import { utils } from 'ethers'
+import { providers, utils } from 'ethers'
 import * as z from 'zod'
 
 import { EthereumAddress } from '../../../utils/EthereumAddress'
@@ -17,6 +17,13 @@ export const ArbitrumValidatorsHandlerDefinition = z.strictObject({
 
 export class ArbitrumValidatorsHandler implements ClassicHandler {
   readonly dependencies: string[] = []
+  readonly setValidatorFn = 'setValidator(address[] _validator, bool[] _val)'
+  readonly ownerFunctionCalledEvent = 'OwnerFunctionCalled(uint256 indexed id)'
+  readonly interface = new utils.Interface([
+    `function ${this.setValidatorFn}`,
+    `event ${this.ownerFunctionCalledEvent}`,
+  ])
+  readonly setValidatorSighash = this.interface.getSighash(this.setValidatorFn)
 
   constructor(
     readonly field: string,
@@ -31,47 +38,57 @@ export class ArbitrumValidatorsHandler implements ClassicHandler {
     blockNumber: number,
   ): Promise<HandlerResult> {
     this.logger.logExecution(this.field, ['Fetching Arbitrum Validators'])
-    const logs = await provider.getLogs(
-      address,
-      [
-        // event OwnerFunctionCalled(uint256 indexed id);
-        '0xea8787f128d10b2cc0317b0c3960f9ad447f7f6c1ed189db1083ccffd20f456e',
-        // id == 6 is emitted inside setValidator()
-        '0x0000000000000000000000000000000000000000000000000000000000000006',
-      ],
-      0,
-      blockNumber,
-    )
 
+    // Find transactions in which setValidator() was called
+    const logs = await this.getRelevantLogs(provider, address, blockNumber)
     const txHashes = logs.map((log) => Hash256(log.transactionHash))
 
+    // Extract setValidator call parameters from transaction traces
     const validatorMap: Record<string, boolean> = {}
     for (const txHash of txHashes) {
       const traces = await provider.getTransactionTrace(txHash)
-      traces.forEach((trace) => this.parseTrace(trace, validatorMap))
+      traces.forEach((trace) => this.processTrace(trace, validatorMap))
     }
 
-    const validatorsSetToTrue = Object.keys(validatorMap).filter(
+    const activeValidators = Object.keys(validatorMap).filter(
       (key) => validatorMap[key],
     )
-    validatorsSetToTrue.sort()
+    activeValidators.sort()
 
     return {
       field: this.field,
-      value: validatorsSetToTrue,
+      value: activeValidators,
     }
   }
 
-  parseTrace(trace: Trace, validatorMap: Record<string, boolean>): void {
+  private async getRelevantLogs(
+    provider: DiscoveryProvider,
+    address: EthereumAddress,
+    blockNumber: number,
+  ): Promise<providers.Log[]> {
+    const topic0 = this.interface.getEventTopic(this.ownerFunctionCalledEvent)
+    // when setValidator is called, the event is emitted with parameter "6"
+    const topic1 = utils.defaultAbiCoder.encode(['uint256'], [6])
+    const logs = await provider.getLogs(
+      address,
+      [topic0, topic1],
+      0,
+      blockNumber,
+    )
+    return logs
+  }
+
+  processTrace(trace: Trace, validatorMap: Record<string, boolean>): void {
     if (trace.type !== 'call') return
     if (trace.action.callType !== 'delegatecall') return
 
-    const fnSignature = 'setValidator(address[] _validator, bool[] _val)'
-    const i = new utils.Interface([`function ${fnSignature}`])
     const input = trace.action.input
-    if (!input.startsWith(i.getSighash(fnSignature))) return
+    if (!input.startsWith(this.setValidatorSighash)) return
 
-    const decodedInput = i.decodeFunctionData(fnSignature, input)
+    const decodedInput = this.interface.decodeFunctionData(
+      this.setValidatorFn,
+      input,
+    )
     const addresses = decodedInput[0] as string[]
     const flags = decodedInput[1] as boolean[]
 
@@ -79,7 +96,7 @@ export class ArbitrumValidatorsHandler implements ClassicHandler {
       const address = addresses[i]
       const flag = flags[i]
       if (address === undefined || flag === undefined) {
-        throw new Error(`Invalid input to ${fnSignature}`)
+        throw new Error(`Invalid input to ${this.setValidatorFn}`)
       }
       validatorMap[address] = flag
     }
