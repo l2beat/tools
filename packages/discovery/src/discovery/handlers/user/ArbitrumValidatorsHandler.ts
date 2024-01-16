@@ -43,7 +43,7 @@ export class ArbitrumValidatorsHandler implements ClassicHandler {
     const logs = await this.getRelevantLogs(provider, address, blockNumber)
     const txHashes = logs.map((log) => Hash256(log.transactionHash))
 
-    // Extract setValidator call parameters from transaction traces
+    // Extract setValidator call parameters from transaction traces and process them
     const validatorMap: Record<string, boolean> = {}
     for (const txHash of txHashes) {
       const traces = await provider.getTransactionTrace(txHash)
