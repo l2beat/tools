@@ -24,8 +24,10 @@ const Trace = z.object({
   traceAddress: z.array(z.number()),
   subtraces: z.number(),
   type: z.string(),
+  blockNumber: z.number(),
   error: z.string().optional(),
 })
+export type Trace = z.infer<typeof Trace>
 
 export const TraceTransactionResponse = z.array(Trace)
 export type TraceTransactionResponse = z.infer<typeof TraceTransactionResponse>

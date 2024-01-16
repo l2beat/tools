@@ -11,6 +11,7 @@ import { DiscoveryLogger } from '../DiscoveryLogger'
 import { isRevert } from '../utils/isRevert'
 import { ContractMetadata, DiscoveryProvider } from './DiscoveryProvider'
 import { RateLimitedProvider } from './RateLimitedProvider'
+import { TraceTransactionResponse } from './TransactionTrace'
 
 const toJSON = <T>(x: T): string => JSON.stringify(x)
 const fromJSON = <T>(x: string): T => JSON.parse(x) as T
@@ -314,6 +315,33 @@ export class ProviderWithCache extends DiscoveryProvider {
         currentBlock,
       )
     }
+    return result
+  }
+
+  override async getTransactionTrace(
+    transactionHash: Hash256,
+  ): Promise<TraceTransactionResponse> {
+    const key = this.buildKey('getTransactionTrace', [transactionHash])
+
+    const cachedResult = await this.cache.get(key)
+
+    if (cachedResult !== undefined) {
+      return TraceTransactionResponse.parse(JSON.parse(cachedResult))
+    }
+
+    const result = await super.getTransactionTrace(transactionHash)
+
+    const blockNumber = result[0]?.blockNumber
+
+    if (blockNumber !== undefined) {
+      await this.cache.set(
+        key,
+        toJSON(result),
+        this.chainId.valueOf(),
+        blockNumber,
+      )
+    }
+
     return result
   }
 }

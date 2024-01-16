@@ -1,9 +1,11 @@
+import { utils } from 'ethers'
 import * as z from 'zod'
 
 import { EthereumAddress } from '../../../utils/EthereumAddress'
 import { Hash256 } from '../../../utils/Hash256'
 import { DiscoveryLogger } from '../../DiscoveryLogger'
 import { DiscoveryProvider } from '../../provider/DiscoveryProvider'
+import { Trace } from '../../provider/TransactionTrace'
 import { ClassicHandler, HandlerResult } from '../Handler'
 
 export type ArbitrumValidatorsHandlerDefinition = z.infer<
@@ -43,15 +45,43 @@ export class ArbitrumValidatorsHandler implements ClassicHandler {
 
     const txHashes = logs.map((log) => Hash256(log.transactionHash))
 
-    // get traces of all those transactions
+    const validatorMap: Record<string, boolean> = {}
     for (const txHash of txHashes) {
       const traces = await provider.getTransactionTrace(txHash)
-      console.log(traces)
+      traces.forEach((trace) => this.parseTrace(trace, validatorMap))
     }
+
+    const validatorsSetToTrue = Object.keys(validatorMap).filter(
+      (key) => validatorMap[key],
+    )
+    validatorsSetToTrue.sort()
 
     return {
       field: this.field,
-      value: 0,
+      value: validatorsSetToTrue,
+    }
+  }
+
+  parseTrace(trace: Trace, validatorMap: Record<string, boolean>): void {
+    if (trace.type !== 'call') return
+    if (trace.action.callType !== 'delegatecall') return
+
+    const fnSignature = 'setValidator(address[] _validator, bool[] _val)'
+    const i = new utils.Interface([`function ${fnSignature}`])
+    const input = trace.action.input
+    if (!input.startsWith(i.getSighash(fnSignature))) return
+
+    const decodedInput = i.decodeFunctionData(fnSignature, input)
+    const addresses = decodedInput[0] as string[]
+    const flags = decodedInput[1] as boolean[]
+
+    for (let i = 0; i < addresses.length; i++) {
+      const address = addresses[i]
+      const flag = flags[i]
+      if (address === undefined || flag === undefined) {
+        throw new Error(`Invalid input to ${fnSignature}`)
+      }
+      validatorMap[address] = flag
     }
   }
 }
