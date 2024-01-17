@@ -115,7 +115,7 @@ const EXAMPLE_VALIDATORS_LOGS = [
   },
 ]
 
-const EXAMPLE_VALIDATORS_TRACES: record<string, unknown> = {
+const EXAMPLE_VALIDATORS_TRACES: Record<string, unknown> = {
   // Add validator '0x83215480dB2C6A7E56f9E99EF93AB9B36F8A3DD5'
   '0x54a5c447871229b19eb454b891e91d1f0c627ed61b59e0d39cb8b183fd98a784': [
     {
