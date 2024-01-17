@@ -42,14 +42,14 @@ export class ArbitrumValidatorsHandler implements ClassicHandler {
     const txHashes = logs.map((log) => Hash256(log.transactionHash))
 
     // Extract setValidator call parameters from transaction traces and process them
-    const validatorMap: Record<string, boolean> = {}
+    const isValidator: Record<string, boolean> = {}
     for (const txHash of txHashes) {
       const traces = await provider.getTransactionTrace(txHash)
-      traces.forEach((trace) => this.processTrace(trace, validatorMap))
+      traces.forEach((trace) => this.processTrace(trace, isValidator))
     }
 
-    const activeValidators = Object.keys(validatorMap).filter(
-      (key) => validatorMap[key],
+    const activeValidators = Object.keys(isValidator).filter(
+      (key) => isValidator[key],
     )
     activeValidators.sort()
 
@@ -76,7 +76,7 @@ export class ArbitrumValidatorsHandler implements ClassicHandler {
     return logs
   }
 
-  processTrace(trace: Trace, validatorMap: Record<string, boolean>): void {
+  processTrace(trace: Trace, isValidator: Record<string, boolean>): void {
     if (trace.type !== 'call') return
     if (trace.action.callType !== 'delegatecall') return
 
@@ -96,7 +96,7 @@ export class ArbitrumValidatorsHandler implements ClassicHandler {
       if (address === undefined || flag === undefined) {
         throw new Error(`Invalid input to ${this.setValidatorFn}`)
       }
-      validatorMap[address] = flag
+      isValidator[address] = flag
     }
   }
 }
