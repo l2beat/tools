@@ -128,6 +128,6 @@ export function getUserHandler(
     case 'layerZeroMultisig':
       return new LayerZeroMultisigHandler(field, abi, logger)
     case 'arbitrumValidators':
-      return new ArbitrumValidatorsHandler(field, definition, abi, logger)
+      return new ArbitrumValidatorsHandler(field, logger)
   }
 }

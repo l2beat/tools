@@ -27,8 +27,6 @@ export class ArbitrumValidatorsHandler implements ClassicHandler {
 
   constructor(
     readonly field: string,
-    readonly definition: ArbitrumValidatorsHandlerDefinition,
-    abi: string[],
     readonly logger: DiscoveryLogger,
   ) {}
 
