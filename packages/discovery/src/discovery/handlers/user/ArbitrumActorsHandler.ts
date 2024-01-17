@@ -8,25 +8,33 @@ import { DiscoveryProvider } from '../../provider/DiscoveryProvider'
 import { Trace } from '../../provider/TransactionTrace'
 import { ClassicHandler, HandlerResult } from '../Handler'
 
-export type ArbitrumValidatorsHandlerDefinition = z.infer<
-  typeof ArbitrumValidatorsHandlerDefinition
+export type ArbitrumActorsHandlerDefinition = z.infer<
+  typeof ArbitrumActorsHandlerDefinition
 >
-export const ArbitrumValidatorsHandlerDefinition = z.strictObject({
-  type: z.literal('arbitrumValidators'),
+export const ArbitrumActorsHandlerDefinition = z.strictObject({
+  type: z.literal('arbitrumActors'),
+  actorType: z.union([z.literal('validator'), z.literal('batchPoster')]),
 })
 
-export class ArbitrumValidatorsHandler implements ClassicHandler {
+export class ArbitrumActorsHandler implements ClassicHandler {
   readonly dependencies: string[] = []
   readonly setValidatorFn = 'setValidator(address[] _validator, bool[] _val)'
+  readonly setIsBatchPosterFn =
+    'setIsBatchPoster(address addr, bool isBatchPoster_)'
   readonly ownerFunctionCalledEvent = 'OwnerFunctionCalled(uint256 indexed id)'
   readonly interface = new utils.Interface([
     `function ${this.setValidatorFn}`,
+    `function ${this.setIsBatchPosterFn}`,
     `event ${this.ownerFunctionCalledEvent}`,
   ])
   readonly setValidatorSighash = this.interface.getSighash(this.setValidatorFn)
+  readonly setIsBatchPosterSighash = this.interface.getSighash(
+    this.setIsBatchPosterFn,
+  )
 
   constructor(
     readonly field: string,
+    readonly definition: ArbitrumActorsHandlerDefinition,
     readonly logger: DiscoveryLogger,
   ) {}
 
@@ -35,27 +43,34 @@ export class ArbitrumValidatorsHandler implements ClassicHandler {
     address: EthereumAddress,
     blockNumber: number,
   ): Promise<HandlerResult> {
-    this.logger.logExecution(this.field, ['Fetching Arbitrum Validators'])
+    this.logger.logExecution(this.field, [
+      this.definition.actorType === 'validator'
+        ? 'Fetching Arbitrum Validators'
+        : 'Fetching Arbitrum Batch Posters',
+    ])
 
-    // Find transactions in which setValidator() was called
+    // Find transactions in which setValidator/setIsBatchPoster was called
     const logs = await this.getRelevantLogs(provider, address, blockNumber)
     const txHashes = logs.map((log) => Hash256(log.transactionHash))
 
-    // Extract setValidator call parameters from transaction traces and process them
-    const isValidator: Record<string, boolean> = {}
+    // Extract setValidator/setIsBatchPoster call parameters
+    // from transaction traces and process them
+    const isActor: Record<string, boolean> = {}
     for (const txHash of txHashes) {
       const traces = await provider.getTransactionTrace(txHash)
-      traces.forEach((trace) => this.processTrace(trace, isValidator))
+      traces.forEach((trace) =>
+        this.definition.actorType === 'validator'
+          ? this.processSetValidatorTrace(trace, isActor)
+          : this.processSetIsBatchPosterTrace(trace, isActor),
+      )
     }
 
-    const activeValidators = Object.keys(isValidator).filter(
-      (key) => isValidator[key],
-    )
-    activeValidators.sort()
+    const activeActors = Object.keys(isActor).filter((key) => isActor[key])
+    activeActors.sort()
 
     return {
       field: this.field,
-      value: activeValidators,
+      value: activeActors,
     }
   }
 
@@ -65,8 +80,9 @@ export class ArbitrumValidatorsHandler implements ClassicHandler {
     blockNumber: number,
   ): Promise<providers.Log[]> {
     const topic0 = this.interface.getEventTopic(this.ownerFunctionCalledEvent)
-    // when setValidator is called, the event is emitted with parameter "6"
-    const topic1 = utils.defaultAbiCoder.encode(['uint256'], [6])
+    // eventParam is 6 for validators and 1 for batch posters
+    const eventParam = this.definition.actorType === 'validator' ? 6 : 1
+    const topic1 = utils.defaultAbiCoder.encode(['uint256'], [eventParam])
     const logs = await provider.getLogs(
       address,
       [topic0, topic1],
@@ -76,7 +92,10 @@ export class ArbitrumValidatorsHandler implements ClassicHandler {
     return logs
   }
 
-  processTrace(trace: Trace, isValidator: Record<string, boolean>): void {
+  processSetValidatorTrace(
+    trace: Trace,
+    isValidator: Record<string, boolean>,
+  ): void {
     if (trace.type !== 'call') return
     if (trace.action.callType !== 'delegatecall') return
 
@@ -98,5 +117,25 @@ export class ArbitrumValidatorsHandler implements ClassicHandler {
       }
       isValidator[address] = flag
     }
+  }
+
+  processSetIsBatchPosterTrace(
+    trace: Trace,
+    isBatchPoster: Record<string, boolean>,
+  ): void {
+    if (trace.type !== 'call') return
+    if (trace.action.callType !== 'delegatecall') return
+
+    const input = trace.action.input
+    if (!input.startsWith(this.setIsBatchPosterSighash)) return
+
+    const decodedInput = this.interface.decodeFunctionData(
+      this.setIsBatchPosterFn,
+      input,
+    )
+    const address = decodedInput[0] as string
+    const flag = decodedInput[1] as boolean
+
+    isBatchPoster[address] = flag
   }
 }

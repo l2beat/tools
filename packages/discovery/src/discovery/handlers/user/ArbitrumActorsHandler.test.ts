@@ -5,12 +5,13 @@ import { Hash256 } from '../../../utils/Hash256'
 import { DiscoveryLogger } from '../../DiscoveryLogger'
 import { DiscoveryProvider } from '../../provider/DiscoveryProvider'
 import { TraceTransactionResponse } from '../../provider/TransactionTrace'
-import { ArbitrumValidatorsHandler } from './ArbitrumValidatorsHandler'
+import { ArbitrumActorsHandler } from './ArbitrumActorsHandler'
 
-describe(ArbitrumValidatorsHandler.name, () => {
+describe(ArbitrumActorsHandler.name, () => {
   it('returns validators from the traces that add and remove them', async () => {
-    const handler = new ArbitrumValidatorsHandler(
+    const handler = new ArbitrumActorsHandler(
       'validators',
+      { type: 'arbitrumActors', actorType: 'validator' },
       DiscoveryLogger.SILENT,
     )
 
