@@ -1,8 +1,8 @@
 # @l2beat/discovery
 
-## 0.33.1
+## 0.34.0
 
-### Patch Changes
+### Minor Changes
 
 - Add chain name support to ConfigReader.
 - Add readAllChains method.
