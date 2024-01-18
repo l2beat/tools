@@ -84,12 +84,8 @@ export class ConfigReader {
     )
     const chains = new Set<string>()
     for (const folder of folders) {
-      readdirSync(`discovery/${folder.name}`, {
-        withFileTypes: true,
-      })
-        .filter(
-          (x) => x.isDirectory() && x.name !== '.code' && x.name !== 'mermaid',
-        )
+      readdirSync(`discovery/${folder.name}`, { withFileTypes: true })
+        .filter((x) => x.isDirectory())
         .map((x) => x.name)
         .forEach((x) => chains.add(x))
     }
