@@ -12,12 +12,12 @@ export async function invertCommand(
     return
   }
 
-  const { project, useMermaidMarkup, chainId } = config.invert
+  const { project, useMermaidMarkup, chain } = config.invert
 
   const configReader = new ConfigReader()
 
   logger = logger.for('Inversion')
   logger.info('Starting')
 
-  await runInversion(project, configReader, useMermaidMarkup, chainId)
+  await runInversion(project, configReader, useMermaidMarkup, chain)
 }

@@ -3,7 +3,7 @@ export interface ChainId extends Number {
 }
 
 export function ChainId(value: number): ChainId {
-  if (!(value in CHAIN_IDS)) {
+  if (!Number.isInteger(value) || value < 0) {
     throw new TypeError('Invalid ChainId')
   }
   return value as unknown as ChainId

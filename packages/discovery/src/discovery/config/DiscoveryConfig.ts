@@ -28,11 +28,12 @@ export class DiscoveryConfig {
   }
 
   get chain(): string {
-    return ChainId.getName(this.config.chain)
+    return this.config.chain
   }
 
+  /** @deprecated Do not rely on ChainId */
   get chainId(): ChainId {
-    return this.config.chain
+    return ChainId.fromName(this.chain)
   }
 
   get initialAddresses(): EthereumAddress[] {
