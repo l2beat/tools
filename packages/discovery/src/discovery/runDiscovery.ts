@@ -145,7 +145,7 @@ export async function discover(
     provider,
     etherscanClient,
     logger,
-    config.chainId,
+    config.chain,
     sqliteCache,
     getLogsMaxRange,
   )

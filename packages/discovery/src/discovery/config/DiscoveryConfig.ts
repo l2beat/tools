@@ -1,4 +1,3 @@
-import { ChainId } from '../../utils/ChainId'
 import { EthereumAddress } from '../../utils/EthereumAddress'
 import { Hash256 } from '../../utils/Hash256'
 import { hashJson } from '../../utils/HashJson'
@@ -29,11 +28,6 @@ export class DiscoveryConfig {
 
   get chain(): string {
     return this.config.chain
-  }
-
-  /** @deprecated Do not rely on ChainId */
-  get chainId(): ChainId {
-    return ChainId.fromName(this.chain)
   }
 
   get initialAddresses(): EthereumAddress[] {
