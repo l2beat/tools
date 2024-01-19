@@ -1,5 +1,6 @@
 import { assert } from '@l2beat/backend-tools'
 
+import { chains } from '../config/chains'
 import { EthereumAddress } from '../utils/EthereumAddress'
 
 export type CliParameters =
@@ -217,9 +218,8 @@ function extractArgWithValue(
   return { found: false }
 }
 
-function isValidChain(_: string): boolean {
-  // TODO: Check against known chains!
-  return true
+function isValidChain(chain: string): boolean {
+  return chains.some((c) => c.name === chain)
 }
 
 function getHelpCliParameter(message: string): HelpCliParameters {

@@ -4,7 +4,7 @@ import { providers } from 'ethers'
 import path from 'path'
 import { rimraf } from 'rimraf'
 
-import { DiscoveryCliConfig } from '../config/config.discovery'
+import { DiscoveryCliConfig } from '../config/types'
 import { DiscoveryConfig } from '../discovery/config/DiscoveryConfig'
 import { DiscoveryLogger } from '../discovery/DiscoveryLogger'
 import { saveDiscoveryResult } from '../discovery/output/saveDiscoveryResult'

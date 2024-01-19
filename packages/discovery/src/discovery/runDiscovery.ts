@@ -1,7 +1,7 @@
 import { DiscoveryOutput } from '@l2beat/discovery-types'
 import { providers } from 'ethers'
 
-import { DiscoveryModuleConfig } from '../config/config.discovery'
+import { DiscoveryModuleConfig } from '../config/types'
 import { EtherscanLikeClient } from '../utils/EtherscanLikeClient'
 import { AddressAnalyzer, Analysis } from './analysis/AddressAnalyzer'
 import { ConfigReader } from './config/ConfigReader'

@@ -74,10 +74,10 @@ export class ConfigReader {
 
   async readAllConfigsForChain(chain: string): Promise<DiscoveryConfig[]> {
     const result: DiscoveryConfig[] = []
-    const projects = this.readAllProjectsForChain(chain as string)
+    const projects = this.readAllProjectsForChain(chain)
 
     for (const project of projects) {
-      const contents = await this.readConfig(project, chain as string)
+      const contents = await this.readConfig(project, chain)
       result.push(contents)
     }
 

@@ -1,6 +1,6 @@
 import { Logger } from '@l2beat/backend-tools'
 
-import { DiscoveryCliConfig } from '../config/config.discovery'
+import { DiscoveryCliConfig } from '../config/types'
 import { ConfigReader } from '../discovery/config/ConfigReader'
 import { runInversion } from '../inversion/runInversion'
 

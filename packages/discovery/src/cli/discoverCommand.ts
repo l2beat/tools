@@ -1,11 +1,8 @@
 import { assert, Logger } from '@l2beat/backend-tools'
 import { providers } from 'ethers'
 
-import {
-  DiscoveryCliConfig,
-  DiscoveryModuleConfig,
-  getDiscoveryCliConfig,
-} from '../config/config.discovery'
+import { getDiscoveryCliConfig } from '../config/config.discovery'
+import { DiscoveryCliConfig, DiscoveryModuleConfig } from '../config/types'
 import { ConfigReader } from '../discovery/config/ConfigReader'
 import { dryRunDiscovery, runDiscovery } from '../discovery/runDiscovery'
 import { EtherscanLikeClient } from '../utils/EtherscanLikeClient'
