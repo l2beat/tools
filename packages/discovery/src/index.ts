@@ -35,7 +35,6 @@ export {
   calculateInversion,
   type InvertedAddresses,
 } from './inversion/runInversion'
-export { ChainId } from './utils/ChainId'
 export {
   EtherscanLikeClient,
   tryParseEtherscanResponse,
