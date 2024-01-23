@@ -336,7 +336,7 @@ export class ProviderWithCache extends DiscoveryProvider {
     await this.cache.set(
       key,
       toJSON(result),
-      this.chainId.valueOf(),
+      this.chain,
       transaction.blockNumber,
     )
 
