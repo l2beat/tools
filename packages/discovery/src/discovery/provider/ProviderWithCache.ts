@@ -9,6 +9,7 @@ import { EtherscanLikeClient } from '../../utils/EtherscanLikeClient'
 import { Hash256 } from '../../utils/Hash256'
 import { DiscoveryLogger } from '../DiscoveryLogger'
 import { isRevert } from '../utils/isRevert'
+import { DebugTransactionCallResponse } from './DebugTransactionTrace'
 import { ContractMetadata, DiscoveryProvider } from './DiscoveryProvider'
 import { RateLimitedProvider } from './RateLimitedProvider'
 import { TraceTransactionResponse } from './TransactionTrace'
@@ -341,6 +342,34 @@ export class ProviderWithCache extends DiscoveryProvider {
         blockNumber,
       )
     }
+
+    return result
+  }
+
+  override async getDebugTransactionTrace(
+    transactionHash: Hash256,
+  ): Promise<DebugTransactionCallResponse> {
+    const key = this.buildKey('getDebugTransactionTrace', [transactionHash])
+
+    const cachedResult = await this.cache.get(key)
+
+    if (cachedResult !== undefined) {
+      return DebugTransactionCallResponse.parse(JSON.parse(cachedResult))
+    }
+
+    // We need to get block number from transaction to cache the result
+    const transaction = await this.getTransaction(transactionHash)
+    // We don't want to cache nor return non-mined transactions
+    assert(transaction.blockNumber, 'Transaction not mined')
+
+    const result = await super.getDebugTransactionTrace(transactionHash)
+
+    await this.cache.set(
+      key,
+      toJSON(result),
+      this.chainId.valueOf(),
+      transaction.blockNumber,
+    )
 
     return result
   }
