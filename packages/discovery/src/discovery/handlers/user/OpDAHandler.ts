@@ -40,15 +40,7 @@ export class OpStackDAHandler implements ClassicHandler {
     readonly logger: DiscoveryLogger,
   ) {
     const dependency = getReferencedName(this.definition.sequencerAddress)
-    console.log(
-      '\n\n\n',
-      'dependency',
-      dependency,
-      this.definition.sequencerAddress,
-      '\n\n\n',
-    )
     if (dependency) {
-      console.log('\n\n\n', 'dependency', dependency, '\n\n\n')
       this.dependencies.push(dependency)
     }
   }
