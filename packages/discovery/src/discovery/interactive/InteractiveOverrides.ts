@@ -1,24 +1,11 @@
 import checkbox from '@inquirer/checkbox'
 import select from '@inquirer/select'
-import { ContractParameters, DiscoveryOutput } from '@l2beat/discovery-types'
+import { ContractParameters } from '@l2beat/discovery-types'
 import chalk from 'chalk'
 
-import { DiscoveryConfig } from '../discovery/config/DiscoveryConfig'
 import { InteractiveOverridesManager } from './InteractiveOverridesManager'
 
-export { runInteraction }
-
-async function runInteraction(
-  output: DiscoveryOutput,
-  config: DiscoveryConfig,
-): Promise<void> {
-  const iom = new InteractiveOverridesManager(output, config)
-  const interactiveOverrides = new InteractiveOverrides(iom)
-
-  await interactiveOverrides.run()
-}
-
-class InteractiveOverrides {
+export class InteractiveOverrides {
   constructor(private readonly iom: InteractiveOverridesManager) {}
 
   async run(): Promise<void> {

@@ -3,13 +3,13 @@ import { ContractParameters, DiscoveryOutput } from '@l2beat/discovery-types'
 import { parse, stringify } from 'comment-json'
 import * as fs from 'fs/promises'
 
-import { DiscoveryConfig } from '../discovery/config/DiscoveryConfig'
-import { ContractOverrides } from '../discovery/config/DiscoveryOverrides'
+import { DiscoveryConfig } from '../config/DiscoveryConfig'
+import { ContractOverrides } from '../config/DiscoveryOverrides'
 import {
   MutableDiscoveryOverrides,
   MutableOverride,
-} from '../discovery/config/MutableDiscoveryOverrides'
-import { RawDiscoveryConfig } from '../discovery/config/RawDiscoveryConfig'
+} from '../config/MutableDiscoveryOverrides'
+import { RawDiscoveryConfig } from '../config/RawDiscoveryConfig'
 
 export class InteractiveOverridesManager {
   private readonly mutableOverrides: MutableDiscoveryOverrides
