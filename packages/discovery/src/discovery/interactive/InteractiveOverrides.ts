@@ -6,10 +6,12 @@ import chalk from 'chalk'
 import { InteractiveOverridesManager } from './InteractiveOverridesManager'
 
 export class InteractiveOverrides {
+  static MAX_PAGE_SIZE = 10
+
   constructor(private readonly iom: InteractiveOverridesManager) {}
 
   async run(): Promise<void> {
-    const header = chalk.blue.bold('### Interactive config builder ###')
+    console.log(chalk.blue.bold('### Interactive mode ###'))
 
     for (;;) {
       const message = 'Options: '
@@ -21,7 +23,6 @@ export class InteractiveOverrides {
         { name: 'Flush overrides', value: 'flush' },
       ] as const
 
-      console.log(header)
       const choice = await select({
         message,
         choices,
@@ -121,7 +122,7 @@ export class InteractiveOverrides {
 
     const ignoreInWatchMode = await checkbox({
       loop: false,
-      pageSize: choices.length,
+      pageSize: InteractiveOverrides.MAX_PAGE_SIZE,
       message,
       choices,
     })
@@ -148,7 +149,7 @@ export class InteractiveOverrides {
 
     const ignoreMethods = await checkbox({
       loop: false,
-      pageSize: choices.length,
+      pageSize: InteractiveOverrides.MAX_PAGE_SIZE,
       message,
       choices,
     })
@@ -209,7 +210,7 @@ async function selectWithBack<T>(
 
   const answer = await select<T | 'back'>({
     loop: false,
-    pageSize: choicesWithBack.length + 1,
+    pageSize: InteractiveOverrides.MAX_PAGE_SIZE,
     message,
     choices: choicesWithBack,
   })
@@ -219,7 +220,7 @@ async function selectWithBack<T>(
 
 function noValuesWarning(full?: boolean): void {
   let msg = `
-  ⚠️ OOPS - no values to manage
+  ⚠️ OOPS - no values to manage - check following cases:
   - Discovery is set to ignore this contract
   - Contract has no values discovered`
 
