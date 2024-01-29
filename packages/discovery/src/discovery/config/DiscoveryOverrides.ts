@@ -7,7 +7,7 @@ export type ContractOverrides = DiscoveryContract & {
 }
 
 export class DiscoveryOverrides {
-  private readonly nameToAddress = new Map<string, EthereumAddress>()
+  protected readonly nameToAddress = new Map<string, EthereumAddress>()
 
   constructor(
     public readonly config: Pick<RawDiscoveryConfig, 'names' | 'overrides'>,
@@ -43,7 +43,6 @@ export class DiscoveryOverrides {
 
   *[Symbol.iterator](): IterableIterator<ContractOverrides> {
     for (const key of Object.keys(this.config.overrides ?? {})) {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       yield this.get(key)
     }
   }
