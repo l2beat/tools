@@ -9,7 +9,10 @@ import {
   MutableDiscoveryOverrides,
   MutableOverride,
 } from '../config/MutableDiscoveryOverrides'
-import { RawDiscoveryConfig } from '../config/RawDiscoveryConfig'
+import {
+  DiscoveryContract,
+  RawDiscoveryConfig,
+} from '../config/RawDiscoveryConfig'
 
 export class InteractiveOverridesManager {
   private readonly mutableOverrides: MutableDiscoveryOverrides
@@ -45,7 +48,10 @@ export class InteractiveOverridesManager {
 
     const ignoredInWatchMode = overrides?.ignoreInWatchMode ?? []
 
-    const possibleMethods = allProperties
+    // All discovered keys + look ahead for all ignored methods
+    const possibleMethods = [
+      ...new Set([...allProperties, ...ignoredMethods.all]),
+    ]
       .filter((method) => !this.isCustomHandler(contract, method))
       .filter((method) => !ignoredMethods.ignored.includes(method))
 
@@ -70,14 +76,17 @@ export class InteractiveOverridesManager {
 
     const overrides = this.getSafeOverride(contract)
 
-    const methods = overrides?.ignoreMethods ?? []
+    const ignoredMethods = overrides?.ignoreMethods ?? []
 
     const allProperties = Object.keys(contract.values ?? {})
-    const possibleMethods = allProperties.filter(
-      (method) => !this.isCustomHandler(contract, method),
-    )
 
-    const ignored = possibleMethods.filter((method) => methods.includes(method))
+    const possibleMethods = [
+      ...new Set([...allProperties, ...ignoredMethods]),
+    ].filter((method) => !this.isCustomHandler(contract, method))
+
+    const ignored = possibleMethods.filter((method) =>
+      ignoredMethods.includes(method),
+    )
 
     return {
       all: possibleMethods,
@@ -153,7 +162,6 @@ export class InteractiveOverridesManager {
       ),
     )
   }
-
 
   private getOverrideIdentity(contract: ContractParameters): string {
     const hasName = Boolean(
