@@ -91,9 +91,6 @@ export class InteractiveOverridesManager {
     return overrides?.ignoreDiscovery ?? false
   }
 
-  /**
-   * Enforce consistency
-   */
   setOverride(contract: ContractParameters, override: MutableOverride): void {
     // Optimistically set overrides
     this.mutableOverrides.set(contract, override)
@@ -102,7 +99,7 @@ export class InteractiveOverridesManager {
     const ignoredInWatchMode = this.getWatchMode(contract)
     const ignoredMethods = this.getIgnoredMethods(contract)
 
-    /** Consistency rules */
+    // Wipe all overrides if discovery is ignored
     if (isDiscoveryIgnored) {
       this.mutableOverrides.set(contract, {
         ignoreDiscovery: true,
