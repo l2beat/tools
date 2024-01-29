@@ -76,7 +76,7 @@ export function getCliParameters(args = process.argv.slice(2)): CliParameters {
 
     if (remaining.includes('--interactive')) {
       interactive = true
-      remaining.splice(remaining.indexOf('--dry-run'), 1)
+      remaining.splice(remaining.indexOf('--interactive'), 1)
     }
 
     if (remaining.includes('--dev')) {
