@@ -97,6 +97,7 @@ describe(getCliParameters.name, () => {
       '--block-number=5678',
       'foo',
       '--dry-run',
+      '--interactive',
     ])
     expect(cli).toEqual({
       mode: 'discover',
