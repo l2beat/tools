@@ -132,7 +132,9 @@ export class InteractiveOverridesManager {
     assert(parsed, 'Cannot parse file')
 
     if (this.mutableOverrides.config.overrides) {
-      parsed.overrides = this.mutableOverrides.config.overrides
+      parsed.overrides = this.stripEmptyOverrides(
+        this.mutableOverrides.config.overrides,
+      )
     }
 
     if (this.mutableOverrides.config.names) {
@@ -141,6 +143,17 @@ export class InteractiveOverridesManager {
 
     await fs.writeFile(path, stringify(parsed, null, 2))
   }
+
+  private stripEmptyOverrides(
+    overrides: Record<string, DiscoveryContract>,
+  ): Record<string, DiscoveryContract> {
+    return Object.fromEntries(
+      Object.entries(overrides).filter(
+        ([_, override]) => Object.keys(override).length > 0,
+      ),
+    )
+  }
+
 
   private getOverrideIdentity(contract: ContractParameters): string {
     const hasName = Boolean(
