@@ -1,6 +1,7 @@
 import { DiscoveryOutput } from '@l2beat/discovery-types'
 import { providers } from 'ethers'
 
+import { runInteraction } from '../cli/InteractiveOverrides'
 import { DiscoveryModuleConfig } from '../config/types'
 import { EtherscanLikeClient } from '../utils/EtherscanLikeClient'
 import { AddressAnalyzer, Analysis } from './analysis/AddressAnalyzer'
@@ -9,7 +10,6 @@ import { DiscoveryConfig } from './config/DiscoveryConfig'
 import { DiscoveryLogger } from './DiscoveryLogger'
 import { DiscoveryEngine } from './engine/DiscoveryEngine'
 import { HandlerExecutor } from './handlers/HandlerExecutor'
-import { diffDiscovery } from './output/diffDiscovery'
 import { saveDiscoveryResult } from './output/saveDiscoveryResult'
 import { toDiscoveryOutput } from './output/toDiscoveryOutput'
 import { MulticallClient } from './provider/multicall/MulticallClient'
@@ -69,37 +69,42 @@ export async function dryRunDiscovery(
     config.project,
     config.chain,
   )
-
-  const [discovered, discoveredYesterday] = await Promise.all([
-    justDiscover(
-      provider,
-      etherscanClient,
-      multicallConfig,
-      projectConfig,
-      blockNumber,
-      config.getLogsMaxRange,
-    ),
-    justDiscover(
-      provider,
-      etherscanClient,
-      multicallConfig,
-      projectConfig,
-      blockNumberYesterday,
-      config.getLogsMaxRange,
-    ),
-  ])
-
-  const diff = diffDiscovery(
-    discoveredYesterday.contracts,
-    discovered.contracts,
-    projectConfig,
+  const discovered = await configReader.readDiscovery(
+    config.project,
+    config.chain,
   )
 
-  if (diff.length > 0) {
-    console.log(JSON.stringify(diff, null, 2))
-  } else {
-    console.log('No changes!')
-  }
+  // const [discovered, discoveredYesterday] = await Promise.all([
+  //   justDiscover(
+  //     provider,
+  //     etherscanClient,
+  //     multicallConfig,
+  //     projectConfig,
+  //     blockNumber,
+  //     config.getLogsMaxRange,
+  //   ),
+  //   justDiscover(
+  //     provider,
+  //     etherscanClient,
+  //     multicallConfig,
+  //     projectConfig,
+  //     blockNumberYesterday,
+  //     config.getLogsMaxRange,
+  //   ),
+  // ])
+
+  // const diff = diffDiscovery(
+  //   discoveredYesterday.contracts,
+  //   discovered.contracts,
+  //   projectConfig,
+  // )
+
+  await runInteraction(discovered, projectConfig)
+  // if (diff.length > 0) {
+  //   console.log(JSON.stringify(diff, null, 2))
+  // } else {
+  //   console.log('No changes!')
+  // }
 }
 
 export async function justDiscover(

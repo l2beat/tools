@@ -13,6 +13,7 @@ export interface DiscoveryModuleConfig {
   readonly project: string
   readonly chain: string
   readonly dryRun?: boolean
+  readonly interactive?: boolean
   readonly dev?: boolean
   readonly blockNumber?: number
   readonly getLogsMaxRange?: number
