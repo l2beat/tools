@@ -1,5 +1,6 @@
 import { assert } from '@l2beat/backend-tools'
 import { DiscoveryOutput } from '@l2beat/discovery-types'
+import { parse as parseWithComments } from 'comment-json'
 import { readdirSync } from 'fs'
 import { readFile } from 'fs/promises'
 import { parse, ParseError } from 'jsonc-parser'
@@ -119,4 +120,37 @@ export class ConfigReader {
 
     return projects
   }
+
+  async readRawConfigWithComments(
+    name: string,
+    chain: string,
+  ): Promise<RawDiscoveryConfig> {
+    assert(
+      fileExistsCaseSensitive(`discovery/${name}`),
+      'Project not found, check if case matches',
+    )
+    assert(
+      fileExistsCaseSensitive(`discovery/${name}/${chain}`),
+      'Chain not found in project, check if case matches',
+    )
+
+    const contents = await readFile(
+      `discovery/${name}/${chain}/config.jsonc`,
+      'utf-8',
+    )
+    const parsed: unknown = parseWithComments(contents)
+
+    // Parsing via Zod would effectively remove symbols and thus comments
+    assertDiscoveryConfig(parsed)
+
+    assert(parsed.chain === chain, 'Chain mismatch in config.jsonc')
+
+    return parsed
+  }
+}
+
+function assertDiscoveryConfig(
+  config: unknown,
+): asserts config is RawDiscoveryConfig {
+  RawDiscoveryConfig.parse(config)
 }

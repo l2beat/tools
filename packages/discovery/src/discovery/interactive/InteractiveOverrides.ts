@@ -12,29 +12,29 @@ export class InteractiveOverrides {
 
   async run(): Promise<void> {
     console.log(chalk.blue.bold('### Interactive mode ###'))
-
     for (;;) {
       const message = 'Options: '
       const choices = [
         {
-          name: 'Configure contract overrides',
+          name: '⚙️  Configure contract overrides',
           value: 'configure',
         },
-        { name: 'Flush overrides', value: 'flush' },
+        { name: '💾 Flush overrides & exit', value: 'flush' },
+        { name: '🚪 Exit', value: 'exit' },
       ] as const
-
       const choice = await select({
         message,
         choices,
       })
-
       if (choice === 'configure') {
         await this.configureContract()
       }
-
       if (choice === 'flush') {
         await this.iom.flushOverrides()
-        break
+        return
+      }
+      if (choice === 'exit') {
+        return
       }
     }
   }
@@ -71,13 +71,15 @@ export class InteractiveOverrides {
           value: 'watchmode',
         },
         {
+          name: `📝 Ignore relatives (${chalk.gray('ignoreRelatives')})`,
+          value: 'relatives',
+        },
+        {
           name: `⏭️  Ignore methods (${chalk.gray('ignoreMethods')})`,
           value: 'methods',
         },
         {
-          name: `🛑 Ignore Discovery completely (${chalk.gray(
-            'ignoreDiscovery',
-          )})`,
+          name: `🛑 Ignore discovery (${chalk.gray('ignoreDiscovery')})`,
           value: 'ignore',
         },
       ] as const
@@ -86,6 +88,10 @@ export class InteractiveOverrides {
 
       if (choice === 'watchmode') {
         await this.configureWatchMode(contract)
+      }
+
+      if (choice === 'relatives') {
+        await this.configureIgnoredRelatives(contract)
       }
 
       if (choice === 'methods') {
@@ -116,7 +122,7 @@ export class InteractiveOverrides {
     }))
 
     if (choices.length === 0) {
-      noValuesWarning(true)
+      noValuesWarning({ withMethods: true })
       return
     }
 
@@ -130,16 +136,41 @@ export class InteractiveOverrides {
     this.iom.setOverride(contract, { ignoreInWatchMode })
   }
 
+  async configureIgnoredRelatives(contract: ContractParameters): Promise<void> {
+    const { possible, ignored } = this.iom.getIgnoredRelatives(contract)
+
+    const message = 'Ignored relatives (values in ignoreMethods are excluded):'
+
+    const choices = possible.map((property) => ({
+      name: property,
+      value: property,
+      checked: ignored.includes(property),
+    }))
+
+    if (choices.length === 0) {
+      noValuesWarning({ withMethods: true })
+      return
+    }
+
+    const ignoredRelatives = await checkbox({
+      loop: false,
+      pageSize: InteractiveOverrides.MAX_PAGE_SIZE,
+      message,
+      choices,
+    })
+
+    this.iom.setOverride(contract, { ignoreRelatives: ignoredRelatives })
+  }
+
   async configureIgnoredMethods(contract: ContractParameters): Promise<void> {
-    const ignoredMethods = this.iom.getIgnoredMethods(contract)
+    const { possible, ignored } = this.iom.getIgnoredMethods(contract)
 
     const message = 'Ignored methods: '
 
-    const choices = ignoredMethods.all.map((property) => ({
+    const choices = possible.map((property) => ({
       name: property,
       value: property,
-      // Sync already present configuration
-      checked: ignoredMethods.ignored.includes(property),
+      checked: ignored.includes(property),
     }))
 
     if (choices.length === 0) {
@@ -174,6 +205,7 @@ export class InteractiveOverrides {
       choices,
     })
 
+    // Checkbox with only one value, yet array is returned
     const ignoreDiscovery = Boolean(choice.length > 0)
 
     this.iom.setOverride(contract, { ignoreDiscovery })
@@ -203,7 +235,7 @@ async function selectWithBack<T>(
   const choicesWithBack = [
     ...choices,
     {
-      name: 'Back',
+      name: '🏃 Back',
       value: 'back',
     } as const,
   ]
@@ -218,13 +250,13 @@ async function selectWithBack<T>(
   return answer
 }
 
-function noValuesWarning(full?: boolean): void {
+function noValuesWarning(opts?: { withMethods: boolean }): void {
   let msg = `
   ⚠️ OOPS - no values to manage - check following cases:
   - Discovery is set to ignore this contract
   - Contract has no values discovered`
 
-  if (full) {
+  if (opts?.withMethods) {
     msg += '\n  - All values are ignored via ignoreMethods'
   }
 

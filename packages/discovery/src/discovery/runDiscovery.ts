@@ -67,7 +67,7 @@ export async function dryRunDiscovery(
   const BLOCKS_PER_DAY = 86400 / 12
   const blockNumberYesterday = blockNumber - BLOCKS_PER_DAY
 
-  const projectConfig = await configReader.readConfig(
+  const rawConfigWitComments = await configReader.readRawConfigWithComments(
     config.project,
     config.chain,
   )
@@ -104,7 +104,10 @@ export async function dryRunDiscovery(
   }
 
   if (config.interactive) {
-    const iom = new InteractiveOverridesManager(discovered, projectConfig)
+    const iom = new InteractiveOverridesManager(
+      discovered,
+      rawConfigWitComments,
+    )
     const interactiveOverrides = new InteractiveOverrides(iom)
     await interactiveOverrides.run()
   }
