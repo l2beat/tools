@@ -67,6 +67,11 @@ export async function dryRunDiscovery(
   const BLOCKS_PER_DAY = 86400 / 12
   const blockNumberYesterday = blockNumber - BLOCKS_PER_DAY
 
+  const projectConfig = await configReader.readConfig(
+    config.project,
+    config.chain,
+  )
+
   const rawConfigWitComments = await configReader.readRawConfigWithComments(
     config.project,
     config.chain,
