@@ -1,27 +1,29 @@
-import { assert } from '@l2beat/backend-tools'
 import { ContractParameters, DiscoveryOutput } from '@l2beat/discovery-types'
-import { parse, stringify } from 'comment-json'
+import { assign, parse, stringify } from 'comment-json'
 import * as fs from 'fs/promises'
 
-import { DiscoveryConfig } from '../config/DiscoveryConfig'
 import { ContractOverrides } from '../config/DiscoveryOverrides'
 import {
   MutableDiscoveryOverrides,
   MutableOverride,
 } from '../config/MutableDiscoveryOverrides'
-import {
-  DiscoveryContract,
-  RawDiscoveryConfig,
-} from '../config/RawDiscoveryConfig'
+import { RawDiscoveryConfig } from '../config/RawDiscoveryConfig'
+
+interface IgnoreResult {
+  possible: string[]
+  ignored: string[]
+}
 
 export class InteractiveOverridesManager {
   private readonly mutableOverrides: MutableDiscoveryOverrides
 
   constructor(
     private readonly output: DiscoveryOutput,
-    private readonly config: DiscoveryConfig,
+    private readonly rawConfigWithComments: RawDiscoveryConfig,
   ) {
-    this.mutableOverrides = new MutableDiscoveryOverrides(this.config.raw)
+    this.mutableOverrides = new MutableDiscoveryOverrides(
+      this.rawConfigWithComments,
+    )
   }
 
   getContracts(): ContractParameters[] {
@@ -50,7 +52,7 @@ export class InteractiveOverridesManager {
 
     // All discovered keys + look ahead for all ignored methods
     const possibleMethods = [
-      ...new Set([...allProperties, ...ignoredMethods.all]),
+      ...new Set([...allProperties, ...ignoredMethods.possible]),
     ]
       .filter((method) => !this.isCustomHandler(contract, method))
       .filter((method) => !ignoredMethods.ignored.includes(method))
@@ -61,15 +63,42 @@ export class InteractiveOverridesManager {
     }
   }
 
-  getIgnoredMethods(contract: ContractParameters): {
-    all: string[]
-    ignored: string[]
-  } {
+  getIgnoredRelatives(contract: ContractParameters): IgnoreResult {
+    const isDiscoveryIgnored = this.getIgnoreDiscovery(contract)
+    const ignoredMethods = this.getIgnoredMethods(contract)
+
+    if (isDiscoveryIgnored) {
+      return {
+        possible: [],
+        ignored: [],
+      }
+    }
+
+    const overrides = this.getSafeOverride(contract)
+
+    const allProperties = Object.keys(contract.values ?? {})
+
+    const ignoredRelatives = overrides?.ignoreRelatives ?? []
+
+    // All discovered keys + look ahead for all ignored methods
+    const possibleMethods = [
+      ...new Set([...allProperties, ...ignoredMethods.possible]),
+    ]
+      .filter((method) => !this.isCustomHandler(contract, method))
+      .filter((method) => !ignoredMethods.ignored.includes(method))
+
+    return {
+      possible: possibleMethods,
+      ignored: ignoredRelatives,
+    }
+  }
+
+  getIgnoredMethods(contract: ContractParameters): IgnoreResult {
     const isDiscoveryIgnored = this.getIgnoreDiscovery(contract)
 
     if (isDiscoveryIgnored) {
       return {
-        all: [],
+        possible: [],
         ignored: [],
       }
     }
@@ -84,13 +113,9 @@ export class InteractiveOverridesManager {
       ...new Set([...allProperties, ...ignoredMethods]),
     ].filter((method) => !this.isCustomHandler(contract, method))
 
-    const ignored = possibleMethods.filter((method) =>
-      ignoredMethods.includes(method),
-    )
-
     return {
-      all: possibleMethods,
-      ignored,
+      possible: possibleMethods,
+      ignored: ignoredMethods,
     }
   }
 
@@ -107,6 +132,7 @@ export class InteractiveOverridesManager {
     const isDiscoveryIgnored = this.getIgnoreDiscovery(contract)
     const ignoredInWatchMode = this.getWatchMode(contract)
     const ignoredMethods = this.getIgnoredMethods(contract)
+    const ignoredRelatives = this.getIgnoredRelatives(contract)
 
     // Wipe all overrides if discovery is ignored
     if (isDiscoveryIgnored) {
@@ -114,17 +140,23 @@ export class InteractiveOverridesManager {
         ignoreDiscovery: true,
         ignoreInWatchMode: [],
         ignoreMethods: [],
+        ignoreRelatives: [],
       })
       return
     }
 
-    // Exclude ignoreMethods from watch mode completely
+    // Exclude ignoreMethods from watch mode and relatives completely
     const validWatchMode = ignoredInWatchMode.ignored.filter(
+      (method) => !ignoredMethods.ignored.includes(method),
+    )
+
+    const validRelatives = ignoredRelatives.ignored.filter(
       (method) => !ignoredMethods.ignored.includes(method),
     )
 
     this.mutableOverrides.set(contract, {
       ignoreInWatchMode: validWatchMode,
+      ignoreRelatives: validRelatives,
     })
   }
 
@@ -138,29 +170,15 @@ export class InteractiveOverridesManager {
 
     const parsed = parse(fileContents) as RawDiscoveryConfig | null
 
-    assert(parsed, 'Cannot parse file')
-
     if (this.mutableOverrides.config.overrides) {
-      parsed.overrides = this.stripEmptyOverrides(
-        this.mutableOverrides.config.overrides,
-      )
+      assign(parsed, { overrides: this.mutableOverrides.config.overrides })
     }
 
     if (this.mutableOverrides.config.names) {
-      parsed.names = this.mutableOverrides.config.names
+      assign(parsed, { names: this.mutableOverrides.config.names })
     }
 
     await fs.writeFile(path, stringify(parsed, null, 2))
-  }
-
-  private stripEmptyOverrides(
-    overrides: Record<string, DiscoveryContract>,
-  ): Record<string, DiscoveryContract> {
-    return Object.fromEntries(
-      Object.entries(overrides).filter(
-        ([_, override]) => Object.keys(override).length > 0,
-      ),
-    )
   }
 
   private getOverrideIdentity(contract: ContractParameters): string {

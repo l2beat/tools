@@ -1,13 +1,19 @@
 import { ContractParameters } from '@l2beat/discovery-types'
+import { assign } from 'comment-json'
 
 import { EthereumAddress } from '../../utils/EthereumAddress'
 import { ContractOverrides, DiscoveryOverrides } from './DiscoveryOverrides'
 
 export type MutableOverride = Pick<
   ContractOverrides,
-  'ignoreDiscovery' | 'ignoreInWatchMode' | 'ignoreMethods'
+  'ignoreDiscovery' | 'ignoreInWatchMode' | 'ignoreMethods' | 'ignoreRelatives'
 >
 
+/**
+ * In-place overrides map with intention to be mutable
+ * since it is easier to do that this way instead of modification squash
+ * @notice Re-assignments made via comments-json `assign` which supports both entries with comments (JSONC) and with out them.
+ */
 export class MutableDiscoveryOverrides extends DiscoveryOverrides {
   public set(contract: ContractParameters, override: MutableOverride): void {
     const nameOrAddress = this.updateNameToAddress(contract)
@@ -22,7 +28,9 @@ export class MutableDiscoveryOverrides extends DiscoveryOverrides {
       if (override.ignoreInWatchMode.length === 0) {
         delete originalOverride.ignoreInWatchMode
       } else {
-        originalOverride.ignoreInWatchMode = override.ignoreInWatchMode
+        assign(originalOverride, {
+          ignoreInWatchMode: override.ignoreInWatchMode,
+        })
       }
     }
 
@@ -30,7 +38,15 @@ export class MutableDiscoveryOverrides extends DiscoveryOverrides {
       if (override.ignoreMethods.length === 0) {
         delete originalOverride.ignoreMethods
       } else {
-        originalOverride.ignoreMethods = override.ignoreMethods
+        assign(originalOverride, { ignoreMethods: override.ignoreMethods })
+      }
+    }
+
+    if (override.ignoreRelatives !== undefined) {
+      if (override.ignoreRelatives.length === 0) {
+        delete originalOverride.ignoreRelatives
+      } else {
+        assign(originalOverride, { ignoreRelatives: override.ignoreRelatives })
       }
     }
 
@@ -38,15 +54,25 @@ export class MutableDiscoveryOverrides extends DiscoveryOverrides {
       if (!override.ignoreDiscovery) {
         delete originalOverride.ignoreDiscovery
       } else {
-        originalOverride.ignoreDiscovery = override.ignoreDiscovery
+        assign(originalOverride, { ignoreRelatives: override.ignoreRelatives })
       }
     }
 
+    // Pre-set overrides if they are not set
     if (this.config.overrides === undefined) {
       this.config.overrides = {}
     }
 
-    this.config.overrides[identifier ?? nameOrAddress] = originalOverride
+    // Set override only if it is not empty
+    if (Object.keys(originalOverride).length > 0) {
+      assign(this.config.overrides, {
+        [identifier ?? nameOrAddress]: originalOverride,
+      })
+      // Remove override if it is empty
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+      delete this.config.overrides[identifier ?? nameOrAddress]
+    }
   }
 
   private getIdentifier(
