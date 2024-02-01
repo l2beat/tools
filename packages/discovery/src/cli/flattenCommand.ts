@@ -1,4 +1,5 @@
 import { Logger } from '@l2beat/backend-tools'
+
 import { DiscoveryCliConfig } from '../config/types'
 import { runFlatten } from '../flatten/runFlatten'
 

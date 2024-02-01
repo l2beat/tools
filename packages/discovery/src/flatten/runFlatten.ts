@@ -1,11 +1,7 @@
-import { Logger, assert } from '@l2beat/backend-tools'
-import { readFile, readdir } from 'fs/promises'
-import { basename, resolve } from 'path'
+import { assert, Logger } from '@l2beat/backend-tools'
 import { parse } from '@solidity-parser/parser'
-import {
-  ASTNode,
-  BaseASTNode,
-} from '@solidity-parser/parser/dist/src/ast-types'
+import { readdir, readFile } from 'fs/promises'
+import { basename, resolve } from 'path'
 
 type ParseResult = ReturnType<typeof parse>
 
@@ -29,17 +25,29 @@ export async function runFlatten(
   path: string,
   rootContractName: string,
   logger: Logger,
-) {
+): Promise<void> {
   logger.info(`Path: ${path}`)
   logger.info(`Root contract name: ${rootContractName}`)
 
-  console.time('parsing')
+  let elapsedMilliseconds = -Date.now()
   const files = await Promise.all(
     filterOutNonSolidityFiles(await listFilesRecursively(path)).map((f) =>
       parseFile(f),
     ),
   )
-  console.timeEnd('parsing')
+  elapsedMilliseconds += Date.now()
+  const sourceLineCount = files.reduce(
+    (acc, f) => acc + f.source.split('\n').length,
+    0,
+  )
+  const linesPerSecond = sourceLineCount / (elapsedMilliseconds / 1000)
+  logger.info(
+    `Parsed ${
+      files.length
+    } files in ${elapsedMilliseconds}ms (${linesPerSecond.toFixed(
+      0,
+    )} lines/s))`,
+  )
 
   console.time('isolation')
   const contracts = isolateContracts(files)
@@ -55,7 +63,8 @@ async function listFilesRecursively(path: string): Promise<string[]> {
       return dirent.isDirectory() ? listFilesRecursively(res) : res
     }),
   )
-  return Array.prototype.concat(...files)
+  // We are not using array, instead we are using concat to flatten the array
+  return files.flat()
 }
 
 function filterOutNonSolidityFiles(files: string[]): string[] {
@@ -75,7 +84,6 @@ function isolateContracts(files: ParsedFile[]): ContractDecl[] {
   const result = []
 
   for (const file of files) {
-    assert(file.ast.type === 'SourceUnit')
     const contractDeclarations = file.ast.children.filter(
       (n) => n.type === 'ContractDefinition',
     )

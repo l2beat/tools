@@ -1,11 +1,11 @@
 import { Logger } from '@l2beat/backend-tools'
 
 import { discoverCommand } from './cli/discoverCommand'
+import { flattenCommand } from './cli/flattenCommand'
 import { handleCli } from './cli/handleCli'
 import { invertCommand } from './cli/invertCommand'
 import { singleDiscoveryCommand } from './cli/singleDiscoveryCommand'
 import { getDiscoveryCliConfig } from './config/config.discovery'
-import { flattenCommand } from './cli/flattenCommand'
 
 main().catch((e) => {
   console.error(e)
