@@ -129,18 +129,8 @@ function isolateContracts(files: ParsedFile[]): void {
         // consider if this simple string comparison will solve every single
         // possible case.
         const matchingFiles = files.filter(
-          (f) =>
-            f.path.endsWith(replaceAll(normalize(i.path), '../', '')) &&
-            basename(f.path) === basename(i.path),
+          (f) => pathsMatch(f.path, i.path)
         )
-
-        // if (!(matchingFiles.length === 1 && matchingFiles[0] !== undefined)) {
-        //   console.log("shrek", replaceAll(normalize(i.path), '../', ''))
-        //   console.log("shrek", files.map((f) => basename(f.path)))
-        //   console.log("shrek", files.map((f) => f.path.endsWith(normalize(i.path).replace('../', ''))))
-        //   console.log("shrek", files.map((f) => basename(f.path) === basename(i.path)))
-        //   console.log("shrek", files.map((f) => f.path))
-        // }
 
         assert(
           matchingFiles.length === 1 && matchingFiles[0] !== undefined,
