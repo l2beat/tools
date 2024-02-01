@@ -11,14 +11,10 @@ export interface ParsedFile {
   ast: ParseResult
 }
 
-interface ByteRange {
-  start: number
-  end: number
-}
-
 interface ContractDecl {
+  inheritsFrom: string[]
   name: string
-  byteRange: ByteRange
+  source: string
 }
 
 export async function runFlatten(
@@ -63,7 +59,7 @@ async function listFilesRecursively(path: string): Promise<string[]> {
       return dirent.isDirectory() ? listFilesRecursively(res) : res
     }),
   )
-  // We are not using array, instead we are using concat to flatten the array
+
   return files.flat()
 }
 
@@ -93,10 +89,8 @@ function isolateContracts(files: ParsedFile[]): ContractDecl[] {
 
         return {
           name: c.name,
-          byteRange: {
-            start: c.range[0],
-            end: c.range[1],
-          },
+          inheritsFrom: c.baseContracts.map((bc) => bc.baseName.namePath),
+          source: file.source.slice(c.range[0], c.range[1]),
         }
       }),
     )
@@ -105,6 +99,7 @@ function isolateContracts(files: ParsedFile[]): ContractDecl[] {
   return result
 }
 
-//function buildInheritanceTree(files: ParsedFile[], rootContractName: string): void {
-//   return files.filter((f) => f.ast.type === 'SourceUnit')
-// }
+function buildInheritanceTree(
+  files: ParsedFile[],
+  rootContractName: string,
+): void {}
