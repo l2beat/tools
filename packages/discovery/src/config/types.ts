@@ -5,28 +5,26 @@ import { EtherscanUnsupportedMethods } from '../utils/EtherscanLikeClient'
 export interface DiscoveryCliConfig {
   discovery: DiscoveryModuleConfig | false
   singleDiscovery: SingleDiscoveryModuleConfig | false
-  chain: DiscoveryChainConfig
   invert: InversionConfig | false
 }
 
 export interface DiscoveryModuleConfig {
   readonly project: string
-  readonly chain: string
+  readonly chain: DiscoveryChainConfig
   readonly dryRun?: boolean
   readonly dev?: boolean
   readonly blockNumber?: number
-  readonly getLogsMaxRange?: number
   readonly sourcesFolder?: string
   readonly discoveryFilename?: string
 }
 
 export interface SingleDiscoveryModuleConfig {
   readonly address: EthereumAddress
-  readonly chain: string
+  readonly chain: DiscoveryChainConfig
 }
 
 export interface DiscoveryChainConfig {
-  chain: string
+  name: string
   rpcUrl: string
   rpcGetLogsMaxRange?: number
   multicall: MulticallConfig
@@ -38,5 +36,5 @@ export interface DiscoveryChainConfig {
 export interface InversionConfig {
   readonly project: string
   readonly useMermaidMarkup: boolean
-  readonly chain: string
+  readonly chain: DiscoveryChainConfig
 }
