@@ -1,6 +1,6 @@
 import { assert, Logger } from '@l2beat/backend-tools'
 import { parse } from '@solidity-parser/parser'
-import { readdir, readFile } from 'fs/promises'
+import { readdir, readFile, writeFile } from 'fs/promises'
 import { basename, resolve } from 'path'
 
 type ParseResult = ReturnType<typeof parse>
@@ -48,7 +48,12 @@ export async function runFlatten(
   console.time('isolation')
   const contracts = isolateContracts(files)
   console.timeEnd('isolation')
-  console.log(contracts)
+
+  console.time('flattening')
+  const flattened = flattenStartingFrom(contracts, rootContractName)
+  console.timeEnd('flattening')
+
+  await writeFile('flattened.sol', flattened)
 }
 
 async function listFilesRecursively(path: string): Promise<string[]> {
@@ -90,7 +95,7 @@ function isolateContracts(files: ParsedFile[]): ContractDecl[] {
         return {
           name: c.name,
           inheritsFrom: c.baseContracts.map((bc) => bc.baseName.namePath),
-          source: file.source.slice(c.range[0], c.range[1]),
+          source: file.source.slice(c.range[0], c.range[1] + 1),
         }
       }),
     )
@@ -99,7 +104,41 @@ function isolateContracts(files: ParsedFile[]): ContractDecl[] {
   return result
 }
 
-function buildInheritanceTree(
-  files: ParsedFile[],
+function flattenStartingFrom(
+  contracts: ContractDecl[],
   rootContractName: string,
-): void {}
+): string {
+  let result = ''
+
+  const rootContract = contracts.filter((c) => c.name === rootContractName)
+  assert(
+    rootContract.length === 1 && rootContract[0] !== undefined,
+    'Root contract not found or ambiguous',
+  )
+
+  result = pushSource(result, rootContract[0].source)
+
+  // Depth first search
+  const stack = rootContract[0].inheritsFrom.slice().reverse()
+  while (stack.length > 0) {
+    const currentContractName = stack.pop()
+    assert(currentContractName !== undefined, 'Stack should not be empty')
+
+    const currentContract = contracts.filter(
+      (c) => c.name === currentContractName,
+    )
+    assert(
+      currentContract.length === 1 && currentContract[0] !== undefined,
+      'Contract not found or ambiguous',
+    )
+
+    result = pushSource(result, currentContract[0].source)
+    stack.push(...currentContract[0].inheritsFrom)
+  }
+
+  return result
+}
+
+function pushSource(acc: string, sourceCode: string): string {
+  return acc + sourceCode + '\n\n'
+}
