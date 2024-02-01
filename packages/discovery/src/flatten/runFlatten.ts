@@ -1,7 +1,7 @@
 import { assert, Logger } from '@l2beat/backend-tools'
 import { parse } from '@solidity-parser/parser'
 import { readdir, readFile, writeFile } from 'fs/promises'
-import { basename, resolve } from 'path'
+import { basename, normalize, resolve } from 'path'
 
 type ParseResult = ReturnType<typeof parse>
 
@@ -9,12 +9,24 @@ export interface ParsedFile {
   path: string
   source: string
   ast: ParseResult
+
+  declaredContracts: ContractDecl[]
+  importedContracts: {
+    path: string
+    originalName: string
+    importedName: string
+  }[]
+}
+
+interface ByteRange {
+  start: number
+  end: number
 }
 
 interface ContractDecl {
   inheritsFrom: string[]
   name: string
-  source: string
+  byteRange: ByteRange
 }
 
 export async function runFlatten(
@@ -46,11 +58,11 @@ export async function runFlatten(
   )
 
   console.time('isolation')
-  const contracts = isolateContracts(files)
+  isolateContracts(files)
   console.timeEnd('isolation')
 
   console.time('flattening')
-  const flattened = flattenStartingFrom(contracts, rootContractName)
+  const flattened = flattenStartingFrom(files, rootContractName)
   console.timeEnd('flattening')
 
   await writeFile('flattened.sol', flattened)
@@ -78,67 +90,212 @@ async function parseFile(path: string): Promise<ParsedFile> {
     path,
     source,
     ast: parse(source, { range: true }),
+    declaredContracts: [],
+    importedContracts: [],
   }
 }
 
-function isolateContracts(files: ParsedFile[]): ContractDecl[] {
-  const result = []
-
+function isolateContracts(files: ParsedFile[]): void {
   for (const file of files) {
     const contractDeclarations = file.ast.children.filter(
       (n) => n.type === 'ContractDefinition',
     )
-    result.push(
-      ...contractDeclarations.map((c) => {
-        assert(c.type === 'ContractDefinition' && c.range !== undefined)
 
-        return {
-          name: c.name,
-          inheritsFrom: c.baseContracts.map((bc) => bc.baseName.namePath),
-          source: file.source.slice(c.range[0], c.range[1] + 1),
-        }
-      }),
-    )
+    file.declaredContracts = contractDeclarations.map((c) => {
+      assert(c.type === 'ContractDefinition' && c.range !== undefined)
+
+      return {
+        name: c.name,
+        inheritsFrom: c.baseContracts.map((bc) => bc.baseName.namePath),
+        byteRange: {
+          start: c.range[0],
+          end: c.range[1],
+        },
+      }
+    })
   }
 
-  return result
+  for (const file of files) {
+    const importDirectives = file.ast.children.filter(
+      (n) => n.type === 'ImportDirective',
+    )
+
+    file.importedContracts = importDirectives.flatMap((i) => {
+      assert(i.type === 'ImportDirective' && i.range !== undefined)
+
+      // We want to import everything from the file
+      if (i.symbolAliases === null) {
+        // TODO(radomski): This is the biggest unknown and I should really
+        // consider if this simple string comparison will solve every single
+        // possible case.
+        const matchingFiles = files.filter(
+          (f) =>
+            f.path.endsWith(replaceAll(normalize(i.path), '../', '')) &&
+            basename(f.path) === basename(i.path),
+        )
+
+        // if (!(matchingFiles.length === 1 && matchingFiles[0] !== undefined)) {
+        //   console.log("shrek", replaceAll(normalize(i.path), '../', ''))
+        //   console.log("shrek", files.map((f) => basename(f.path)))
+        //   console.log("shrek", files.map((f) => f.path.endsWith(normalize(i.path).replace('../', ''))))
+        //   console.log("shrek", files.map((f) => basename(f.path) === basename(i.path)))
+        //   console.log("shrek", files.map((f) => f.path))
+        // }
+
+        assert(
+          matchingFiles.length === 1 && matchingFiles[0] !== undefined,
+          'File not found or ambiguous',
+        )
+
+        return matchingFiles[0].declaredContracts.map((c) => ({
+          path: i.path,
+          originalName: c.name,
+          importedName: c.name,
+        }))
+      }
+
+      return i.symbolAliases.map((a) => ({
+        path: i.path,
+        originalName: a[0],
+        importedName: a[1] ?? a[0],
+      }))
+    })
+  }
 }
 
 function flattenStartingFrom(
-  contracts: ContractDecl[],
+  files: ParsedFile[],
   rootContractName: string,
 ): string {
   let result = ''
 
-  const rootContract = contracts.filter((c) => c.name === rootContractName)
+  const fileWithRootContracts = files.filter((f) =>
+    f.declaredContracts.some((c) => c.name === rootContractName),
+  )
+  assert(
+    fileWithRootContracts.length === 1 &&
+      fileWithRootContracts[0] !== undefined,
+    'File with root contract not found or ambiguous',
+  )
+  const fileWithRootContract = fileWithRootContracts[0]
+
+  const rootContract = fileWithRootContract.declaredContracts.filter(
+    (c) => c.name === rootContractName,
+  )
   assert(
     rootContract.length === 1 && rootContract[0] !== undefined,
     'Root contract not found or ambiguous',
   )
 
-  result = pushSource(result, rootContract[0].source)
+  result = pushSource(
+    result,
+    fileWithRootContract.source,
+    rootContract[0].byteRange,
+  )
 
   // Depth first search
-  const stack = rootContract[0].inheritsFrom.slice().reverse()
+  const stack = rootContract[0].inheritsFrom
+    .slice()
+    .reverse()
+    .map((contractName) => ({
+      contractName,
+      path: fileWithRootContract.path,
+    }))
+
   while (stack.length > 0) {
-    const currentContractName = stack.pop()
-    assert(currentContractName !== undefined, 'Stack should not be empty')
+    const currentEntry = stack.pop()
+    assert(currentEntry !== undefined, 'Stack should not be empty')
 
-    const currentContract = contracts.filter(
-      (c) => c.name === currentContractName,
-    )
+    const currentFiles = files.filter((f) => f.path.endsWith(currentEntry.path))
     assert(
-      currentContract.length === 1 && currentContract[0] !== undefined,
-      'Contract not found or ambiguous',
+      currentFiles.length === 1 && currentFiles[0] !== undefined,
+      'File not found or ambiguous',
+    )
+    const currentFile = currentFiles[0]
+
+    const isDeclared = currentFile.declaredContracts.some(
+      (c) => c.name === currentEntry.contractName,
+    )
+    const isImported = currentFile.importedContracts.some(
+      (c) => c.importedName === currentEntry.contractName,
     )
 
-    result = pushSource(result, currentContract[0].source)
-    stack.push(...currentContract[0].inheritsFrom)
+    assert(isDeclared || isImported, 'Contract not found')
+    assert(!(isDeclared && isImported), 'Contract found in multiple files')
+
+    if (isDeclared) {
+      const currentContracts = currentFile.declaredContracts.filter(
+        (c) => c.name === currentEntry.contractName,
+      )
+      assert(
+        currentContracts.length === 1 && currentContracts[0] !== undefined,
+        'Contract not found or ambiguous',
+      )
+      const currentContract = currentContracts[0]
+
+      result = pushSource(result, currentFile.source, currentContract.byteRange)
+      stack.push(
+        ...currentContract.inheritsFrom.map((contractName) => ({
+          contractName,
+          path: currentFile.path,
+        })),
+      )
+    } else {
+      const currentImports = currentFile.importedContracts.filter(
+        (c) => c.importedName === currentEntry.contractName,
+      )
+      assert(
+        currentImports.length === 1 && currentImports[0] !== undefined,
+        'Contract not found or ambiguous',
+      )
+      const currentImport = currentImports[0]
+
+      const importedFiles = files.filter((f) =>
+        pathsMatch(f.path, currentImport.path),
+      )
+      assert(
+        importedFiles.length === 1 && importedFiles[0] !== undefined,
+        'File not found or ambiguous',
+      )
+      const importedFile = importedFiles[0]
+
+      const importedContracts = importedFile.declaredContracts.filter(
+        (c) => c.name === currentImport.originalName,
+      )
+      assert(
+        importedContracts.length === 1 && importedContracts[0] !== undefined,
+        'Contract not found or ambiguous',
+      )
+      const importedContract = importedContracts[0]
+
+      result = pushSource(
+        result,
+        importedFile.source,
+        importedContract.byteRange,
+      )
+      stack.push(
+        ...importedContract.inheritsFrom.map((contractName) => ({
+          contractName,
+          path: importedFile.path,
+        })),
+      )
+    }
   }
 
   return result
 }
 
-function pushSource(acc: string, sourceCode: string): string {
-  return acc + sourceCode + '\n\n'
+function pushSource(acc: string, source: string, byteRange: ByteRange): string {
+  return acc + source.slice(byteRange.start, byteRange.end + 1) + '\n\n'
+}
+
+function replaceAll(str: string, search: string, replacement: string): string {
+  return str.split(search).join(replacement)
+}
+
+function pathsMatch(path1: string, path2: string): boolean {
+  return (
+    path1.endsWith(replaceAll(normalize(path2), '../', '')) &&
+    basename(path1) === basename(path2)
+  )
 }
