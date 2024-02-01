@@ -43,7 +43,6 @@ export class ArbitrumSequencerVersionHandler implements ClassicHandler {
     provider: DiscoveryProvider,
     address: EthereumAddress,
     blockNumber: number,
-    _previousResults: Record<string, HandlerResult | undefined>,
   ): Promise<HandlerResult> {
     this.logger.logExecution(this.field, [
       'Checking Arbitrum Sequencer Version',
