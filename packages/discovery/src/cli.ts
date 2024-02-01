@@ -5,6 +5,7 @@ import { handleCli } from './cli/handleCli'
 import { invertCommand } from './cli/invertCommand'
 import { singleDiscoveryCommand } from './cli/singleDiscoveryCommand'
 import { getDiscoveryCliConfig } from './config/config.discovery'
+import { flattenCommand } from './cli/flattenCommand'
 
 main().catch((e) => {
   console.error(e)
@@ -19,4 +20,5 @@ async function main(): Promise<void> {
   await discoverCommand(config, logger)
   await invertCommand(config, logger)
   await singleDiscoveryCommand(config, logger)
+  await flattenCommand(config, logger)
 }
