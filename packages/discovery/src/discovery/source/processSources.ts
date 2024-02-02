@@ -4,7 +4,7 @@ import path from 'path'
 import { EthereumAddress } from '../../utils/EthereumAddress'
 import { ContractMetadata } from '../provider/DiscoveryProvider'
 import { removeSharedNesting } from './removeSharedNesting'
-import { sourceToEntries } from './sourceToEntries'
+import { decodeEtherscanSource } from './sourceToEntries'
 
 export function processSources(
   address: EthereumAddress,
@@ -25,16 +25,28 @@ export function processSources(
   return result
 }
 
+export function getRemappings({
+  name,
+  source,
+  isVerified,
+}: Omit<ContractMetadata, 'abi'>): string[] {
+  if (!isVerified) {
+    return []
+  }
+
+  return decodeEtherscanSource(name, source).remappings
+}
+
 function parseSource(name: string, source: string): Record<string, string> {
-  const entries = sourceToEntries(name, source)
+  const decodedSource = decodeEtherscanSource(name, source)
+  const entries = decodedSource.sources
 
   if (entries.length === 1) {
     assert(entries[0], 'cannot parse source to single file')
     return parseSingleFile(...entries[0])
   }
 
-  const simplified = removeSharedNesting(entries)
-  return Object.fromEntries(simplified)
+  return Object.fromEntries(entries)
 }
 
 function parseSingleFile(

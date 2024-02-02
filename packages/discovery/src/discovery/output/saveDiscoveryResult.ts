@@ -8,6 +8,10 @@ import { Analysis } from '../analysis/AddressAnalyzer'
 import { DiscoveryConfig } from '../config/DiscoveryConfig'
 import { toDiscoveryOutput } from './toDiscoveryOutput'
 import { toPrettyJson } from './toPrettyJson'
+import { ContractFlattener } from '../../flatten/ParsingContext'
+import { removeSharedNesting } from '../source/removeSharedNesting'
+import { Logger } from '@l2beat/backend-tools'
+import { filterOutNonSolidityFiles } from '../../flatten/runFlatten'
 
 export async function saveDiscoveryResult(
   results: Analysis[],
@@ -36,17 +40,22 @@ export async function saveDiscoveryResult(
   await writeFile(path.join(root, discoveryFilename), json)
 
   const sourcesFolder = options.sourcesFolder ?? '.code'
+  const flatSourcesFolder = `${sourcesFolder}-flat`
   const sourcesPath = path.join(root, sourcesFolder)
+  const flatSourcesPath = path.join(root, flatSourcesFolder)
   const allContractNames = results.map((c) =>
     c.type !== 'EOA' ? c.name : 'EOA',
   )
   await rimraf(sourcesPath)
+  await rimraf(flatSourcesPath)
   for (const contract of results) {
     if (contract.type === 'EOA') {
       continue
     }
+
     for (const [i, files] of contract.sources.entries()) {
-      for (const [fileName, content] of Object.entries(files)) {
+      const simplified = removeSharedNesting(Object.entries(files))
+      for (const [fileName, content] of simplified) {
         const path = getSourceOutputPath(
           fileName,
           i,
@@ -59,6 +68,41 @@ export async function saveDiscoveryResult(
         await mkdirp(dirname(path))
         await writeFile(path, content)
       }
+    }
+  }
+
+  for (const contract of results) {
+
+    try {
+      if (contract.type === 'EOA') {
+        continue
+      }
+
+      for (const [i, files] of contract.sources.entries()) {
+          // SKip the proxy
+          if(contract.sources.length > 1 && i === 0) {
+              continue
+          }
+
+        const input = Object.entries(files).map(([fileName, content]) => ({
+          path: fileName,
+          content,
+        })).filter((e) => e.path.endsWith('.sol'))
+
+        const flattener = new ContractFlattener(
+          input,
+          contract.remappings,
+          Logger.SILENT,
+        )
+        const output = flattener.flattenStartingFrom(contract.name)
+        console.log(`Successfully flattened contract ${contract.name}`)
+      }
+    } catch (e) {
+      console.log(
+        `Error flattening contract ${
+          contract.type !== 'EOA' ? contract.name : 'EOA'
+        } - ${e}`,
+      )
     }
   }
 }

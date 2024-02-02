@@ -268,14 +268,17 @@ export class ContractFlattener {
     // consider if this simple string comparison will solve every single
     // possible case.
     const remappedPath = this.resolveRemappings(importPath)
-    const resolvedPath = remappedPath[0] === '.' ? posix.join(path.dirname(fromFile.path), remappedPath) : remappedPath
+    const resolvedPath =
+      remappedPath[0] === '.'
+        ? posix.join(path.dirname(fromFile.path), remappedPath)
+        : remappedPath
 
     const matchingFiles = this.files.filter((f) =>
       pathsMatch(f.path, resolvedPath),
     )
 
     if (matchingFiles.length !== 1) {
-      console.log(fromFile.path, remappedPath, matchingFiles)
+      console.log("resolveImportPath: ", this.remappings, fromFile.path, remappedPath, matchingFiles)
     }
     assert(matchingFiles.length !== 0, 'File not found')
     assert(matchingFiles.length === 1, 'Multiple files found')

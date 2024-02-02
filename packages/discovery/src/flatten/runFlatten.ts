@@ -55,7 +55,7 @@ async function listFilesRecursively(path: string): Promise<string[]> {
   return files.flat()
 }
 
-function filterOutNonSolidityFiles(files: string[]): string[] {
+export function filterOutNonSolidityFiles(files: string[]): string[] {
   return files.filter((f) => basename(f).endsWith('.sol'))
 }
 

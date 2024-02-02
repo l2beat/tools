@@ -4,7 +4,7 @@ import { EthereumAddress } from '../../utils/EthereumAddress'
 import { DiscoveryProvider } from '../provider/DiscoveryProvider'
 import { deduplicateAbi } from './deduplicateAbi'
 import { getLegacyDerivedName } from './getDerivedName'
-import { processSources } from './processSources'
+import { getRemappings, processSources } from './processSources'
 import { skipIgnoredFunctions } from './skipIgnoredFunctions'
 
 export interface ContractSources {
@@ -13,6 +13,7 @@ export interface ContractSources {
   abi: string[]
   abis: Record<string, string[]>
   files: Record<string, string>[]
+  remappings: string[]
 }
 
 export class SourceCodeService {
@@ -43,8 +44,16 @@ export class SourceCodeService {
     }
 
     const isVerified = metadata.every((x) => x.isVerified)
+    const isOnlyOneImplementation = implementations?.length === 1
+    const isMoreThanOneImplementation = (implementations?.length ?? 0) > 1
+    const sourceAddress = isOnlyOneImplementation ? implementations[0] ?? address: address
 
-    return { name, isVerified, abi, abis, files }
+    const remappings: string[] = !isMoreThanOneImplementation
+      ? getRemappings(await this.provider.getMetadata(sourceAddress))
+      : []
+
+    console.log("shrek", name, remappings, sourceAddress)
+    return { name, isVerified, abi, abis, files, remappings }
   }
 
   getRelevantAbi(

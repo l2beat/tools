@@ -32,6 +32,7 @@ export interface AnalyzedContract {
   errors: Record<string, string>
   abis: Record<string, string[]>
   sources: Record<string, string>[]
+  remappings: string[]
 }
 
 export interface AnalyzedEOA {
@@ -99,6 +100,7 @@ export class AddressAnalyzer {
         errors: errors ?? {},
         abis: sources.abis,
         sources: sources.files,
+        remappings: sources.remappings,
       },
       relatives: getRelatives(
         results,
