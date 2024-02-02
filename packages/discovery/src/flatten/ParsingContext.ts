@@ -25,6 +25,7 @@ interface ContractDecl {
 // importedName: 'bar'
 interface ImportDirective {
   path: string
+  absolutePath: string
   originalName: string
   importedName: string
 }
@@ -43,6 +44,8 @@ export interface ParsedFile extends FileContent {
 
 export class ContractFlattener {
   private readonly files: ParsedFile[] = []
+
+  private readonly visitedPaths: string[] = []
 
   constructor(
     fileContents: FileContent[],
@@ -113,32 +116,47 @@ export class ContractFlattener {
     }
 
     for (const file of this.files) {
-      const importDirectives = file.ast.children.filter(
-        (n) => n.type === 'ImportDirective',
-      )
+        this.visitedPaths.push(file.path)
+        file.importDirectives = this.resolveFileImports(file)
+        this.visitedPaths.splice(0, this.visitedPaths.length)
+    }
+  }
 
-      // TODO(radomski): There is a problem because we are not resolving imported contracts that are two levels deep.
-      // We need to recursively resolve imports, that means that we need to resolve imports in the imported files as well.
-      file.importDirectives = importDirectives.flatMap((i) => {
-        assert(i.type === 'ImportDirective' && i.range !== undefined)
+  resolveFileImports(file: ParsedFile, depth: number = 0): ImportDirective[] {
+    const importDirectives = file.ast.children.filter(
+      (n) => n.type === 'ImportDirective',
+    )
 
-        if (i.symbolAliases === null) {
-          // We want to import everything from the file
-          const importedFile = this.resolveImportPath(file, i.path)
-          return importedFile.contractDeclarations.map((c) => ({
+    // TODO(radomski): There is a problem because we are not resolving imported contracts that are two levels deep.
+    // We need to recursively resolve imports, that means that we need to resolve imports in the imported files as well.
+    return importDirectives.flatMap((i) => {
+      assert(i.type === 'ImportDirective' && i.range !== undefined)
+
+      const importedFile = this.resolveImportPath(file, i.path)
+      if (this.visitedPaths.includes(importedFile.path)) {
+          return []
+      }
+      this.visitedPaths.push(importedFile.path)
+
+      if (i.symbolAliases === null) {
+        // We want to import everything from the file
+        return importedFile.contractDeclarations
+          .map((c) => ({
             path: i.path,
+            absolutePath: importedFile.path,
             originalName: c.name,
             importedName: c.name,
-          }))
-        }
+          })).concat(this.resolveFileImports(importedFile, depth + 1))
+      }
 
-        return i.symbolAliases.map((alias) => ({
+      return i.symbolAliases
+        .map((alias) => ({
           path: i.path,
+          absolutePath: importedFile.path,
           originalName: alias[0],
           importedName: alias[1] ?? alias[0],
         }))
-      })
-    }
+    })
   }
 
   flattenStartingFrom(rootContractName: string): string {
@@ -269,6 +287,9 @@ export class ContractFlattener {
       (c) => c.importedName === contractName,
     )
 
+      if(matchingImports.length !== 1) {
+          console.log('resolveImportContract: ', fromFile.path, contractName, matchingImports)
+      }
     assert(matchingImports.length !== 0, 'Import not found')
     assert(matchingImports.length === 1, 'Multiple imports found')
     assert(matchingImports[0] !== undefined, 'Import not found')
