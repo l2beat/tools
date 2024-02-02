@@ -46,13 +46,15 @@ export class SourceCodeService {
     const isVerified = metadata.every((x) => x.isVerified)
     const isOnlyOneImplementation = implementations?.length === 1
     const isMoreThanOneImplementation = (implementations?.length ?? 0) > 1
-    const sourceAddress = isOnlyOneImplementation ? implementations[0] ?? address: address
+    const sourceAddress = isOnlyOneImplementation
+      ? implementations[0] ?? address
+      : address
 
     const remappings: string[] = !isMoreThanOneImplementation
       ? getRemappings(await this.provider.getMetadata(sourceAddress))
       : []
 
-    console.log("shrek", name, remappings, sourceAddress)
+    console.log('shrek', name, remappings, sourceAddress)
     return { name, isVerified, abi, abis, files, remappings }
   }
 

@@ -1,8 +1,7 @@
-import { assert, Logger } from '@l2beat/backend-tools'
-import { parse } from '@solidity-parser/parser'
-import { createHash } from 'crypto'
+import { Logger } from '@l2beat/backend-tools'
 import { readdir, readFile, writeFile } from 'fs/promises'
-import { basename, normalize, resolve } from 'path'
+import { basename, resolve } from 'path'
+
 import { ContractFlattener } from './ParsingContext'
 
 export async function runFlatten(

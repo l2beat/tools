@@ -1,17 +1,16 @@
+import { Logger } from '@l2beat/backend-tools'
 import { writeFile } from 'fs/promises'
 import { mkdirp } from 'mkdirp'
-import path, { dirname } from 'path'
+import path, { dirname, posix } from 'path'
 import { rimraf } from 'rimraf'
 
+import { ContractFlattener } from '../../flatten/ParsingContext'
 import { EthereumAddress } from '../../utils/EthereumAddress'
 import { Analysis } from '../analysis/AddressAnalyzer'
 import { DiscoveryConfig } from '../config/DiscoveryConfig'
+import { removeSharedNesting } from '../source/removeSharedNesting'
 import { toDiscoveryOutput } from './toDiscoveryOutput'
 import { toPrettyJson } from './toPrettyJson'
-import { ContractFlattener } from '../../flatten/ParsingContext'
-import { removeSharedNesting } from '../source/removeSharedNesting'
-import { Logger } from '@l2beat/backend-tools'
-import { filterOutNonSolidityFiles } from '../../flatten/runFlatten'
 
 export async function saveDiscoveryResult(
   results: Analysis[],
@@ -72,39 +71,59 @@ export async function saveDiscoveryResult(
   }
 
   for (const contract of results) {
-
     try {
       if (contract.type === 'EOA') {
         continue
       }
 
       for (const [i, files] of contract.sources.entries()) {
-          // SKip the proxy
-          if(contract.sources.length > 1 && i === 0) {
-              continue
-          }
+        // SKip the proxy
+        if (contract.sources.length > 1 && i === 0) {
+          continue
+        }
 
-        const input = Object.entries(files).map(([fileName, content]) => ({
-          path: fileName,
-          content,
-        })).filter((e) => e.path.endsWith('.sol'))
+        const input = Object.entries(files)
+          .map(([fileName, content]) => ({
+            path: fileName,
+            content,
+          }))
+          .filter((e) => e.path.endsWith('.sol'))
 
         const flattener = new ContractFlattener(
           input,
           contract.remappings,
           Logger.SILENT,
         )
-        const output = flattener.flattenStartingFrom(contract.name)
+        const output = flattener.flattenStartingFrom(
+          contract.derivedName ?? contract.name,
+        )
+
+        const path = posix.join(flatSourcesPath, `${contract.name}.sol`)
+        await mkdirp(dirname(path))
+        await writeFile(path, output)
+
         console.log(`Successfully flattened contract ${contract.name}`)
       }
     } catch (e) {
       console.log(
         `Error flattening contract ${
-          contract.type !== 'EOA' ? contract.name : 'EOA'
-        } - ${e}`,
+          contract.type !== 'EOA'
+            ? contract.derivedName ?? contract.name
+            : 'EOA'
+        } - ${stringifyError(e)}`,
       )
     }
   }
+}
+
+function stringifyError(e: unknown): string {
+  if (e instanceof Error) {
+    return e.message
+  } else if (typeof e === 'string') {
+    return e
+  }
+
+  return JSON.stringify(e)
 }
 
 export function getSourceOutputPath(

@@ -1,7 +1,6 @@
-import { Logger, assert } from '@l2beat/backend-tools'
+import { assert, Logger } from '@l2beat/backend-tools'
 import { parse } from '@solidity-parser/parser'
 import * as path from 'path'
-import * as posix from 'path'
 
 type ParseResult = ReturnType<typeof parse>
 
@@ -93,7 +92,7 @@ export class ContractFlattener {
     return path
   }
 
-  isolate() {
+  isolate(): void {
     for (const file of this.files) {
       const contractDeclarations = file.ast.children.filter(
         (n) => n.type === 'ContractDefinition',
@@ -118,6 +117,8 @@ export class ContractFlattener {
         (n) => n.type === 'ImportDirective',
       )
 
+      // TODO(radomski): There is a problem because we are not resolving imported contracts that are two levels deep.
+      // We need to recursively resolve imports, that means that we need to resolve imports in the imported files as well.
       file.importDirectives = importDirectives.flatMap((i) => {
         assert(i.type === 'ImportDirective' && i.range !== undefined)
 
@@ -177,7 +178,13 @@ export class ContractFlattener {
         (c) => c.importedName === entry.contractName,
       )
 
-      assert(isDeclared || isImported, 'Contract not found')
+      if (!isDeclared && !isImported) {
+        console.log('flattenStartingFrom: ', currentFile, entry.contractName)
+      }
+      assert(
+        isDeclared || isImported,
+        'Contract not found, neither declared nor imported',
+      )
       assert(!(isDeclared && isImported), 'Contract found in multiple files')
 
       if (isDeclared) {
@@ -226,6 +233,9 @@ export class ContractFlattener {
       f.contractDeclarations.some((c) => c.name === contractName),
     )
 
+    if (matchingFiles.length !== 1) {
+      console.log('resolveImportPath: ', this.remappings, contractName)
+    }
     assert(matchingFiles.length !== 0, 'File not found')
     assert(matchingFiles.length === 1, 'Multiple files found')
     assert(matchingFiles[0] !== undefined, 'File not found')
@@ -241,6 +251,9 @@ export class ContractFlattener {
       (c) => c.name === contractName,
     )
 
+    if (matchingContracts.length !== 1) {
+      console.log('findContractDeclaration: ', file, contractName)
+    }
     assert(matchingContracts.length !== 0, 'Contract not found')
     assert(matchingContracts.length === 1, 'Multiple contracts found')
     assert(matchingContracts[0] !== undefined, 'Contract not found')
@@ -268,17 +281,22 @@ export class ContractFlattener {
     // consider if this simple string comparison will solve every single
     // possible case.
     const remappedPath = this.resolveRemappings(importPath)
-    const resolvedPath =
-      remappedPath[0] === '.'
-        ? posix.join(path.dirname(fromFile.path), remappedPath)
-        : remappedPath
+    const resolvedPath = remappedPath.startsWith('.')
+      ? path.join(path.dirname(fromFile.path), remappedPath)
+      : remappedPath
 
     const matchingFiles = this.files.filter((f) =>
       pathsMatch(f.path, resolvedPath),
     )
 
     if (matchingFiles.length !== 1) {
-      console.log("resolveImportPath: ", this.remappings, fromFile.path, remappedPath, matchingFiles)
+      console.log(
+        'resolveImportPath: ',
+        this.remappings,
+        fromFile.path,
+        remappedPath,
+        matchingFiles,
+      )
     }
     assert(matchingFiles.length !== 0, 'File not found')
     assert(matchingFiles.length === 1, 'Multiple files found')
