@@ -1,7 +1,8 @@
 import z from 'zod'
 
 const Sources = z.record(z.object({ content: z.string() }))
-const EtherscanSource = z.object({ sources: Sources })
+const Settings = z.object({ remappings: z.array(z.string()).optional() })
+const EtherscanSource = z.object({ sources: Sources, settings: Settings })
 
 export function sourceToEntries(
   name: string,
@@ -19,7 +20,8 @@ export function sourceToEntries(
   const parsed: unknown = JSON.parse(source)
   let validated: Record<string, { content: string }>
   try {
-    validated = EtherscanSource.parse(parsed).sources
+    const verified = EtherscanSource.parse(parsed)
+    validated = verified.sources
   } catch {
     validated = Sources.parse(parsed)
   }
