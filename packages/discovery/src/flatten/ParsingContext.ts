@@ -179,7 +179,7 @@ export class ContractFlattener {
       )
 
       if (!isDeclared && !isImported) {
-        console.log('flattenStartingFrom: ', currentFile, entry.contractName)
+        console.log('flattenStartingFrom: ', currentFile.path, entry.contractName)
       }
       assert(
         isDeclared || isImported,
