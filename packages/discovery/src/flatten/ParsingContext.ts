@@ -1,5 +1,9 @@
 import { assert, Logger } from '@l2beat/backend-tools'
 import { parse } from '@solidity-parser/parser'
+// TODO(radomski): The parser does not expose the AST types for SOME reason.
+// Either we ignore this error or we fork the parser and expose the types.
+// eslint-disable-next-line import/no-unresolved
+import { UsingForDeclaration } from '@solidity-parser/parser/dist/src/ast-types'
 import * as path from 'path'
 
 type ParseResult = ReturnType<typeof parse>
@@ -11,6 +15,7 @@ interface ByteRange {
 
 interface ContractDecl {
   inheritsFrom: string[]
+  librariesUsed: string[]
   name: string
   byteRange: ByteRange
 }
@@ -96,6 +101,7 @@ export class ContractFlattener {
   }
 
   isolate(): void {
+    // Pass 1: Find all contract declarations and libraries used (only 'using' directive is supported for now)
     for (const file of this.files) {
       const contractDeclarations = file.ast.children.filter(
         (n) => n.type === 'ContractDefinition',
@@ -107,6 +113,15 @@ export class ContractFlattener {
         return {
           name: c.name,
           inheritsFrom: c.baseContracts.map((bc) => bc.baseName.namePath),
+          librariesUsed: c.subNodes
+            .filter((sn) => sn.type === 'UsingForDeclaration')
+            .map((sn) => {
+              assert(sn.type === 'UsingForDeclaration')
+              const usingNode = sn as UsingForDeclaration
+              assert(usingNode.libraryName !== null)
+
+              return usingNode.libraryName
+            }),
           byteRange: {
             start: c.range[0],
             end: c.range[1],
@@ -115,14 +130,15 @@ export class ContractFlattener {
       })
     }
 
+    // Pass 2: Resolve all imports
     for (const file of this.files) {
-        this.visitedPaths.push(file.path)
-        file.importDirectives = this.resolveFileImports(file)
-        this.visitedPaths.splice(0, this.visitedPaths.length)
+      this.visitedPaths.push(file.path)
+      file.importDirectives = this.resolveFileImports(file)
+      this.visitedPaths.splice(0, this.visitedPaths.length)
     }
   }
 
-  resolveFileImports(file: ParsedFile, depth: number = 0): ImportDirective[] {
+  resolveFileImports(file: ParsedFile, depth = 0): ImportDirective[] {
     const importDirectives = file.ast.children.filter(
       (n) => n.type === 'ImportDirective',
     )
@@ -134,7 +150,7 @@ export class ContractFlattener {
 
       const importedFile = this.resolveImportPath(file, i.path)
       if (this.visitedPaths.includes(importedFile.path)) {
-          return []
+        return []
       }
       this.visitedPaths.push(importedFile.path)
 
@@ -146,16 +162,16 @@ export class ContractFlattener {
             absolutePath: importedFile.path,
             originalName: c.name,
             importedName: c.name,
-          })).concat(this.resolveFileImports(importedFile, depth + 1))
+          }))
+          .concat(this.resolveFileImports(importedFile, depth + 1))
       }
 
-      return i.symbolAliases
-        .map((alias) => ({
-          path: i.path,
-          absolutePath: importedFile.path,
-          originalName: alias[0],
-          importedName: alias[1] ?? alias[0],
-        }))
+      return i.symbolAliases.map((alias) => ({
+        path: i.path,
+        absolutePath: importedFile.path,
+        originalName: alias[0],
+        importedName: alias[1] ?? alias[0],
+      }))
     })
   }
 
@@ -177,6 +193,7 @@ export class ContractFlattener {
 
     // Depth first search
     const stack = rootContract.inheritsFrom
+      .concat(rootContract.librariesUsed)
       .slice()
       .reverse()
       .map((contractName) => ({
@@ -197,7 +214,11 @@ export class ContractFlattener {
       )
 
       if (!isDeclared && !isImported) {
-        console.log('flattenStartingFrom: ', currentFile.path, entry.contractName)
+        console.log(
+          'flattenStartingFrom: ',
+          currentFile.path,
+          entry.contractName,
+        )
       }
       assert(
         isDeclared || isImported,
@@ -213,10 +234,17 @@ export class ContractFlattener {
 
         result = pushSource(result, currentFile.content, contract.byteRange)
         stack.push(
-          ...contract.inheritsFrom.map((contractName) => ({
-            contractName,
-            fromFile: currentFile,
-          })),
+          ...contract.inheritsFrom
+            .map((contractName) => ({
+              contractName,
+              fromFile: currentFile,
+            }))
+            .concat(
+              contract.librariesUsed.map((contractName) => ({
+                contractName,
+                fromFile: currentFile,
+              })),
+            ),
         )
       } else {
         const importedFile = this.resolveImportContract(
@@ -235,10 +263,17 @@ export class ContractFlattener {
           importedContract.byteRange,
         )
         stack.push(
-          ...importedContract.inheritsFrom.map((contractName) => ({
-            contractName,
-            fromFile: importedFile,
-          })),
+          ...importedContract.inheritsFrom
+            .map((contractName) => ({
+              contractName,
+              fromFile: importedFile,
+            }))
+            .concat(
+              importedContract.librariesUsed.map((contractName) => ({
+                contractName,
+                fromFile: importedFile,
+              })),
+            ),
         )
       }
     }
@@ -252,7 +287,7 @@ export class ContractFlattener {
     )
 
     if (matchingFiles.length !== 1) {
-      console.log('resolveImportPath: ', this.remappings, contractName)
+      console.log('findFileDeclaringContract: ', this.remappings, contractName)
     }
     assert(matchingFiles.length !== 0, 'File not found')
     assert(matchingFiles.length === 1, 'Multiple files found')
@@ -287,14 +322,19 @@ export class ContractFlattener {
       (c) => c.importedName === contractName,
     )
 
-      if(matchingImports.length !== 1) {
-          console.log('resolveImportContract: ', fromFile.path, contractName, matchingImports)
-      }
+    if (matchingImports.length !== 1) {
+      console.log(
+        'resolveImportContract: ',
+        fromFile.path,
+        contractName,
+        matchingImports,
+      )
+    }
     assert(matchingImports.length !== 0, 'Import not found')
     assert(matchingImports.length === 1, 'Multiple imports found')
     assert(matchingImports[0] !== undefined, 'Import not found')
 
-    return this.resolveImportPath(fromFile, matchingImports[0].path)
+    return this.resolveImportPath(fromFile, matchingImports[0].absolutePath)
   }
 
   resolveImportPath(fromFile: ParsedFile, importPath: string): ParsedFile {
@@ -311,13 +351,14 @@ export class ContractFlattener {
     )
 
     if (matchingFiles.length !== 1) {
-      console.log(
-        'resolveImportPath: ',
-        this.remappings,
-        fromFile.path,
+      console.log('resolveImportPath: ', {
+        remappings: this.remappings,
+        fromFilePath: fromFile.path,
+        importPath,
         remappedPath,
+        resolvedPath,
         matchingFiles,
-      )
+      })
     }
     assert(matchingFiles.length !== 0, 'File not found')
     assert(matchingFiles.length === 1, 'Multiple files found')
