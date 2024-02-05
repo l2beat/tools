@@ -20,9 +20,7 @@ export class MutableDiscoveryOverrides extends DiscoveryOverrides {
 
     const identifier = this.getIdentifier(nameOrAddress)
 
-    const originalOverride = identifier
-      ? this.config.overrides?.[identifier] ?? {}
-      : {}
+    const originalOverride = this.config.overrides?.[identifier] ?? {}
 
     if (override.ignoreInWatchMode !== undefined) {
       if (override.ignoreInWatchMode.length === 0) {
@@ -54,7 +52,7 @@ export class MutableDiscoveryOverrides extends DiscoveryOverrides {
       if (!override.ignoreDiscovery) {
         delete originalOverride.ignoreDiscovery
       } else {
-        assign(originalOverride, { ignoreRelatives: override.ignoreRelatives })
+        assign(originalOverride, { ignoreDiscovery: override.ignoreDiscovery })
       }
     }
 
@@ -66,18 +64,16 @@ export class MutableDiscoveryOverrides extends DiscoveryOverrides {
     // Set override only if it is not empty
     if (Object.keys(originalOverride).length > 0) {
       assign(this.config.overrides, {
-        [identifier ?? nameOrAddress]: originalOverride,
+        [identifier]: originalOverride,
       })
       // Remove override if it is empty
     } else {
       // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-      delete this.config.overrides[identifier ?? nameOrAddress]
+      delete this.config.overrides[identifier]
     }
   }
 
-  private getIdentifier(
-    nameOrAddress: string | EthereumAddress,
-  ): string | null {
+  private getIdentifier(nameOrAddress: string | EthereumAddress): string {
     let name: string | undefined
     let address: EthereumAddress | undefined
 
@@ -89,7 +85,8 @@ export class MutableDiscoveryOverrides extends DiscoveryOverrides {
       name = nameOrAddress.toString()
     }
 
-    return name ?? address?.toString() ?? null
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    return name ?? address!.toString()
   }
 
   // Naive update without checks
