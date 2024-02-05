@@ -54,7 +54,6 @@ export class SourceCodeService {
       ? getRemappings(await this.provider.getMetadata(sourceAddress))
       : []
 
-    console.log('shrek', name, remappings, sourceAddress)
     return { name, isVerified, abi, abis, files, remappings }
   }
 

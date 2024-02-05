@@ -373,6 +373,8 @@ function replaceAll(str: string, search: string, replacement: string): string {
 }
 
 function pathsMatch(path1: string, path2: string): boolean {
+    // return path1 === path2
+    // This is better but for the demo we will use the below
   return (
     path1.endsWith(replaceAll(path.normalize(path2), '../', '')) &&
     path.basename(path1) === path.basename(path2)
