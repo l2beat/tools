@@ -96,6 +96,10 @@ export class DiscoveryProvider {
     const maxRange = this.getLogsMaxRange
     const allLogs: providers.Log[] = []
 
+    const howManyEvents =
+      options.filter !== undefined
+        ? options.howManyEvents ?? 1 // if filtering, assume we only need 1 event
+        : options.howManyEvents ?? toBlock - fromBlock
     const lowerLimitBlock = Math.max(fromBlock, deploymentBlockNumber)
     let end = toBlock
     do {
@@ -103,19 +107,15 @@ export class DiscoveryProvider {
       const start = Math.max(lowerLimitBlock, curBoundaryStart)
 
       const logs = await this.getLogsBatch(address, topics, start, end)
-      allLogs.unshift(...logs)
+      if (options.filter) {
+        allLogs.unshift(...logs.filter(options.filter))
+      } else {
+        allLogs.unshift(...logs)
+      }
       end = start - 1
 
-      if (options.filter) {
-        const howManyEvents = options.howManyEvents ?? 1
-        if (allLogs.filter(options.filter).length >= howManyEvents) {
-          return allLogs.filter(options.filter).slice(0, howManyEvents)
-        }
-      } else if (
-        options.howManyEvents &&
-        allLogs.length >= options.howManyEvents
-      ) {
-        return allLogs.slice(0, options.howManyEvents)
+      if(allLogs.length >= howManyEvents) {
+          return allLogs.slice(0, howManyEvents)
       }
     } while (end >= lowerLimitBlock)
 

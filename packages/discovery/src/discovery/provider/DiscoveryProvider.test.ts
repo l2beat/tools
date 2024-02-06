@@ -174,7 +174,7 @@ describe(DiscoveryProvider.name, () => {
           getLogs: mockFn()
             .resolvesToOnce([OrderingTestEvent()])
             .resolvesToOnce([OrderingTestEvent()])
-            .resolvesToOnce([OrderingTestEvent()])
+            .resolvesToOnce([OrderingTestEvent()]),
         })
 
         const discoveryProviderMock = new DiscoveryProvider(
@@ -196,7 +196,7 @@ describe(DiscoveryProvider.name, () => {
         )
 
         expect(events.length).toEqual(3)
-        expect(events.map(getEventId)).toEqual([2,1,0])
+        expect(events.map(getEventId)).toEqual([2, 1, 0])
       })
 
       it('returns logs in order, when two logs are added in one call', async () => {
@@ -204,7 +204,7 @@ describe(DiscoveryProvider.name, () => {
           getLogs: mockFn()
             .resolvesToOnce([])
             .resolvesToOnce([OrderingTestEvent(), OrderingTestEvent()])
-            .resolvesToOnce([OrderingTestEvent()])
+            .resolvesToOnce([OrderingTestEvent()]),
         })
 
         const discoveryProviderMock = new DiscoveryProvider(
@@ -232,7 +232,7 @@ describe(DiscoveryProvider.name, () => {
         // - third call: [2]
         // going backwards since we fetch starting at fromBlock and going
         // backwards it's going to be
-        expect(events.map(getEventId)).toEqual([2,0,1])
+        expect(events.map(getEventId)).toEqual([2, 0, 1])
       })
     })
 
