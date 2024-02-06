@@ -151,6 +151,91 @@ describe(DiscoveryProvider.name, () => {
       })
     })
 
+    describe('ordering', () => {
+      const abi = new utils.Interface(['event OrderingTestEvent(uint256 id)'])
+
+      let eventId = 0
+      function OrderingTestEvent(): providers.Log {
+        return abi.encodeEventLog('OrderingTestEvent', [
+          eventId++,
+        ]) as providers.Log
+      }
+
+      function getEventId(log: providers.Log) {
+        return abi.decodeEventLog('OrderingTestEvent', log.data).id.toNumber()
+      }
+
+      beforeEach(() => {
+        eventId = 0
+      })
+
+      it('returns logs in order', async () => {
+        const providerMock = mockObject<providers.JsonRpcProvider>({
+          getLogs: mockFn()
+            .resolvesToOnce([OrderingTestEvent()])
+            .resolvesToOnce([OrderingTestEvent()])
+            .resolvesToOnce([OrderingTestEvent()])
+        })
+
+        const discoveryProviderMock = new DiscoveryProvider(
+          providerMock,
+          etherscanLikeClientMock,
+          DiscoveryLogger.SILENT,
+          GETLOGS_MAX_RANGE,
+        )
+        discoveryProviderMock.getDeploymentInfo = mockFn().resolvesTo({
+          blockNumber: 0,
+          timestamp: 0,
+        })
+
+        const events = await discoveryProviderMock.getLogs(
+          address,
+          topics,
+          10000,
+          39999,
+        )
+
+        expect(events.length).toEqual(3)
+        expect(events.map(getEventId)).toEqual([2,1,0])
+      })
+
+      it('returns logs in order, when two logs are added in one call', async () => {
+        const providerMock = mockObject<providers.JsonRpcProvider>({
+          getLogs: mockFn()
+            .resolvesToOnce([])
+            .resolvesToOnce([OrderingTestEvent(), OrderingTestEvent()])
+            .resolvesToOnce([OrderingTestEvent()])
+        })
+
+        const discoveryProviderMock = new DiscoveryProvider(
+          providerMock,
+          etherscanLikeClientMock,
+          DiscoveryLogger.SILENT,
+          GETLOGS_MAX_RANGE,
+        )
+        discoveryProviderMock.getDeploymentInfo = mockFn().resolvesTo({
+          blockNumber: 0,
+          timestamp: 0,
+        })
+
+        const events = await discoveryProviderMock.getLogs(
+          address,
+          topics,
+          10000,
+          39999,
+        )
+
+        expect(events.length).toEqual(3)
+        // We will see the logs in this order:
+        // - first call: []
+        // - second call: [0,1]
+        // - third call: [2]
+        // going backwards since we fetch starting at fromBlock and going
+        // backwards it's going to be
+        expect(events.map(getEventId)).toEqual([2,0,1])
+      })
+    })
+
     describe('filter tests', () => {
       const abi = new utils.Interface(['event TestEvent(bool passesFilter)'])
 
