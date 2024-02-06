@@ -94,7 +94,7 @@ export class DiscoveryProvider {
       (await this.getDeploymentInfo(address)) ?? { blockNumber: 0 } // for cases where API to get deployment info is not available
 
     const maxRange = this.getLogsMaxRange
-    const allLogs: providers.Log[][] = []
+    const allLogs: providers.Log[] = []
 
     const lowerLimitBlock = Math.max(fromBlock, deploymentBlockNumber)
     let end = toBlock
@@ -103,23 +103,23 @@ export class DiscoveryProvider {
       const start = Math.max(lowerLimitBlock, curBoundaryStart)
 
       const logs = await this.getLogsBatch(address, topics, start, end)
-      allLogs.push(logs)
+      allLogs.push(...logs)
       end = start - 1
 
       if (options.filter) {
         const howManyEvents = options.howManyEvents ?? 1
-        if (allLogs.flat().filter(options.filter).length >= howManyEvents) {
-          return allLogs.flat().filter(options.filter).slice(0, howManyEvents)
+        if (allLogs.filter(options.filter).length >= howManyEvents) {
+          return allLogs.filter(options.filter).slice(0, howManyEvents)
         }
       } else if (
         options.howManyEvents &&
-        allLogs.flat().length >= options.howManyEvents
+        allLogs.length >= options.howManyEvents
       ) {
-        return allLogs.flat().slice(0, options.howManyEvents)
+        return allLogs.slice(0, options.howManyEvents)
       }
     } while (end >= lowerLimitBlock)
 
-    return allLogs.flat()
+    return allLogs
   }
 
   public async getLogsBatch(
