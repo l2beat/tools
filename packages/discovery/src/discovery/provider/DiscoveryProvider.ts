@@ -114,8 +114,8 @@ export class DiscoveryProvider {
       }
       end = start - 1
 
-      if(allLogs.length >= howManyEvents) {
-          return allLogs.slice(0, howManyEvents)
+      if (allLogs.length >= howManyEvents) {
+        return allLogs.slice(0, howManyEvents)
       }
     } while (end >= lowerLimitBlock)
 
