@@ -103,7 +103,7 @@ export class DiscoveryProvider {
       const start = Math.max(lowerLimitBlock, curBoundaryStart)
 
       const logs = await this.getLogsBatch(address, topics, start, end)
-      allLogs.push(...logs)
+      allLogs.unshift(...logs)
       end = start - 1
 
       if (options.filter) {
