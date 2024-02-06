@@ -42,10 +42,10 @@ describe(DiscoveryProvider.name, () => {
       await discoveryProviderMock.getLogs(address, topics, 5000, 35000)
       const ranges = rangesFromCalls(providerMock)
       expect(ranges).toEqual([
-        [5000, 9999],
-        [10000, 19999],
-        [20000, 29999],
         [30000, 35000],
+        [20000, 29999],
+        [10000, 19999],
+        [5000, 9999],
       ])
     })
 
@@ -53,9 +53,9 @@ describe(DiscoveryProvider.name, () => {
       await discoveryProviderMock.getLogs(address, topics, 10000, 39999)
       const ranges = rangesFromCalls(providerMock)
       expect(ranges).toEqual([
-        [10000, 19999],
-        [20000, 29999],
         [30000, 39999],
+        [20000, 29999],
+        [10000, 19999],
       ])
     })
 
@@ -63,10 +63,10 @@ describe(DiscoveryProvider.name, () => {
       await discoveryProviderMock.getLogs(address, topics, 9999, 30000)
       const ranges = rangesFromCalls(providerMock)
       expect(ranges).toEqual([
-        [9999, 9999],
-        [10000, 19999],
-        [20000, 29999],
         [30000, 30000],
+        [20000, 29999],
+        [10000, 19999],
+        [9999, 9999],
       ])
     })
 
@@ -143,9 +143,9 @@ describe(DiscoveryProvider.name, () => {
       await discoveryProviderMock.getLogs(address, topics, 5000, 35000)
       const ranges = rangesFromCalls(providerMock)
       expect(ranges).toEqual([
-        [16000, 19999],
-        [20000, 29999],
         [30000, 35000],
+        [20000, 29999],
+        [16000, 19999],
       ])
     })
   })

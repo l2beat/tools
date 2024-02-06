@@ -81,26 +81,27 @@ export class DiscoveryProvider {
     }
 
     // To support efficient caching, we divide the requested blocks range into
-    // sequential boundaries of `maxRange` size, e.g [0,10k-1], [10k, 20k-1], ...
+    // sequential boundaries of `maxRange` size, e.g [10k, 20k-1], [0,10k-1], ...
     // Otherwise ranges would depend on `fromBlock` and even small change to it
     // would make the previous cache useless.
 
-    // Let's start with the deployment block number if it's higher than fromBlock
+    // Let's fetch to the deployment block number if it's higher than fromBlock
     const { blockNumber: deploymentBlockNumber } =
       (await this.getDeploymentInfo(address)) ?? { blockNumber: 0 } // for cases where API to get deployment info is not available
 
     const maxRange = this.getLogsMaxRange
     const allLogs: providers.Log[][] = []
 
-    let start = Math.max(fromBlock, deploymentBlockNumber)
+    const lowerLimitBlock = Math.max(fromBlock, deploymentBlockNumber)
+    let end = toBlock
     do {
-      const curBoundaryStart = Math.floor(start / maxRange) * maxRange
-      const curBoundaryEnd = curBoundaryStart + maxRange - 1 // getLogs 'to' is inclusive!
-      const end = Math.min(curBoundaryEnd, toBlock)
+      const curBoundaryStart = Math.floor(end / maxRange) * maxRange
+      const start = Math.max(lowerLimitBlock, curBoundaryStart)
+
       const logs = await this.getLogsBatch(address, topics, start, end)
       allLogs.push(logs)
-      start = end + 1
-    } while (start <= toBlock)
+      end = start - 1
+    } while (end >= lowerLimitBlock)
 
     return allLogs.flat()
   }
