@@ -69,6 +69,10 @@ export class DiscoveryProvider {
     topics: Topics,
     fromBlock: number,
     toBlock: number,
+    options: {
+      howManyEvents?: number
+      filter?: (log: providers.Log) => boolean
+    } = {},
   ): Promise<providers.Log[]> {
     if (fromBlock > toBlock) {
       throw new Error(
@@ -101,6 +105,18 @@ export class DiscoveryProvider {
       const logs = await this.getLogsBatch(address, topics, start, end)
       allLogs.push(logs)
       end = start - 1
+
+      if (options.filter) {
+        const howManyEvents = options.howManyEvents ?? 1
+        if (allLogs.flat().filter(options.filter).length >= howManyEvents) {
+          return allLogs.flat().filter(options.filter).slice(0, howManyEvents)
+        }
+      } else if (
+        options.howManyEvents &&
+        allLogs.flat().length >= options.howManyEvents
+      ) {
+        return allLogs.flat().slice(0, options.howManyEvents)
+      }
     } while (end >= lowerLimitBlock)
 
     return allLogs.flat()
