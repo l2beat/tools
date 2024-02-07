@@ -23,7 +23,8 @@ import { toTopics } from '../utils/toTopics'
  * Logic:
  * 1. Get all logs for the event
  * 2. Group logs by returnParam[0] (it is always eid with current approach)
- * 3. Keep only the latest log for each group
+ * 3. Expand tuple of values into named values dictionary if expandParam is provided
+ * 4. Keep only the latest log for each group
  */
 
 export type StateFromEventTupleDefinition = z.infer<
@@ -33,6 +34,7 @@ export const StateFromEventTupleDefinition = z.strictObject({
   type: z.literal('stateFromEventTuple'),
   event: z.string(),
   returnParam: z.string(),
+  expandParam: z.string().optional(),
   ignoreRelative: z.boolean().optional(),
 })
 
@@ -69,7 +71,6 @@ export class StateFromEventTupleHandler implements ClassicHandler {
   ): Promise<HandlerResult> {
     this.logger.logExecution(this.field, ['Querying ', this.fragment.name])
     const topics = toTopics(this.abi, this.fragment)
-    // todo: are we sure that logs are sorted by blockNumber?
     const logs = await provider.getLogs(address, topics, 0, blockNumber)
 
     const values = new Map<number, ContractValue>()
@@ -86,7 +87,32 @@ export class StateFromEventTupleHandler implements ClassicHandler {
       for (const array of Object.values(params)) {
         assert(Array.isArray(array), 'Invalid param type')
         for (const tuple of array) {
-          values.set(tuple[0], tuple[1])
+          if (this.definition.expandParam) {
+            const returnParam = this.fragment.inputs[0]
+            assert(returnParam, 'Return param not returned from event')
+            const inputToExpand = returnParam.components.find(
+              (component) => component.name === this.definition.expandParam,
+            )
+
+            assert(
+              inputToExpand,
+              'Input to expand not found in the return param',
+            )
+
+            const inputLabels = inputToExpand.components.map(
+              (component) => component.name,
+            )
+
+            assert(Array.isArray(tuple[1]), 'Cannot expand non-tuple value')
+
+            const expanded = Object.fromEntries(
+              tuple[1].map((value, index) => [inputLabels[index], value]),
+            ) as ContractValue
+
+            values.set(tuple[0], expanded)
+          } else {
+            values.set(tuple[0], tuple[1])
+          }
         }
       }
     }
