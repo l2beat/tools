@@ -4,45 +4,46 @@ import { providers, utils } from 'ethers'
 import { EthereumAddress } from '../../../utils/EthereumAddress'
 import { DiscoveryLogger } from '../../DiscoveryLogger'
 import { DiscoveryProvider } from '../../provider/DiscoveryProvider'
-import { StateFromEventHandler } from './StateFromEventHandler'
+import { StateFromEventTupleHandler } from './StateFromEventTupleHandler'
 
-const ABI = [
-  'event TupleEvent(tuple(uint32 id, tuple(uint32 foo, address bar) config)[] params)',
-]
+const EVENT =
+  'event TupleEvent(tuple(uint32 eid, tuple(uint64 foo, uint8 bar, uint8 baz, uint8 qux) config)[] params)'
 
-describe(StateFromEventHandler.name, () => {
+describe(StateFromEventTupleHandler.name, () => {
   const BLOCK_NUMBER = 1234
 
   describe('constructor', () => {
     it('finds the specified event by name', () => {
-      const handler = new StateFromEventHandler(
+      const handler = new StateFromEventTupleHandler(
         'someName',
         {
-          type: 'stateFromEvent',
-          event: 'OwnerChanged',
-          returnParams: ['account', 'status'],
+          type: 'stateFromEventTuple',
+          event: 'TupleEvent',
+          returnParam: 'params',
         },
-        ['event OwnerChanged(address indexed account, bool indexed status)'],
+        [EVENT],
         DiscoveryLogger.SILENT,
       )
-      expect(handler.getEvent()).toEqual(
-        'event OwnerChanged(address indexed account, bool indexed status)',
-      )
+      expect(handler.getEvent()).toEqual(EVENT)
     })
   })
 
   describe('execute', () => {
-    const event =
-      'event OwnerChanged(address indexed account, bool indexed status)'
-    const abi = new utils.Interface([event])
+    const abi = new utils.Interface([EVENT])
 
-    function OwnerChanged(
-      account: EthereumAddress,
-      status: boolean,
+    function TupleEvent(
+      eid: number,
+      config: {
+        foo: number
+        bar: number
+        baz: number
+        qux: number
+      },
     ): providers.Log {
-      return abi.encodeEventLog(abi.getEvent('OwnerChanged'), [
-        account,
-        status,
+      const data = [[eid, [config.foo, config.bar, config.baz, config.qux]]]
+
+      return abi.encodeEventLog(abi.getEvent('TupleEvent'), [
+        data,
       ]) as providers.Log
     }
 
@@ -51,55 +52,72 @@ describe(StateFromEventHandler.name, () => {
       const provider = mockObject<DiscoveryProvider>({
         async getLogs(providedAddress, topics, fromBlock, toBlock) {
           expect(providedAddress).toEqual(address)
-          expect(topics).toEqual([abi.getEventTopic('OwnerChanged')])
+          expect(topics).toEqual([abi.getEventTopic('TupleEvent')])
           expect(fromBlock).toEqual(0)
           expect(toBlock).toEqual(BLOCK_NUMBER)
           return []
         },
       })
 
-      const handler = new StateFromEventHandler(
+      const handler = new StateFromEventTupleHandler(
         'someName',
         {
-          type: 'stateFromEvent',
-          event,
-          returnParams: ['account', 'status'],
+          type: 'stateFromEventTuple',
+          event: EVENT,
+          returnParam: 'params',
         },
         [],
         DiscoveryLogger.SILENT,
       )
       const value = await handler.execute(provider, address, BLOCK_NUMBER)
+
       expect(value).toEqual({
         field: 'someName',
-        value: [],
+        value: {},
         ignoreRelative: undefined,
       })
     })
 
     it('many logs as array', async () => {
-      const Alice = EthereumAddress.random()
-      const Bob = EthereumAddress.random()
-      const Charlie = EthereumAddress.random()
-
       const address = EthereumAddress.random()
       const provider = mockObject<DiscoveryProvider>({
         async getLogs() {
           return [
-            OwnerChanged(Alice, true),
-            OwnerChanged(Bob, true),
-            OwnerChanged(Bob, false),
-            OwnerChanged(Charlie, false),
-            OwnerChanged(Bob, true),
+            TupleEvent(1, {
+              foo: 1,
+              bar: 2,
+              baz: 3,
+              qux: 4,
+            }),
+            TupleEvent(2, {
+              foo: 5,
+              bar: 6,
+              baz: 7,
+              qux: 8,
+            }),
+            TupleEvent(3, {
+              foo: 9,
+              bar: 10,
+              baz: 11,
+              qux: 12,
+            }),
+            // Persist last
+            TupleEvent(3, {
+              foo: 20,
+              bar: 20,
+              baz: 20,
+              qux: 20,
+            }),
           ]
         },
       })
 
-      const handler = new StateFromEventHandler(
+      const handler = new StateFromEventTupleHandler(
         'someName',
         {
-          type: 'stateFromEvent',
-          event,
-          returnParams: ['account', 'status'],
+          type: 'stateFromEventTuple',
+          event: EVENT,
+          returnParam: 'params',
         },
         [],
         DiscoveryLogger.SILENT,
@@ -108,142 +126,75 @@ describe(StateFromEventHandler.name, () => {
 
       expect(value).toEqual({
         field: 'someName',
-        value: [
-          {
-            account: Alice.toString(),
-            status: true,
-          },
-          {
-            account: Bob.toString(),
-            status: true,
-          },
-          {
-            account: Bob.toString(),
-            status: false,
-          },
-          {
-            account: Charlie.toString(),
-            status: false,
-          },
-          {
-            account: Bob.toString(),
-            status: true,
-          },
-        ],
+        value: { '1': [1, 2, 3, 4], '2': [5, 6, 7, 8], '3': [20, 20, 20, 20] },
         ignoreRelative: undefined,
       })
     })
 
-    it('many logs as object groupedBy', async () => {
-      const Alice = EthereumAddress.random()
-      const Bob = EthereumAddress.random()
-      const Charlie = EthereumAddress.random()
-
+    it('many logs as array with param expansion', async () => {
       const address = EthereumAddress.random()
       const provider = mockObject<DiscoveryProvider>({
         async getLogs() {
           return [
-            OwnerChanged(Alice, true),
-            OwnerChanged(Bob, true),
-            OwnerChanged(Bob, false),
-            OwnerChanged(Charlie, false),
+            TupleEvent(1, {
+              foo: 1,
+              bar: 2,
+              baz: 3,
+              qux: 4,
+            }),
+            TupleEvent(2, {
+              foo: 5,
+              bar: 6,
+              baz: 7,
+              qux: 8,
+            }),
+            TupleEvent(3, {
+              foo: 9,
+              bar: 10,
+              baz: 11,
+              qux: 12,
+            }),
           ]
         },
       })
 
-      const handler = new StateFromEventHandler(
+      const handler = new StateFromEventTupleHandler(
         'someName',
         {
-          type: 'stateFromEvent',
-          event,
-          returnParams: ['account', 'status'],
-          groupBy: 'account',
+          type: 'stateFromEventTuple',
+          event: EVENT,
+          returnParam: 'params',
+          expandParam: 'config',
         },
         [],
         DiscoveryLogger.SILENT,
       )
       const value = await handler.execute(provider, address, BLOCK_NUMBER)
 
-      // expect just last event, since it overrides all props
       expect(value).toEqual({
         field: 'someName',
         value: {
-          [Alice.toString()]: {
-            account: Alice.toString(),
-            status: true,
+          '1': {
+            foo: 1,
+            bar: 2,
+            baz: 3,
+            qux: 4,
           },
-          [Bob.toString()]: {
-            account: Bob.toString(),
-            status: false,
+          '2': {
+            foo: 5,
+            bar: 6,
+            baz: 7,
+            qux: 8,
           },
-          [Charlie.toString()]: {
-            account: Charlie.toString(),
-            status: false,
+          '3': {
+            foo: 9,
+            bar: 10,
+            baz: 11,
+            qux: 12,
           },
         },
         ignoreRelative: undefined,
       })
-    })
-
-    it('passes ignoreRelative', async () => {
-      const Alice = EthereumAddress.random()
-      const address = EthereumAddress.random()
-      const provider = mockObject<DiscoveryProvider>({
-        async getLogs() {
-          return [OwnerChanged(Alice, true)]
-        },
-      })
-
-      const handler = new StateFromEventHandler(
-        'someName',
-        {
-          type: 'stateFromEvent',
-          event,
-          returnParams: ['account', 'status'],
-          ignoreRelative: true,
-        },
-        [],
-        DiscoveryLogger.SILENT,
-      )
-      const value = await handler.execute(provider, address, BLOCK_NUMBER)
-      expect(value).toEqual({
-        field: 'someName',
-        value: [
-          {
-            account: Alice.toString(),
-            status: true,
-          },
-        ],
-        ignoreRelative: true,
-      })
-    })
-
-    it('filters by topics', async () => {
-      const Alice = EthereumAddress.random()
-
-      const address = EthereumAddress.random()
-      const provider = mockObject<DiscoveryProvider>({
-        async getLogs(_address, topics) {
-          expect(topics).toEqual([
-            abi.getEventTopic('OwnerChanged'),
-            utils.hexZeroPad(Alice.toString(), 32),
-          ])
-          return [OwnerChanged(Alice, true)]
-        },
-      })
-
-      const handler = new StateFromEventHandler(
-        'someName',
-        {
-          type: 'stateFromEvent',
-          event,
-          topics: [Alice.toString()],
-          returnParams: ['account', 'status'],
-        },
-        [],
-        DiscoveryLogger.SILENT,
-      )
-      await handler.execute(provider, address, BLOCK_NUMBER)
     })
   })
 })
