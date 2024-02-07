@@ -2,19 +2,14 @@ import { ContractParameters, DiscoveryOutput } from '@l2beat/discovery-types'
 import { assign, parse, stringify } from 'comment-json'
 import * as fs from 'fs/promises'
 
-import { ContractOverrides } from '../config/DiscoveryOverrides'
+import { ContractOverrides } from './DiscoveryOverrides'
 import {
   MutableDiscoveryOverrides,
   MutableOverride,
-} from '../config/MutableDiscoveryOverrides'
-import { RawDiscoveryConfig } from '../config/RawDiscoveryConfig'
+} from './MutableDiscoveryOverrides'
+import { RawDiscoveryConfig } from './RawDiscoveryConfig'
 
-interface IgnoreResult {
-  possible: string[]
-  ignored: string[]
-}
-
-export class InteractiveOverridesManager {
+export class DiscoveryOverridesBuilder {
   private readonly mutableOverrides: MutableDiscoveryOverrides
 
   constructor(
@@ -30,93 +25,33 @@ export class InteractiveOverridesManager {
     return [...this.output.contracts]
   }
 
-  getWatchMode(contract: ContractParameters): {
-    all: string[]
-    ignored: string[]
-  } {
+  getWatchMode(contract: ContractParameters): string[] {
     const isDiscoveryIgnored = this.getIgnoreDiscovery(contract)
-    const ignoredMethods = this.getIgnoredMethods(contract)
 
     if (isDiscoveryIgnored) {
-      return {
-        all: [],
-        ignored: [],
-      }
+      return []
     }
 
     const overrides = this.getSafeOverride(contract)
-
-    const allProperties = Object.keys(contract.values ?? {})
 
     const ignoredInWatchMode = overrides?.ignoreInWatchMode ?? []
 
-    // All discovered keys + look ahead for all ignored methods
-    const possibleMethods = [
-      ...new Set([...allProperties, ...ignoredMethods.possible]),
-    ]
-      .filter((method) => !this.isCustomHandler(contract, method))
-      .filter((method) => !ignoredMethods.ignored.includes(method))
-
-    return {
-      all: possibleMethods,
-      ignored: ignoredInWatchMode,
-    }
+    return ignoredInWatchMode
   }
 
-  getIgnoredRelatives(contract: ContractParameters): IgnoreResult {
-    const isDiscoveryIgnored = this.getIgnoreDiscovery(contract)
-    const ignoredMethods = this.getIgnoredMethods(contract)
-
-    if (isDiscoveryIgnored) {
-      return {
-        possible: [],
-        ignored: [],
-      }
-    }
-
+  getIgnoredRelatives(contract: ContractParameters): string[] {
     const overrides = this.getSafeOverride(contract)
-
-    const allProperties = Object.keys(contract.values ?? {})
 
     const ignoredRelatives = overrides?.ignoreRelatives ?? []
 
-    // All discovered keys + look ahead for all ignored methods
-    const possibleMethods = [
-      ...new Set([...allProperties, ...ignoredMethods.possible]),
-    ]
-      .filter((method) => !this.isCustomHandler(contract, method))
-      .filter((method) => !ignoredMethods.ignored.includes(method))
-
-    return {
-      possible: possibleMethods,
-      ignored: ignoredRelatives,
-    }
+    return ignoredRelatives
   }
 
-  getIgnoredMethods(contract: ContractParameters): IgnoreResult {
-    const isDiscoveryIgnored = this.getIgnoreDiscovery(contract)
-
-    if (isDiscoveryIgnored) {
-      return {
-        possible: [],
-        ignored: [],
-      }
-    }
-
+  getIgnoredMethods(contract: ContractParameters): string[] {
     const overrides = this.getSafeOverride(contract)
-
     const ignoredMethods = overrides?.ignoreMethods ?? []
 
-    const allProperties = Object.keys(contract.values ?? {})
-
-    const possibleMethods = [
-      ...new Set([...allProperties, ...ignoredMethods]),
-    ].filter((method) => !this.isCustomHandler(contract, method))
-
-    return {
-      possible: possibleMethods,
-      ignored: ignoredMethods,
-    }
+    return ignoredMethods
   }
 
   getIgnoreDiscovery(contract: ContractParameters): boolean {
@@ -146,12 +81,12 @@ export class InteractiveOverridesManager {
     }
 
     // Exclude ignoreMethods from watch mode and relatives completely
-    const validWatchMode = ignoredInWatchMode.ignored.filter(
-      (method) => !ignoredMethods.ignored.includes(method),
+    const validWatchMode = ignoredInWatchMode.filter(
+      (method) => !ignoredMethods.includes(method),
     )
 
-    const validRelatives = ignoredRelatives.ignored.filter(
-      (method) => !ignoredMethods.ignored.includes(method),
+    const validRelatives = ignoredRelatives.filter(
+      (method) => !ignoredMethods.includes(method),
     )
 
     this.mutableOverrides.set(contract, {
@@ -205,7 +140,7 @@ export class InteractiveOverridesManager {
     }
   }
 
-  private isCustomHandler(
+  public isCustomHandler(
     contract: ContractParameters,
     property: string,
   ): boolean {

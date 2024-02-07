@@ -6,11 +6,11 @@ import { EtherscanLikeClient } from '../utils/EtherscanLikeClient'
 import { AddressAnalyzer, Analysis } from './analysis/AddressAnalyzer'
 import { ConfigReader } from './config/ConfigReader'
 import { DiscoveryConfig } from './config/DiscoveryConfig'
+import { DiscoveryOverridesBuilder } from './config/DiscoveryOverridesBuilder'
 import { DiscoveryLogger } from './DiscoveryLogger'
 import { DiscoveryEngine } from './engine/DiscoveryEngine'
 import { HandlerExecutor } from './handlers/HandlerExecutor'
-import { InteractiveOverrides } from './interactive/InteractiveOverrides'
-import { InteractiveOverridesManager } from './interactive/InteractiveOverridesManager'
+import { InteractiveDiffIgnore } from './interactive/InteractiveDiffIgnore'
 import { diffDiscovery } from './output/diffDiscovery'
 import { saveDiscoveryResult } from './output/saveDiscoveryResult'
 import { toDiscoveryOutput } from './output/toDiscoveryOutput'
@@ -104,17 +104,18 @@ export async function dryRunDiscovery(
 
   if (diff.length > 0) {
     console.log(JSON.stringify(diff, null, 2))
+
+    if (config.interactive) {
+      const dob = new DiscoveryOverridesBuilder(
+        discovered,
+        rawConfigWitComments,
+      )
+      const interactiveDiffIgnore = new InteractiveDiffIgnore(dob)
+
+      await interactiveDiffIgnore.runForDiffs(diff)
+    }
   } else {
     console.log('No changes!')
-  }
-
-  if (config.interactive) {
-    const iom = new InteractiveOverridesManager(
-      discovered,
-      rawConfigWitComments,
-    )
-    const interactiveOverrides = new InteractiveOverrides(iom)
-    await interactiveOverrides.run()
   }
 }
 

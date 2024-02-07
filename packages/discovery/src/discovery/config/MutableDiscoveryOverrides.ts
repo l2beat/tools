@@ -1,7 +1,6 @@
 import { ContractParameters } from '@l2beat/discovery-types'
 import { assign } from 'comment-json'
 
-import { EthereumAddress } from '../../utils/EthereumAddress'
 import { ContractOverrides, DiscoveryOverrides } from './DiscoveryOverrides'
 
 export type MutableOverride = Pick<
@@ -10,17 +9,16 @@ export type MutableOverride = Pick<
 >
 
 /**
- * In-place overrides map with intention to be mutable
- * since it is easier to do that this way instead of modification squash
  * @notice Re-assignments made via comments-json `assign` which supports both entries with comments (JSONC) and with out them.
  */
 export class MutableDiscoveryOverrides extends DiscoveryOverrides {
   public set(contract: ContractParameters, override: MutableOverride): void {
-    const nameOrAddress = this.updateNameToAddress(contract)
+    const hasName = Boolean(contract.name)
 
-    const identifier = this.getIdentifier(nameOrAddress)
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const nameOrAddress = hasName ? contract.name : contract.address.toString()!
 
-    const originalOverride = this.config.overrides?.[identifier] ?? {}
+    const originalOverride = this.config.overrides?.[nameOrAddress] ?? {}
 
     if (override.ignoreInWatchMode !== undefined) {
       if (override.ignoreInWatchMode.length === 0) {
@@ -64,49 +62,12 @@ export class MutableDiscoveryOverrides extends DiscoveryOverrides {
     // Set override only if it is not empty
     if (Object.keys(originalOverride).length > 0) {
       assign(this.config.overrides, {
-        [identifier]: originalOverride,
+        [nameOrAddress]: originalOverride,
       })
       // Remove override if it is empty
     } else {
       // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-      delete this.config.overrides[identifier]
+      delete this.config.overrides[nameOrAddress]
     }
-  }
-
-  private getIdentifier(nameOrAddress: string | EthereumAddress): string {
-    let name: string | undefined
-    let address: EthereumAddress | undefined
-
-    if (EthereumAddress.check(nameOrAddress.toString())) {
-      address = EthereumAddress(nameOrAddress.toString())
-      name = this.config.names?.[address.toString()]
-    } else {
-      address = this.nameToAddress.get(nameOrAddress.toString())
-      name = nameOrAddress.toString()
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    return name ?? address!.toString()
-  }
-
-  // Naive update without checks
-  private updateNameToAddress(contract: ContractParameters): string {
-    const hasName = Boolean(contract.name)
-
-    if (hasName) {
-      this.nameToAddress.set(contract.name, contract.address)
-
-      if (this.config.names === undefined) {
-        this.config.names = {
-          [contract.address.toString()]: contract.name,
-        }
-      } else {
-        this.config.names[contract.address.toString()] = contract.name
-      }
-    }
-
-    const addressOrName = hasName ? contract.name : contract.address.toString()
-
-    return addressOrName
   }
 }
