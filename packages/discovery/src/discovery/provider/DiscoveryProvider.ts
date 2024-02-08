@@ -80,10 +80,6 @@ export class DiscoveryProvider {
       )
     }
 
-    if (this.getLogsMaxRange === undefined) {
-      return await this.getLogsBatch(address, topics, fromBlock, toBlock)
-    }
-
     // To support efficient caching, we divide the requested blocks range into
     // sequential boundaries of `maxRange` size, e.g [10k, 20k-1], [0,10k-1], ...
     // Otherwise ranges would depend on `fromBlock` and even small change to it
@@ -93,10 +89,9 @@ export class DiscoveryProvider {
     const { blockNumber: deploymentBlockNumber } =
       (await this.getDeploymentInfo(address)) ?? { blockNumber: 0 } // for cases where API to get deployment info is not available
 
-    const maxRange = this.getLogsMaxRange
     let allLogs: providers.Log[] = []
-
-    const howManyEvents = options.howManyEvents ?? Infinity
+    const maxRange = this.getLogsMaxRange ?? Number.MAX_SAFE_INTEGER
+    const howManyEvents = options.howManyEvents ?? Number.MAX_SAFE_INTEGER
     const lowerLimitBlock = Math.max(fromBlock, deploymentBlockNumber)
     let end = toBlock
     do {
