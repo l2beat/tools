@@ -283,6 +283,7 @@ describe(DiscoveryProvider.name, () => {
           39999,
           {
             filter: (log) => eventFilter(log),
+            howManyEvents: 1,
           },
         )
 

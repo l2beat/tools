@@ -96,10 +96,7 @@ export class DiscoveryProvider {
     const maxRange = this.getLogsMaxRange
     const allLogs: providers.Log[] = []
 
-    const howManyEvents =
-      options.filter !== undefined
-        ? options.howManyEvents ?? 1 // if filtering, assume we only need 1 event
-        : options.howManyEvents ?? toBlock - fromBlock
+    const howManyEvents = options.howManyEvents ?? Infinity
     const lowerLimitBlock = Math.max(fromBlock, deploymentBlockNumber)
     let end = toBlock
     do {
