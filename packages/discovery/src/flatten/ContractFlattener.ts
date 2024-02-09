@@ -84,22 +84,6 @@ export class ContractFlattener {
     this.isolate()
   }
 
-  resolveRemappings(path: string): string {
-    for (const remapping of this.remappings) {
-      const [prefix, target] = remapping.split('=')
-
-      assert(remapping.includes('='), 'Invalid remapping, lacking "=" sign.')
-      assert(prefix !== undefined, 'Invalid remapping, missing prefix.')
-      assert(target !== undefined, 'Invalid remapping, missing target.')
-
-      if (path.startsWith(prefix)) {
-        return target + path.slice(prefix.length)
-      }
-    }
-
-    return path
-  }
-
   isolate(): void {
     // Pass 1: Find all contract declarations and libraries used (only 'using' directive is supported for now)
     for (const file of this.files) {
@@ -365,6 +349,22 @@ export class ContractFlattener {
     assert(matchingFiles[0] !== undefined, 'File not found')
 
     return matchingFiles[0]
+  }
+
+  resolveRemappings(path: string): string {
+    for (const remapping of this.remappings) {
+      const [prefix, target] = remapping.split('=')
+
+      assert(remapping.includes('='), 'Invalid remapping, lacking "=" sign.')
+      assert(prefix !== undefined, 'Invalid remapping, missing prefix.')
+      assert(target !== undefined, 'Invalid remapping, missing target.')
+
+      if (path.startsWith(prefix)) {
+        return target + path.slice(prefix.length)
+      }
+    }
+
+    return path
   }
 }
 
