@@ -50,8 +50,6 @@ export interface ParsedFile extends FileContent {
 export class ContractFlattener {
   private readonly files: ParsedFile[] = []
 
-  private readonly visitedPaths: string[] = []
-
   constructor(
     fileContents: FileContent[],
     private readonly remappings: string[],
@@ -108,9 +106,8 @@ export class ContractFlattener {
 
     // Pass 2: Resolve all imports
     for (const file of this.files) {
-      this.visitedPaths.push(file.path)
-      file.importDirectives = this.resolveFileImports(file)
-      this.visitedPaths.splice(0, this.visitedPaths.length)
+      let visitedPaths: string[] = [file.path]
+      file.importDirectives = this.resolveFileImports(file, visitedPaths)
     }
   }
 
@@ -132,7 +129,7 @@ export class ContractFlattener {
       })
   }
 
-  resolveFileImports(file: ParsedFile, depth = 0): ImportDirective[] {
+  resolveFileImports(file: ParsedFile, visitedPaths: string[]): ImportDirective[] {
     const importDirectives = file.ast.children.filter(
       (n) => n.type === 'ImportDirective',
     )
@@ -143,10 +140,10 @@ export class ContractFlattener {
       assert(i.type === 'ImportDirective' && i.range !== undefined)
 
       const importedFile = this.resolveImportPath(file, i.path)
-      if (this.visitedPaths.includes(importedFile.path)) {
+      if (visitedPaths.includes(importedFile.path)) {
         return []
       }
-      this.visitedPaths.push(importedFile.path)
+      visitedPaths.push(importedFile.path)
 
       if (i.symbolAliases === null) {
         // We want to import everything from the file
@@ -157,7 +154,7 @@ export class ContractFlattener {
             originalName: c.name,
             importedName: c.name,
           }))
-          .concat(this.resolveFileImports(importedFile, depth + 1))
+          .concat(this.resolveFileImports(importedFile, visitedPaths))
       }
 
       return i.symbolAliases.map((alias) => ({
