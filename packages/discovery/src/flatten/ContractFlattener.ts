@@ -3,7 +3,7 @@ import { parse } from '@solidity-parser/parser'
 // TODO(radomski): The parser does not expose the AST types for SOME reason.
 // Either we ignore this error or we fork the parser and expose the types.
 // eslint-disable-next-line import/no-unresolved
-import { UsingForDeclaration } from '@solidity-parser/parser/dist/src/ast-types'
+import { UsingForDeclaration, ContractDefinition } from '@solidity-parser/parser/dist/src/ast-types'
 import * as path from 'path'
 
 type ParseResult = ReturnType<typeof parse>
@@ -97,15 +97,7 @@ export class ContractFlattener {
         return {
           name: c.name,
           inheritsFrom: c.baseContracts.map((bc) => bc.baseName.namePath),
-          librariesUsed: c.subNodes
-            .filter((sn) => sn.type === 'UsingForDeclaration')
-            .map((sn) => {
-              assert(sn.type === 'UsingForDeclaration')
-              const usingNode = sn as UsingForDeclaration
-              assert(usingNode.libraryName !== null)
-
-              return usingNode.libraryName
-            }),
+          librariesUsed: this.resolveUsingDirectives(c),
           byteRange: {
             start: c.range[0],
             end: c.range[1],
@@ -120,6 +112,24 @@ export class ContractFlattener {
       file.importDirectives = this.resolveFileImports(file)
       this.visitedPaths.splice(0, this.visitedPaths.length)
     }
+  }
+
+  resolveUsingDirectives(c: ContractDefinition): string[] {
+      return c.subNodes
+      .filter((sn) => sn.type === 'UsingForDeclaration')
+      .filter((sn) => {
+          const usingNode = sn as UsingForDeclaration
+          assert(usingNode.libraryName !== null)
+
+          return usingNode.libraryName !== c.name
+      })
+      .map((sn) => {
+          assert(sn.type === 'UsingForDeclaration')
+          const usingNode = sn as UsingForDeclaration
+          assert(usingNode.libraryName !== null)
+
+          return usingNode.libraryName
+      })
   }
 
   resolveFileImports(file: ParsedFile, depth = 0): ImportDirective[] {
