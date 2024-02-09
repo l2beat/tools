@@ -134,8 +134,6 @@ export class ContractFlattener {
       (n) => n.type === 'ImportDirective',
     )
 
-    // TODO(radomski): There is a problem because we are not resolving imported contracts that are two levels deep.
-    // We need to recursively resolve imports, that means that we need to resolve imports in the imported files as well.
     return importDirectives.flatMap((i) => {
       assert(i.type === 'ImportDirective' && i.range !== undefined)
 
