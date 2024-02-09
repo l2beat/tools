@@ -368,9 +368,9 @@ export class ContractFlattener {
   }
 }
 
-function replaceAll(str: string, search: string, replacement: string): string {
-  return str.split(search).join(replacement)
-}
+// function replaceAll(str: string, search: string, replacement: string): string {
+//   return str.split(search).join(replacement)
+// }
 
 function pathsMatch(path1: string, path2: string): boolean {
   // This is better but for the demo we will use the below
