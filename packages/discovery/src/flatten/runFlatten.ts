@@ -2,7 +2,7 @@ import { Logger } from '@l2beat/backend-tools'
 import { readdir, readFile, writeFile } from 'fs/promises'
 import { basename, resolve } from 'path'
 
-import { ContractFlattener } from './ParsingContext'
+import { ContractFlattener } from './ContractFlattener'
 
 export async function runFlatten(
   path: string,
