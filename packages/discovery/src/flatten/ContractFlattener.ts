@@ -3,7 +3,10 @@ import { parse } from '@solidity-parser/parser'
 // TODO(radomski): The parser does not expose the AST types for SOME reason.
 // Either we ignore this error or we fork the parser and expose the types.
 // eslint-disable-next-line import/no-unresolved
-import { UsingForDeclaration, ContractDefinition } from '@solidity-parser/parser/dist/src/ast-types'
+import {
+  ContractDefinition,
+  UsingForDeclaration,
+} from '@solidity-parser/parser/dist/src/ast-types'
 import * as path from 'path'
 
 type ParseResult = ReturnType<typeof parse>
@@ -106,30 +109,33 @@ export class ContractFlattener {
 
     // Pass 2: Resolve all imports
     for (const file of this.files) {
-      let visitedPaths: string[] = [file.path]
+      const visitedPaths: string[] = [file.path]
       file.importDirectives = this.resolveFileImports(file, visitedPaths)
     }
   }
 
   resolveUsingDirectives(c: ContractDefinition): string[] {
-      return c.subNodes
+    return c.subNodes
       .filter((sn) => sn.type === 'UsingForDeclaration')
       .filter((sn) => {
-          const usingNode = sn as UsingForDeclaration
-          assert(usingNode.libraryName !== null)
+        const usingNode = sn as UsingForDeclaration
+        assert(usingNode.libraryName !== null)
 
-          return usingNode.libraryName !== c.name
+        return usingNode.libraryName !== c.name
       })
       .map((sn) => {
-          assert(sn.type === 'UsingForDeclaration')
-          const usingNode = sn as UsingForDeclaration
-          assert(usingNode.libraryName !== null)
+        assert(sn.type === 'UsingForDeclaration')
+        const usingNode = sn as UsingForDeclaration
+        assert(usingNode.libraryName !== null)
 
-          return usingNode.libraryName
+        return usingNode.libraryName
       })
   }
 
-  resolveFileImports(file: ParsedFile, visitedPaths: string[]): ImportDirective[] {
+  resolveFileImports(
+    file: ParsedFile,
+    visitedPaths: string[],
+  ): ImportDirective[] {
     const importDirectives = file.ast.children.filter(
       (n) => n.type === 'ImportDirective',
     )
@@ -190,10 +196,15 @@ export class ContractFlattener {
         fromFile: fileWithRootContract,
       }))
 
+    const visited = new Set<string>()
     while (stack.length > 0) {
       const entry = stack.pop()
       assert(entry !== undefined, 'Stack should not be empty')
+      if (visited.has(`${entry.fromFile.path}-${entry.contractName}`)) {
+        continue
+      }
       const currentFile = entry.fromFile
+      visited.add(`${currentFile.path}-${entry.contractName}`)
 
       const isDeclared = currentFile.contractDeclarations.some(
         (c) => c.name === entry.contractName,
