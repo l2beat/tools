@@ -211,20 +211,14 @@ function parseExpression(expr: Expression | null): string[] {
 
       return base.concat(indexStart).concat(indexEnd)
     }
-    case 'NumberLiteral': {
-      return []
-    }
-    case 'BooleanLiteral': {
-      return []
-    }
-    case 'HexLiteral': {
-      return []
-    }
-    case 'StringLiteral': {
-      return []
-    }
     case 'ElementaryTypeName': {
       return parseTypeName(expr)
+    }
+    case 'NumberLiteral':
+    case 'BooleanLiteral':
+    case 'HexLiteral':
+    case 'StringLiteral': {
+      return []
     }
     default: {
       throw new Error(
