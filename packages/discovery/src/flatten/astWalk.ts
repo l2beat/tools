@@ -10,6 +10,7 @@ import {
   EventDefinition,
   Expression,
   ExpressionStatement,
+  FunctionDefinition,
   Identifier,
   IfStatement,
   ModifierDefinition,
@@ -78,7 +79,7 @@ export function getUniqueIdentifiers(node: BaseASTNode | null): string[] {
       )
     }
     case 'FunctionDefinition': {
-      return (node as EventDefinition).parameters.flatMap((p) =>
+      return (node as FunctionDefinition).parameters.flatMap((p) =>
         getUniqueIdentifiers(p),
       )
     }
@@ -122,9 +123,6 @@ export function getUniqueIdentifiers(node: BaseASTNode | null): string[] {
       const emitStatement = node as EmitStatement
       return parseExpression(emitStatement.eventCall)
     }
-    case 'BinaryOperation': {
-      return parseExpression(node as Expression)
-    }
     case 'EnumDefinition': {
       return []
     }
@@ -139,6 +137,7 @@ export function getUniqueIdentifiers(node: BaseASTNode | null): string[] {
 
       return typeName.concat(libraryName)
     }
+    case 'BinaryOperation':
     case 'IndexAccess':
     case 'IndexRangeAccess':
     case 'TupleExpression':

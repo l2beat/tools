@@ -35,7 +35,6 @@ interface ContractDeclaration {
 // originalName: 'foo'
 // importedName: 'bar'
 interface ImportDirective {
-  path: string
   absolutePath: string
   originalName: string
   importedName: string
@@ -84,13 +83,14 @@ export class ParsedFileManager {
       )
 
       file.contractDeclarations = contractDeclarations.map((c) => {
-        assert(c.type === 'ContractDefinition' && c.range !== undefined)
+        assert(c.range !== undefined)
+        const declaration = c as ContractDefinition
 
         return {
-          ast: c,
-          name: c.name,
-          type: c.kind as ContractType,
-          inheritsFrom: c.baseContracts.map((bc) => bc.baseName.namePath),
+          ast: declaration,
+          name: declaration.name,
+          type: declaration.kind as ContractType,
+          inheritsFrom: declaration.baseContracts.map((bc) => bc.baseName.namePath),
           librariesUsed: [],
           byteRange: {
             start: c.range[0],
@@ -160,7 +160,8 @@ export class ParsedFileManager {
     return importDirectives.flatMap((i) => {
       assert(i.type === 'ImportDirective' && i.range !== undefined)
 
-      const importedFile = this.resolveImportPath(file, i.path)
+      const remappedPath = this.resolveRemappings(i.path)
+      const importedFile = this.resolveImportPath(file, remappedPath)
       if (visitedPaths.includes(importedFile.path)) {
         return []
       }
@@ -170,7 +171,6 @@ export class ParsedFileManager {
         // We want to import everything from the file
         return importedFile.contractDeclarations
           .map((c) => ({
-            path: i.path,
             absolutePath: importedFile.path,
             originalName: c.name,
             importedName: c.name,
@@ -179,7 +179,6 @@ export class ParsedFileManager {
       }
 
       return i.symbolAliases.map((alias) => ({
-        path: i.path,
         absolutePath: importedFile.path,
         originalName: alias[0],
         importedName: alias[1] ?? alias[0],
@@ -221,9 +220,6 @@ export class ParsedFileManager {
       f.contractDeclarations.some((c) => c.name === contractName),
     )
 
-    if (matchingFiles.length !== 1) {
-      console.log('findFileDeclaringContract: ', this.remappings, contractName)
-    }
     assert(matchingFiles.length !== 0, 'File not found')
     assert(matchingFiles.length === 1, 'Multiple files found')
     assert(matchingFiles[0] !== undefined, 'File not found')
@@ -235,17 +231,11 @@ export class ParsedFileManager {
     contractName: string,
     file?: ParsedFile,
   ): ContractFilePair {
-    if (file === undefined) {
-      file = this.findFileDeclaringContract(contractName)
-    }
-
+      file ??= this.findFileDeclaringContract(contractName)
     const matchingContracts = file.contractDeclarations.filter(
       (c) => c.name === contractName,
     )
 
-    if (matchingContracts.length !== 1) {
-      console.log('findContractDeclaration: ', file, contractName)
-    }
     assert(matchingContracts.length !== 0, 'Contract not found')
     assert(matchingContracts.length === 1, 'Multiple contracts found')
     assert(matchingContracts[0] !== undefined, 'Contract not found')
@@ -257,23 +247,12 @@ export class ParsedFileManager {
   }
 
   resolveImportPath(fromFile: ParsedFile, importPath: string): ParsedFile {
-    const remappedPath = this.resolveRemappings(importPath)
-    const resolvedPath = remappedPath.startsWith('.')
-      ? path.join(path.dirname(fromFile.path), remappedPath)
-      : remappedPath
+    const resolvedPath = importPath.startsWith('.')
+      ? path.join(path.dirname(fromFile.path), importPath)
+      : importPath
 
     const matchingFiles = this.files.filter((f) => f.path === resolvedPath)
 
-    if (matchingFiles.length !== 1) {
-      console.log('resolveImportPath: ', {
-        remappings: this.remappings,
-        fromFilePath: fromFile.path,
-        importPath,
-        remappedPath,
-        resolvedPath,
-        matchingFiles,
-      })
-    }
     assert(matchingFiles.length !== 0, 'File not found')
     assert(matchingFiles.length === 1, 'Multiple files found')
     assert(matchingFiles[0] !== undefined, 'File not found')
