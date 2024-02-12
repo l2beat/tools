@@ -129,6 +129,10 @@ export class ContractFlattener {
         contract.librariesUsed = this.resolveLibrariesUsed(file, contract.ast)
       }
     }
+
+    for (const file of this.files) {
+        assert(file.ast.children.filter((n) => n.type === 'FunctionDefinition').length === 0)
+    }
   }
 
   resolveLibrariesUsed(file: ParsedFile, c: ContractDefinition): string[] {
