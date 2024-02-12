@@ -129,9 +129,7 @@ export class ParsedFileManager {
 
   resolveLibrariesUsed(file: ParsedFile, c: ContractDefinition): string[] {
     const identifiers = new Set(
-      c.subNodes
-        .flatMap((n) => getUniqueIdentifiers(n))
-        .map(ParsedFileManager.extractNamespace),
+      c.subNodes.flatMap((n) => getUniqueIdentifiers(n)).map(extractNamespace),
     )
 
     const resolvedAsLibraries = []
@@ -143,14 +141,6 @@ export class ParsedFileManager {
     }
 
     return resolvedAsLibraries
-  }
-
-  static extractNamespace(identifier: string): string {
-    const dotIndex = identifier.indexOf('.')
-    if (dotIndex === -1) {
-      return identifier
-    }
-    return identifier.substring(0, dotIndex)
   }
 
   resolveFileImports(
@@ -172,8 +162,8 @@ export class ParsedFileManager {
       }
       visitedPaths.push(importedFile.path)
 
-      if (i.symbolAliases === null) {
-        // We want to import everything from the file
+      const importEverything = i.symbolAliases === null
+      if (importEverything) {
         return importedFile.contractDeclarations
           .map((c) => ({
             absolutePath: importedFile.path,
@@ -185,6 +175,7 @@ export class ParsedFileManager {
           )
       }
 
+      assert(i.symbolAliases !== null)
       return i.symbolAliases.map((alias) => ({
         absolutePath: importedFile.path,
         originalName: alias[0],
@@ -197,25 +188,27 @@ export class ParsedFileManager {
     contractName: string,
     file: ParsedFile,
   ): ContractFilePair | undefined {
-    const matchingContracts = file.contractDeclarations.filter(
+    const matchingContract = findOne(
+      file.contractDeclarations,
       (c) => c.name === contractName,
     )
 
-    if (matchingContracts.length === 1 && matchingContracts[0] !== undefined) {
+    if (matchingContract !== undefined) {
       return {
-        contract: matchingContracts[0],
+        contract: matchingContract,
         file,
       }
     }
 
-    const matchingImports = file.importDirectives.filter(
+    const matchingImport = findOne(
+      file.importDirectives,
       (c) => c.importedName === contractName,
     )
 
-    if (matchingImports.length === 1 && matchingImports[0] !== undefined) {
+    if (matchingImport !== undefined) {
       return this.tryFindContract(
         contractName,
-        this.resolveImportPath(file, matchingImports[0].absolutePath),
+        this.resolveImportPath(file, matchingImport.absolutePath),
       )
     }
 
@@ -223,15 +216,12 @@ export class ParsedFileManager {
   }
 
   findFileDeclaringContract(contractName: string): ParsedFile {
-    const matchingFiles = this.files.filter((f) =>
+    const matchingFile = findOne(this.files, (f) =>
       f.contractDeclarations.some((c) => c.name === contractName),
     )
+    assert(matchingFile !== undefined, 'File not found')
 
-    assert(matchingFiles.length !== 0, 'File not found')
-    assert(matchingFiles.length === 1, 'Multiple files found')
-    assert(matchingFiles[0] !== undefined, 'File not found')
-
-    return matchingFiles[0]
+    return matchingFile
   }
 
   findContractDeclaration(
@@ -239,16 +229,15 @@ export class ParsedFileManager {
     file?: ParsedFile,
   ): ContractFilePair {
     file ??= this.findFileDeclaringContract(contractName)
-    const matchingContracts = file.contractDeclarations.filter(
+
+    const matchingContract = findOne(
+      file.contractDeclarations,
       (c) => c.name === contractName,
     )
-
-    assert(matchingContracts.length !== 0, 'Contract not found')
-    assert(matchingContracts.length === 1, 'Multiple contracts found')
-    assert(matchingContracts[0] !== undefined, 'Contract not found')
+    assert(matchingContract !== undefined, 'Contract not found')
 
     return {
-      contract: matchingContracts[0],
+      contract: matchingContract,
       file,
     }
   }
@@ -258,14 +247,19 @@ export class ParsedFileManager {
       ? path.join(path.dirname(fromFile.path), importPath)
       : importPath
 
-    const matchingFiles = this.files.filter((f) => f.path === resolvedPath)
+    const matchingFile = findOne(this.files, (f) => f.path === resolvedPath)
+    assert(matchingFile !== undefined, 'File not found')
 
-    assert(matchingFiles.length !== 0, 'File not found')
-    assert(matchingFiles.length === 1, 'Multiple files found')
-    assert(matchingFiles[0] !== undefined, 'File not found')
-
-    return matchingFiles[0]
+    return matchingFile
   }
+}
+
+function extractNamespace(identifier: string): string {
+  const dotIndex = identifier.indexOf('.')
+  if (dotIndex === -1) {
+    return identifier
+  }
+  return identifier.substring(0, dotIndex)
 }
 
 function resolveRemappings(path: string, remappings: string[]): string {
@@ -282,4 +276,17 @@ function resolveRemappings(path: string, remappings: string[]): string {
   }
 
   return path
+}
+
+function findOne<T>(
+  array: T[],
+  predicate: (item: T) => boolean,
+): T | undefined {
+  const matching = array.filter(predicate)
+
+  if (matching.length === 1 && matching[0] !== undefined) {
+    return matching[0]
+  }
+
+  return undefined
 }

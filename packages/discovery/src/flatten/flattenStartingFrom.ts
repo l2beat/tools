@@ -56,7 +56,7 @@ function formatSource(source: string, byteRange: ByteRange): string {
   return source.slice(byteRange.start, byteRange.end + 1) + '\n\n'
 }
 
-function getUniqueContractId(entry: ContractNameFilePair) {
+function getUniqueContractId(entry: ContractNameFilePair): string {
   return `${entry.file.path}-${entry.contractName}`
 }
 

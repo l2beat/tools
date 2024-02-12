@@ -1,7 +1,7 @@
 import { assert } from '@l2beat/backend-tools'
 // TODO(radomski): The parser does not expose the AST types for SOME reason.
 // Either we ignore this error or we fork the parser and expose the types.
-// eslint-disable-next-line import/no-unresolved
+/* eslint-disable import/no-unresolved */
 import {
   BaseASTNode,
   Block,
@@ -24,6 +24,7 @@ import {
   VariableDeclaration,
   VariableDeclarationStatement,
 } from '@solidity-parser/parser/dist/src/ast-types'
+/* eslint-enable */
 
 export function getUniqueIdentifiers(node: BaseASTNode | null): string[] {
   if (node === null) {
@@ -141,7 +142,6 @@ export function getUniqueIdentifiers(node: BaseASTNode | null): string[] {
     case 'IndexAccess':
     case 'IndexRangeAccess':
     case 'TupleExpression':
-    case 'BinaryOperation':
     case 'Conditional':
     case 'MemberAccess':
     case 'FunctionCall':
@@ -164,7 +164,7 @@ export function getUniqueIdentifiers(node: BaseASTNode | null): string[] {
 }
 
 function parseExpression(expr: Expression | null): string[] {
-  if (!expr || !expr.type) {
+  if (!expr?.type) {
     return []
   }
   assert(expr.range !== undefined)
@@ -228,7 +228,7 @@ function parseExpression(expr: Expression | null): string[] {
 }
 
 function parseTypeName(type: TypeName | null): string[] {
-  if (!type || !type.type) {
+  if (!type?.type) {
     return []
   }
 
