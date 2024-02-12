@@ -74,30 +74,9 @@ export class ParsedFileManager {
       importDirectives: [],
     }))
 
-    // Pass 1: Find all contract declarations and libraries used (only 'using' directive is supported for now)
+    // Pass 1: Find all contract declarations
     for (const file of result.files) {
-      const contractDeclarations = file.ast.children.filter(
-        (n) => n.type === 'ContractDefinition',
-      )
-
-      file.contractDeclarations = contractDeclarations.map((c) => {
-        assert(c.range !== undefined)
-        const declaration = c as ContractDefinition
-
-        return {
-          ast: declaration,
-          name: declaration.name,
-          type: declaration.kind as ContractType,
-          inheritsFrom: declaration.baseContracts.map(
-            (bc) => bc.baseName.namePath,
-          ),
-          librariesUsed: [],
-          byteRange: {
-            start: c.range[0],
-            end: c.range[1],
-          },
-        }
-      })
+      file.contractDeclarations = result.resolveContractDeclarations(file)
     }
 
     // Pass 2: Resolve all imports
@@ -125,6 +104,31 @@ export class ParsedFileManager {
     }
 
     return result
+  }
+
+  resolveContractDeclarations(file: ParsedFile): ContractDeclaration[] {
+    const contractDeclarations = file.ast.children.filter(
+      (n) => n.type === 'ContractDefinition',
+    )
+
+    return contractDeclarations.map((c) => {
+      assert(c.range !== undefined)
+      const declaration = c as ContractDefinition
+
+      return {
+        ast: declaration,
+        name: declaration.name,
+        type: declaration.kind as ContractType,
+        inheritsFrom: declaration.baseContracts.map(
+          (bc) => bc.baseName.namePath,
+        ),
+        librariesUsed: [],
+        byteRange: {
+          start: c.range[0],
+          end: c.range[1],
+        },
+      }
+    })
   }
 
   resolveLibrariesUsed(file: ParsedFile, c: ContractDefinition): string[] {
