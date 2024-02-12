@@ -159,9 +159,9 @@ export function getUniqueIdentifiers(
       return parseTypeName(typeDefinition.definition)
     }
     case 'UsingForDeclaration': {
-        const declaration = node as UsingForDeclaration
-        const typeName = parseTypeName(declaration.typeName)
-        const libraryName = declaration.libraryName ?? []
+      const declaration = node as UsingForDeclaration
+      const typeName = parseTypeName(declaration.typeName)
+      const libraryName = declaration.libraryName ?? []
 
       return typeName.concat(libraryName)
     }
