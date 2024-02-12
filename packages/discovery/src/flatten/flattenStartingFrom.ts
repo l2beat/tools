@@ -5,13 +5,10 @@ export function flattenStartingFrom(
   rootContractName: string,
   parsedFileManager: ParsedFileManager,
 ): string {
-  let flatSource = ''
-
   const rootContract =
     parsedFileManager.findContractDeclaration(rootContractName)
 
-  flatSource = pushSource(
-    flatSource,
+  let flatSource = formatSource(
     rootContract.file.content,
     rootContract.contract.byteRange,
   )
@@ -44,7 +41,7 @@ export function flattenStartingFrom(
     assert(result)
     const { contract, file } = result
 
-    flatSource = pushSource(flatSource, file.content, contract.byteRange)
+    flatSource += formatSource(file.content, contract.byteRange)
     stack.push(
       ...contract.inheritsFrom
         .map((contractName) => ({
@@ -63,6 +60,6 @@ export function flattenStartingFrom(
   return flatSource
 }
 
-function pushSource(acc: string, source: string, byteRange: ByteRange): string {
-  return acc + source.slice(byteRange.start, byteRange.end + 1) + '\n\n'
+function formatSource(source: string, byteRange: ByteRange): string {
+  return source.slice(byteRange.start, byteRange.end + 1) + '\n\n'
 }
