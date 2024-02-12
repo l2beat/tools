@@ -30,29 +30,25 @@ export class ContractFlattener {
   }
 
   flattenStartingFrom(rootContractName: string): string {
-    let result = ''
+    let flatSource = ''
 
-    const fileWithRootContract =
-      this.parsedFileManager.findFileDeclaringContract(rootContractName)
-    const rootContract = this.parsedFileManager.findContractDeclaration(
-      fileWithRootContract,
-      rootContractName,
-    )
+    const rootContract =
+      this.parsedFileManager.findContractDeclaration(rootContractName)
 
-    result = pushSource(
-      result,
-      fileWithRootContract.content,
-      rootContract.byteRange,
+    flatSource = pushSource(
+      flatSource,
+      rootContract.file.content,
+      rootContract.contract.byteRange,
     )
 
     // Depth first search
-    const stack = rootContract.inheritsFrom
-      .concat(rootContract.librariesUsed)
+    const stack = rootContract.contract.inheritsFrom
+      .concat(rootContract.contract.librariesUsed)
       .slice()
       .reverse()
       .map((contractName) => ({
         contractName,
-        fromFile: fileWithRootContract,
+        fromFile: rootContract.file,
       }))
 
     const visited = new Set<string>()
@@ -65,79 +61,31 @@ export class ContractFlattener {
       const currentFile = entry.fromFile
       visited.add(`${currentFile.path}-${entry.contractName}`)
 
-      const isDeclared = currentFile.contractDeclarations.some(
-        (c) => c.name === entry.contractName,
-      )
-      const isImported = currentFile.importDirectives.some(
-        (c) => c.importedName === entry.contractName,
-      )
-
-      if (!isDeclared && !isImported) {
-        console.log(
-          'flattenStartingFrom: ',
-          currentFile.path,
+      const result = this.parsedFileManager.tryFindContract(
           entry.contractName,
-        )
-      }
-      assert(
-        isDeclared || isImported,
-        'Contract not found, neither declared nor imported',
-      )
-      assert(!(isDeclared && isImported), 'Contract found in multiple files')
-
-      if (isDeclared) {
-        const contract = this.parsedFileManager.findContractDeclaration(
           currentFile,
-          entry.contractName,
-        )
+      )
 
-        result = pushSource(result, currentFile.content, contract.byteRange)
-        stack.push(
+      assert(result)
+      const { contract, file } = result
+
+      flatSource = pushSource(flatSource, file.content, contract.byteRange)
+      stack.push(
           ...contract.inheritsFrom
-            .map((contractName) => ({
+          .map((contractName) => ({
               contractName,
-              fromFile: currentFile,
-            }))
-            .concat(
+              fromFile: file,
+          }))
+          .concat(
               contract.librariesUsed.map((contractName) => ({
-                contractName,
-                fromFile: currentFile,
+                  contractName,
+                  fromFile: file,
               })),
-            ),
-        )
-      } else {
-        const importedFile = this.parsedFileManager.resolveImportContract(
-          currentFile,
-          entry.contractName,
-        )
-
-        const importedContract = this.parsedFileManager.findContractDeclaration(
-          importedFile,
-          entry.contractName,
-        )
-
-        result = pushSource(
-          result,
-          importedFile.content,
-          importedContract.byteRange,
-        )
-        stack.push(
-          ...importedContract.inheritsFrom
-            .map((contractName) => ({
-              contractName,
-              fromFile: importedFile,
-            }))
-            .concat(
-              importedContract.librariesUsed.map((contractName) => ({
-                contractName,
-                fromFile: importedFile,
-              })),
-            ),
-        )
-      }
+          ),
+      )
     }
 
-    return result
+    return flatSource
   }
 }
 

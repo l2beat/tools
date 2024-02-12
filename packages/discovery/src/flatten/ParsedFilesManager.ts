@@ -14,7 +14,7 @@ export interface ByteRange {
 
 type ContractType = 'contract' | 'interface' | 'library' | 'abstract'
 
-interface ContractDecl {
+interface ContractDeclaration {
   name: string
   type: ContractType
 
@@ -48,7 +48,7 @@ export interface FileContent {
 export interface ParsedFile extends FileContent {
   ast: ParseResult
 
-  contractDeclarations: ContractDecl[]
+  contractDeclarations: ContractDeclaration[]
   importDirectives: ImportDirective[]
 }
 
@@ -122,8 +122,8 @@ export class ParsedFileManager {
 
     const fromMagic = []
     for (const identifier of identifiers) {
-      const contract = this.tryFindContract(file, identifier)
-      if (contract !== undefined && contract.type === 'library') {
+      const result = this.tryFindContract(identifier, file)
+      if (result !== undefined && result.contract.type === 'library') {
         fromMagic.push(identifier)
       }
     }
@@ -191,14 +191,21 @@ export class ParsedFileManager {
   }
 
   tryFindContract(
-    file: ParsedFile,
     contractName: string,
-  ): ContractDecl | undefined {
+    file: ParsedFile,
+  ): {
+    contract: ContractDeclaration
+    file: ParsedFile
+  } | undefined {
     const matchingContracts = file.contractDeclarations.filter(
       (c) => c.name === contractName,
     )
+
     if (matchingContracts.length === 1 && matchingContracts[0] !== undefined) {
-      return matchingContracts[0]
+      return {
+          contract: matchingContracts[0],
+          file
+      }
     }
 
     const matchingImports = file.importDirectives.filter(
@@ -207,8 +214,8 @@ export class ParsedFileManager {
 
     if (matchingImports.length === 1 && matchingImports[0] !== undefined) {
       return this.tryFindContract(
-        this.resolveImportPath(file, matchingImports[0].absolutePath),
         contractName,
+        this.resolveImportPath(file, matchingImports[0].absolutePath),
       )
     }
 
@@ -231,9 +238,16 @@ export class ParsedFileManager {
   }
 
   findContractDeclaration(
-    file: ParsedFile,
     contractName: string,
-  ): ContractDecl {
+    file?: ParsedFile,
+  ): {
+    contract: ContractDeclaration
+    file: ParsedFile
+  } {
+    if (file === undefined) {
+      file = this.findFileDeclaringContract(contractName)
+    }
+
     const matchingContracts = file.contractDeclarations.filter(
       (c) => c.name === contractName,
     )
@@ -245,7 +259,10 @@ export class ParsedFileManager {
     assert(matchingContracts.length === 1, 'Multiple contracts found')
     assert(matchingContracts[0] !== undefined, 'Contract not found')
 
-    return matchingContracts[0]
+    return {
+      contract: matchingContracts[0],
+      file,
+    }
   }
 
   resolveImportContract(
