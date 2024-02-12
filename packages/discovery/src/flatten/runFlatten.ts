@@ -35,9 +35,8 @@ export async function runFlatten(
     'safe-contracts/=safe-contracts/contracts/',
     'solmate/=solmate/src/',
   ]
-  const parsedFileManager = new ParsedFileManager()
-  parsedFileManager.parseFiles(files, remappings)
 
+  const parsedFileManager = ParsedFileManager.parseFiles(files, remappings)
   const flattend = flattenStartingFrom(rootContractName, parsedFileManager)
   await writeFile('flattened.sol', flattend)
 

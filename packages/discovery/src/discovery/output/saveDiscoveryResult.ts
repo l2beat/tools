@@ -90,9 +90,10 @@ export async function saveDiscoveryResult(
           }))
           .filter((e) => e.path.endsWith('.sol'))
 
-        const parsedFileManager = new ParsedFileManager()
-        parsedFileManager.parseFiles(input, contract.remappings)
-
+        const parsedFileManager = ParsedFileManager.parseFiles(
+          input,
+          contract.remappings,
+        )
         const output = flattenStartingFrom(
           contract.derivedName ?? contract.name,
           parsedFileManager,

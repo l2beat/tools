@@ -57,10 +57,15 @@ export class ParsedFileManager {
   private files: ParsedFile[] = []
   private remappings: string[] = []
 
-  parseFiles(files: FileContent[], remappings: string[]) {
-    this.remappings = remappings
-    this.files = files.map(({ path, content }) => ({
-      path: this.resolveRemappings(path),
+  static parseFiles(
+    files: FileContent[],
+    remappings: string[],
+  ): ParsedFileManager {
+    const result = new ParsedFileManager()
+
+    result.remappings = remappings
+    result.files = files.map(({ path, content }) => ({
+      path: result.resolveRemappings(path),
       content,
       ast: parse(content, { range: true }),
       contractDeclarations: [],
@@ -68,7 +73,7 @@ export class ParsedFileManager {
     }))
 
     // Pass 1: Find all contract declarations and libraries used (only 'using' directive is supported for now)
-    for (const file of this.files) {
+    for (const file of result.files) {
       const contractDeclarations = file.ast.children.filter(
         (n) => n.type === 'ContractDefinition',
       )
@@ -91,24 +96,26 @@ export class ParsedFileManager {
     }
 
     // Pass 2: Resolve all imports
-    for (const file of this.files) {
+    for (const file of result.files) {
       const visitedPaths: string[] = [file.path]
-      file.importDirectives = this.resolveFileImports(file, visitedPaths)
+      file.importDirectives = result.resolveFileImports(file, visitedPaths)
     }
 
     // Pass 3: Resolve all libraries used
-    for (const file of this.files) {
+    for (const file of result.files) {
       for (const contract of file.contractDeclarations) {
-        contract.librariesUsed = this.resolveLibrariesUsed(file, contract.ast)
+        contract.librariesUsed = result.resolveLibrariesUsed(file, contract.ast)
       }
     }
 
-    for (const file of this.files) {
+    for (const file of result.files) {
       assert(
         file.ast.children.filter((n) => n.type === 'FunctionDefinition')
           .length === 0,
       )
     }
+
+    return result
   }
 
   resolveLibrariesUsed(file: ParsedFile, c: ContractDefinition): string[] {
