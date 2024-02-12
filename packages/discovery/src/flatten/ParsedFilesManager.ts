@@ -59,7 +59,6 @@ export interface ContractFilePair {
 
 export class ParsedFileManager {
   private files: ParsedFile[] = []
-  private remappings: string[] = []
 
   static parseFiles(
     files: FileContent[],
@@ -67,9 +66,8 @@ export class ParsedFileManager {
   ): ParsedFileManager {
     const result = new ParsedFileManager()
 
-    result.remappings = remappings
     result.files = files.map(({ path, content }) => ({
-      path: result.resolveRemappings(path),
+      path: resolveRemappings(path, remappings),
       content,
       ast: parse(content, { range: true }),
       contractDeclarations: [],
@@ -90,7 +88,9 @@ export class ParsedFileManager {
           ast: declaration,
           name: declaration.name,
           type: declaration.kind as ContractType,
-          inheritsFrom: declaration.baseContracts.map((bc) => bc.baseName.namePath),
+          inheritsFrom: declaration.baseContracts.map(
+            (bc) => bc.baseName.namePath,
+          ),
           librariesUsed: [],
           byteRange: {
             start: c.range[0],
@@ -103,7 +103,11 @@ export class ParsedFileManager {
     // Pass 2: Resolve all imports
     for (const file of result.files) {
       const visitedPaths: string[] = [file.path]
-      file.importDirectives = result.resolveFileImports(file, visitedPaths)
+      file.importDirectives = result.resolveFileImports(
+        file,
+        remappings,
+        visitedPaths,
+      )
     }
 
     // Pass 3: Resolve all libraries used
@@ -151,6 +155,7 @@ export class ParsedFileManager {
 
   resolveFileImports(
     file: ParsedFile,
+    remappings: string[],
     visitedPaths: string[],
   ): ImportDirective[] {
     const importDirectives = file.ast.children.filter(
@@ -160,7 +165,7 @@ export class ParsedFileManager {
     return importDirectives.flatMap((i) => {
       assert(i.type === 'ImportDirective' && i.range !== undefined)
 
-      const remappedPath = this.resolveRemappings(i.path)
+      const remappedPath = resolveRemappings(i.path, remappings)
       const importedFile = this.resolveImportPath(file, remappedPath)
       if (visitedPaths.includes(importedFile.path)) {
         return []
@@ -175,7 +180,9 @@ export class ParsedFileManager {
             originalName: c.name,
             importedName: c.name,
           }))
-          .concat(this.resolveFileImports(importedFile, visitedPaths))
+          .concat(
+            this.resolveFileImports(importedFile, remappings, visitedPaths),
+          )
       }
 
       return i.symbolAliases.map((alias) => ({
@@ -231,7 +238,7 @@ export class ParsedFileManager {
     contractName: string,
     file?: ParsedFile,
   ): ContractFilePair {
-      file ??= this.findFileDeclaringContract(contractName)
+    file ??= this.findFileDeclaringContract(contractName)
     const matchingContracts = file.contractDeclarations.filter(
       (c) => c.name === contractName,
     )
@@ -259,20 +266,20 @@ export class ParsedFileManager {
 
     return matchingFiles[0]
   }
+}
 
-  resolveRemappings(path: string): string {
-    for (const remapping of this.remappings) {
-      const [prefix, target] = remapping.split('=')
+function resolveRemappings(path: string, remappings: string[]): string {
+  for (const remapping of remappings) {
+    const [prefix, target] = remapping.split('=')
 
-      assert(remapping.includes('='), 'Invalid remapping, lacking "=" sign.')
-      assert(prefix !== undefined, 'Invalid remapping, missing prefix.')
-      assert(target !== undefined, 'Invalid remapping, missing target.')
+    assert(remapping.includes('='), 'Invalid remapping, lacking "=" sign.')
+    assert(prefix !== undefined, 'Invalid remapping, missing prefix.')
+    assert(target !== undefined, 'Invalid remapping, missing target.')
 
-      if (path.startsWith(prefix)) {
-        return target + path.slice(prefix.length)
-      }
+    if (path.startsWith(prefix)) {
+      return target + path.slice(prefix.length)
     }
-
-    return path
   }
+
+  return path
 }
