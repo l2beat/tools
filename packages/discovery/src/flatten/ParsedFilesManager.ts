@@ -53,6 +53,11 @@ export interface ParsedFile extends FileContent {
   importDirectives: ImportDirective[]
 }
 
+export interface ContractFilePair {
+  contract: ContractDeclaration
+  file: ParsedFile
+}
+
 export class ParsedFileManager {
   private files: ParsedFile[] = []
   private remappings: string[] = []
@@ -145,19 +150,6 @@ export class ParsedFileManager {
     return identifier.substring(0, dotIndex)
   }
 
-  // There are two parts to this equation:
-  // 1. If the library has a function and we use it, we need to find the
-  // identifier in a function call
-  // 2. If the library has a type we need to find the typename and resolve that
-  // This is a little bit stupid because the type name is for example
-  // "MyLibrary.MyStruct", that means we need to check if the typename has a
-  // dot inside.
-  // 2.1 If it has a dot, it really means that it's from a library. A basic
-  // struct can't have a dot in it's name.
-  // 2.2 There cannot be multiple dots, since we can't declare a type inside a
-  // type. "MyLibrary1.MyLibrary2.MyStruct" would use both libraries but it's
-  // impossible to do(?).
-
   resolveFileImports(
     file: ParsedFile,
     visitedPaths: string[],
@@ -199,12 +191,7 @@ export class ParsedFileManager {
   tryFindContract(
     contractName: string,
     file: ParsedFile,
-  ):
-    | {
-        contract: ContractDeclaration
-        file: ParsedFile
-      }
-    | undefined {
+  ): ContractFilePair | undefined {
     const matchingContracts = file.contractDeclarations.filter(
       (c) => c.name === contractName,
     )
@@ -248,10 +235,7 @@ export class ParsedFileManager {
   findContractDeclaration(
     contractName: string,
     file?: ParsedFile,
-  ): {
-    contract: ContractDeclaration
-    file: ParsedFile
-  } {
+  ): ContractFilePair {
     if (file === undefined) {
       file = this.findFileDeclaringContract(contractName)
     }

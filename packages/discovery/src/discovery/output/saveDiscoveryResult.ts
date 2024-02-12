@@ -1,17 +1,16 @@
-import { Logger } from '@l2beat/backend-tools'
 import { writeFile } from 'fs/promises'
 import { mkdirp } from 'mkdirp'
 import path, { dirname, posix } from 'path'
 import { rimraf } from 'rimraf'
 
 import { flattenStartingFrom } from '../../flatten/flattenStartingFrom'
+import { ParsedFileManager } from '../../flatten/ParsedFilesManager'
 import { EthereumAddress } from '../../utils/EthereumAddress'
 import { Analysis } from '../analysis/AddressAnalyzer'
 import { DiscoveryConfig } from '../config/DiscoveryConfig'
 import { removeSharedNesting } from '../source/removeSharedNesting'
 import { toDiscoveryOutput } from './toDiscoveryOutput'
 import { toPrettyJson } from './toPrettyJson'
-import { ParsedFileManager } from '../../flatten/ParsedFilesManager'
 
 export async function saveDiscoveryResult(
   results: Analysis[],

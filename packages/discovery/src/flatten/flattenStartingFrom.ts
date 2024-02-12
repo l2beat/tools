@@ -1,5 +1,16 @@
 import { assert } from '@l2beat/backend-tools'
-import { ByteRange, ParsedFileManager } from './ParsedFilesManager'
+
+import {
+  ByteRange,
+  ContractFilePair,
+  ParsedFile,
+  ParsedFileManager,
+} from './ParsedFilesManager'
+
+interface ContractNameFilePair {
+  contractName: string
+  file: ParsedFile
+}
 
 export function flattenStartingFrom(
   rootContractName: string,
@@ -14,47 +25,28 @@ export function flattenStartingFrom(
   )
 
   // Depth first search
-  const stack = rootContract.contract.inheritsFrom
-    .concat(rootContract.contract.librariesUsed)
-    .slice()
-    .reverse()
-    .map((contractName) => ({
-      contractName,
-      fromFile: rootContract.file,
-    }))
-
   const visited = new Set<string>()
+  const stack: ContractNameFilePair[] = getStackEntries(rootContract).reverse()
   while (stack.length > 0) {
     const entry = stack.pop()
     assert(entry !== undefined, 'Stack should not be empty')
-    if (visited.has(`${entry.fromFile.path}-${entry.contractName}`)) {
+
+    const uniqueContractId = getUniqueContractId(entry)
+    if (visited.has(uniqueContractId)) {
       continue
     }
-    const currentFile = entry.fromFile
-    visited.add(`${currentFile.path}-${entry.contractName}`)
+    visited.add(uniqueContractId)
 
-    const result = parsedFileManager.tryFindContract(
+    const foundContract = parsedFileManager.tryFindContract(
       entry.contractName,
-      currentFile,
+      entry.file,
     )
 
-    assert(result)
-    const { contract, file } = result
+    assert(foundContract)
+    const { contract, file } = foundContract
 
     flatSource += formatSource(file.content, contract.byteRange)
-    stack.push(
-      ...contract.inheritsFrom
-        .map((contractName) => ({
-          contractName,
-          fromFile: file,
-        }))
-        .concat(
-          contract.librariesUsed.map((contractName) => ({
-            contractName,
-            fromFile: file,
-          })),
-        ),
-    )
+    stack.push(...getStackEntries(foundContract))
   }
 
   return flatSource
@@ -62,4 +54,18 @@ export function flattenStartingFrom(
 
 function formatSource(source: string, byteRange: ByteRange): string {
   return source.slice(byteRange.start, byteRange.end + 1) + '\n\n'
+}
+
+function getUniqueContractId(entry: ContractNameFilePair) {
+  return `${entry.file.path}-${entry.contractName}`
+}
+
+function getStackEntries(pair: ContractFilePair): ContractNameFilePair[] {
+  const contractNames = pair.contract.inheritsFrom.concat(
+    pair.contract.librariesUsed,
+  )
+  return contractNames.map((contractName) => ({
+    contractName,
+    file: pair.file,
+  }))
 }
