@@ -24,39 +24,28 @@ import {
   VariableDeclarationStatement,
 } from '@solidity-parser/parser/dist/src/ast-types'
 
-export function getUniqueIdentifiers(
-  node: BaseASTNode | null,
-  path: string[],
-  content: string,
-): string[] {
+export function getUniqueIdentifiers(node: BaseASTNode | null): string[] {
   if (node === null) {
     return []
   }
 
   assert(node.range !== undefined)
-  path.push(
-    '\n-----------------------------------------------------\n' +
-      content.slice(node.range[0], node.range[1] + 1) +
-      '\n-----------------------------------------------------\n',
-  )
 
   switch (node.type) {
     case 'Identifier': {
       return [(node as Identifier).name]
     }
     case 'VariableDeclaration': {
-      // TODO(radomski): Decode the type, see if it contains a dot, if
-      // it does, check if it's a library
       const decl = node as VariableDeclaration
       const ident = decl.identifier !== null ? [decl.identifier.name] : []
-      const expr = parseExpression(decl.expression, path, content)
+      const expr = parseExpression(decl.expression)
       const typeName = parseTypeName(decl.typeName)
       return expr.concat(ident).concat(typeName)
     }
     case 'Block': {
       const block = node as Block
       return block.statements.flatMap((statement) =>
-        getUniqueIdentifiers(statement, path, content),
+        getUniqueIdentifiers(statement),
       )
     }
     case 'InlineAssemblyStatement': {
@@ -64,47 +53,41 @@ export function getUniqueIdentifiers(
     }
     case 'RevertStatement': {
       const revertStatement = node as RevertStatement
-      return parseExpression(revertStatement.revertCall, path, content)
+      return parseExpression(revertStatement.revertCall)
     }
     case 'IfStatement': {
       const ifStatement = node as IfStatement
-      const condition = parseExpression(ifStatement.condition, path, content)
-      const trueBody = getUniqueIdentifiers(ifStatement.trueBody, path, content)
-      const falseBody = getUniqueIdentifiers(
-        ifStatement.falseBody,
-        path,
-        content,
-      )
+      const condition = parseExpression(ifStatement.condition)
+      const trueBody = getUniqueIdentifiers(ifStatement.trueBody)
+      const falseBody = getUniqueIdentifiers(ifStatement.falseBody)
 
       return condition.concat(trueBody).concat(falseBody)
     }
     case 'ExpressionStatement': {
       const expressionStatement = node as ExpressionStatement
-      return parseExpression(expressionStatement.expression, path, content)
+      return parseExpression(expressionStatement.expression)
     }
     case 'CustomErrorDefinition': {
       return (node as CustomErrorDefinition).parameters.flatMap((p) =>
-        getUniqueIdentifiers(p, path, content),
+        getUniqueIdentifiers(p),
       )
     }
     case 'EventDefinition': {
       return (node as EventDefinition).parameters.flatMap((p) =>
-        getUniqueIdentifiers(p, path, content),
+        getUniqueIdentifiers(p),
       )
     }
     case 'FunctionDefinition': {
       return (node as EventDefinition).parameters.flatMap((p) =>
-        getUniqueIdentifiers(p, path, content),
+        getUniqueIdentifiers(p),
       )
     }
     case 'ModifierDefinition': {
       const mod = node as ModifierDefinition
       const params = mod.parameters ?? []
 
-      const paramTypes = params.flatMap((p) =>
-        getUniqueIdentifiers(p, path, content),
-      )
-      const librariesFromBlock = getUniqueIdentifiers(mod.body, path, content)
+      const paramTypes = params.flatMap((p) => getUniqueIdentifiers(p))
+      const librariesFromBlock = getUniqueIdentifiers(mod.body)
 
       return paramTypes.concat(librariesFromBlock)
     }
@@ -112,41 +95,35 @@ export function getUniqueIdentifiers(
       const declaration = node as VariableDeclarationStatement
 
       const variables = declaration.variables.flatMap((v) =>
-        getUniqueIdentifiers(v, path, content),
+        getUniqueIdentifiers(v),
       )
-      const initialValue = parseExpression(
-        declaration.initialValue,
-        path,
-        content,
-      )
+      const initialValue = parseExpression(declaration.initialValue)
 
       return variables.concat(initialValue)
     }
     case 'StateVariableDeclaration': {
       const decl = node as StateVariableDeclaration
 
-      const varTypes = decl.variables.flatMap((v) =>
-        getUniqueIdentifiers(v, path, content),
-      )
-      const expr = parseExpression(decl.initialValue, path, content)
+      const varTypes = decl.variables.flatMap((v) => getUniqueIdentifiers(v))
+      const expr = parseExpression(decl.initialValue)
 
       return expr.concat(varTypes)
     }
     case 'StructDefinition': {
       return (node as StructDefinition).members.flatMap((m) =>
-        getUniqueIdentifiers(m, path, content),
+        getUniqueIdentifiers(m),
       )
     }
     case 'ReturnStatement': {
       const returnStatement = node as ReturnStatement
-      return parseExpression(returnStatement.expression, path, content)
+      return parseExpression(returnStatement.expression)
     }
     case 'EmitStatement': {
       const emitStatement = node as EmitStatement
-      return parseExpression(emitStatement.eventCall, path, content)
+      return parseExpression(emitStatement.eventCall)
     }
     case 'BinaryOperation': {
-      return parseExpression(node as Expression, path, content)
+      return parseExpression(node as Expression)
     }
     case 'EnumDefinition': {
       return []
@@ -172,7 +149,7 @@ export function getUniqueIdentifiers(
     case 'UnaryOperation':
     case 'NewExpression':
     case 'NameValueExpression': {
-      return parseExpression(node as Expression, path, content)
+      return parseExpression(node as Expression)
     }
     case 'ElementaryTypeName':
     case 'UserDefinedTypeName':
@@ -182,61 +159,41 @@ export function getUniqueIdentifiers(
       return parseTypeName(node as TypeName)
     }
     default: {
-      throw new Error(
-        `TopLevelFunc: Unknown node type: [${node.type}] [${path.join(
-          ' -> \n',
-        )}]}]`,
-      )
+      throw new Error(`TopLevelFunc: Unknown node type: [${node.type}]`)
     }
   }
 }
 
-function parseExpression(
-  expr: Expression | null,
-  path: string[],
-  content: string,
-): string[] {
+function parseExpression(expr: Expression | null): string[] {
   if (!expr || !expr.type) {
     return []
   }
-
   assert(expr.range !== undefined)
-  path.push(
-    '\n-----------------------------------------------------\n' +
-      content.slice(expr.range[0], expr.range[1] + 1) +
-      '\n-----------------------------------------------------\n',
-  )
 
   switch (expr.type) {
     case 'BinaryOperation': {
-      return parseExpression(expr.left, path, content).concat(
-        parseExpression(expr.right, path, content),
-      )
+      return parseExpression(expr.left).concat(parseExpression(expr.right))
     }
     case 'FunctionCall': {
-      return parseExpression(expr.expression, path, content)
-        .concat(
-          expr.arguments.flatMap((k) => parseExpression(k, path, content)),
-        )
+      return parseExpression(expr.expression)
+        .concat(expr.arguments.flatMap((k) => parseExpression(k)))
         .concat(expr.identifiers.map((i) => i.name))
     }
     case 'IndexAccess': {
-      return parseExpression(expr.base, path, content).concat(
-        parseExpression(expr.index, path, content),
-      )
+      return parseExpression(expr.base).concat(parseExpression(expr.index))
     }
     case 'TupleExpression': {
       return expr.components.flatMap((component) =>
-        getUniqueIdentifiers(component, path, content),
+        getUniqueIdentifiers(component),
       )
     }
     case 'MemberAccess': {
-      return parseExpression(expr.expression, path, content)
+      return parseExpression(expr.expression)
     }
     case 'Conditional': {
-      return parseExpression(expr.condition, path, content)
-        .concat(parseExpression(expr.trueExpression, path, content))
-        .concat(parseExpression(expr.falseExpression, path, content))
+      return parseExpression(expr.condition)
+        .concat(parseExpression(expr.trueExpression))
+        .concat(parseExpression(expr.falseExpression))
     }
     case 'Identifier': {
       return [expr.name]
@@ -245,12 +202,12 @@ function parseExpression(
       return parseTypeName(expr.typeName)
     }
     case 'UnaryOperation': {
-      return parseExpression(expr.subExpression, path, content)
+      return parseExpression(expr.subExpression)
     }
     case 'IndexRangeAccess': {
-      const base = parseExpression(expr.base, path, content)
-      const indexStart = parseExpression(expr.indexStart ?? null, path, content)
-      const indexEnd = parseExpression(expr.indexEnd ?? null, path, content)
+      const base = parseExpression(expr.base)
+      const indexStart = parseExpression(expr.indexStart ?? null)
+      const indexEnd = parseExpression(expr.indexEnd ?? null)
 
       return base.concat(indexStart).concat(indexEnd)
     }
@@ -271,9 +228,7 @@ function parseExpression(
     }
     default: {
       throw new Error(
-        `parseExpression: Unknown expression type: [${expr.type}] [${path.join(
-          ' -> \n',
-        )}]}]`,
+        `parseExpression: Unknown expression type: [${expr.type}]`,
       )
     }
   }

@@ -124,22 +124,21 @@ export class ParsedFileManager {
   }
 
   resolveLibrariesUsed(file: ParsedFile, c: ContractDefinition): string[] {
-    const path: string[] = []
     const identifiers = new Set(
       c.subNodes
-        .flatMap((k) => getUniqueIdentifiers(k, path, file.content))
+        .flatMap((n) => getUniqueIdentifiers(n))
         .map(ParsedFileManager.extractNamespace),
     )
 
-    const fromMagic = []
+    const resolvedAsLibraries = []
     for (const identifier of identifiers) {
       const result = this.tryFindContract(identifier, file)
       if (result !== undefined && result.contract.type === 'library') {
-        fromMagic.push(identifier)
+        resolvedAsLibraries.push(identifier)
       }
     }
 
-    return fromMagic
+    return resolvedAsLibraries
   }
 
   static extractNamespace(identifier: string): string {
@@ -257,38 +256,13 @@ export class ParsedFileManager {
     }
   }
 
-  resolveImportContract(
-    fromFile: ParsedFile,
-    contractName: string,
-  ): ParsedFile {
-    const matchingImports = fromFile.importDirectives.filter(
-      (c) => c.importedName === contractName,
-    )
-
-    if (matchingImports.length !== 1) {
-      console.log(
-        'resolveImportContract: ',
-        fromFile.path,
-        contractName,
-        matchingImports,
-      )
-    }
-    assert(matchingImports.length !== 0, 'Import not found')
-    assert(matchingImports.length === 1, 'Multiple imports found')
-    assert(matchingImports[0] !== undefined, 'Import not found')
-
-    return this.resolveImportPath(fromFile, matchingImports[0].absolutePath)
-  }
-
   resolveImportPath(fromFile: ParsedFile, importPath: string): ParsedFile {
     const remappedPath = this.resolveRemappings(importPath)
     const resolvedPath = remappedPath.startsWith('.')
       ? path.join(path.dirname(fromFile.path), remappedPath)
       : remappedPath
 
-    const matchingFiles = this.files.filter((f) =>
-      pathsMatch(f.path, resolvedPath),
-    )
+    const matchingFiles = this.files.filter((f) => f.path === resolvedPath)
 
     if (matchingFiles.length !== 1) {
       console.log('resolveImportPath: ', {
@@ -322,8 +296,4 @@ export class ParsedFileManager {
 
     return path
   }
-}
-
-function pathsMatch(path1: string, path2: string): boolean {
-  return path1 === path2
 }
