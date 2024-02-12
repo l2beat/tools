@@ -4,13 +4,14 @@ import { mkdirp } from 'mkdirp'
 import path, { dirname, posix } from 'path'
 import { rimraf } from 'rimraf'
 
-import { ContractFlattener } from '../../flatten/ContractFlattener'
+import { flattenStartingFrom } from '../../flatten/flattenStartingFrom'
 import { EthereumAddress } from '../../utils/EthereumAddress'
 import { Analysis } from '../analysis/AddressAnalyzer'
 import { DiscoveryConfig } from '../config/DiscoveryConfig'
 import { removeSharedNesting } from '../source/removeSharedNesting'
 import { toDiscoveryOutput } from './toDiscoveryOutput'
 import { toPrettyJson } from './toPrettyJson'
+import { ParsedFileManager } from '../../flatten/ParsedFilesManager'
 
 export async function saveDiscoveryResult(
   results: Analysis[],
@@ -89,13 +90,12 @@ export async function saveDiscoveryResult(
           }))
           .filter((e) => e.path.endsWith('.sol'))
 
-        const flattener = new ContractFlattener(
-          input,
-          contract.remappings,
-          Logger.SILENT,
-        )
-        const output = flattener.flattenStartingFrom(
+        const parsedFileManager = new ParsedFileManager()
+        parsedFileManager.parseFiles(input, contract.remappings)
+
+        const output = flattenStartingFrom(
           contract.derivedName ?? contract.name,
+          parsedFileManager,
         )
 
         const path = posix.join(flatSourcesPath, `${contract.name}.sol`)

@@ -2,7 +2,8 @@ import { Logger } from '@l2beat/backend-tools'
 import { readdir, readFile, writeFile } from 'fs/promises'
 import { basename, resolve } from 'path'
 
-import { ContractFlattener } from './ContractFlattener'
+import { flattenStartingFrom } from './flattenStartingFrom'
+import { ParsedFileManager } from './ParsedFilesManager'
 
 export async function runFlatten(
   path: string,
@@ -34,9 +35,10 @@ export async function runFlatten(
     'safe-contracts/=safe-contracts/contracts/',
     'solmate/=solmate/src/',
   ]
-  const flattener = new ContractFlattener(files, remappings, logger)
+  const parsedFileManager = new ParsedFileManager()
+  parsedFileManager.parseFiles(files, remappings)
 
-  const flattend = flattener.flattenStartingFrom(rootContractName)
+  const flattend = flattenStartingFrom(rootContractName, parsedFileManager)
   await writeFile('flattened.sol', flattend)
 
   process.exit(0)

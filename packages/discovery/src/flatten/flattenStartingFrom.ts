@@ -1,40 +1,12 @@
-import { assert, Logger } from '@l2beat/backend-tools'
+import { assert  } from '@l2beat/backend-tools'
+import { ByteRange, ParsedFileManager } from './ParsedFilesManager'
 
-import { ByteRange, FileContent, ParsedFileManager } from './ParsedFilesManager'
-
-export class ContractFlattener {
-  private readonly parsedFileManager: ParsedFileManager
-  constructor(
-    files: FileContent[],
-    private readonly remappings: string[],
-    private readonly logger: Logger,
-  ) {
-    this.parsedFileManager = new ParsedFileManager()
-    this.parsedFileManager.parseFiles(files, remappings)
-
-    // let elapsedMilliseconds = -Date.now()
-
-    // elapsedMilliseconds += Date.now()
-    // const sourceLineCount = fileContents.reduce(
-    //   (acc, f) => acc + f.content.split('\n').length,
-    //   0,
-    // )
-    // const linesPerSecond = sourceLineCount / (elapsedMilliseconds / 1000)
-
-    // this.logger.info(
-    //   `Parsed ${
-    //     fileContents.length
-    //   } files in ${elapsedMilliseconds}ms (${linesPerSecond.toFixed(
-    //     0,
-    //   )} lines/s))`,
-    // )
-  }
-
-  flattenStartingFrom(rootContractName: string): string {
+export function flattenStartingFrom(rootContractName: string,
+                                    parsedFileManager: ParsedFileManager): string {
     let flatSource = ''
 
     const rootContract =
-      this.parsedFileManager.findContractDeclaration(rootContractName)
+      parsedFileManager.findContractDeclaration(rootContractName)
 
     flatSource = pushSource(
       flatSource,
@@ -62,7 +34,7 @@ export class ContractFlattener {
       const currentFile = entry.fromFile
       visited.add(`${currentFile.path}-${entry.contractName}`)
 
-      const result = this.parsedFileManager.tryFindContract(
+      const result = parsedFileManager.tryFindContract(
         entry.contractName,
         currentFile,
       )
@@ -87,7 +59,6 @@ export class ContractFlattener {
     }
 
     return flatSource
-  }
 }
 
 function pushSource(acc: string, source: string, byteRange: ByteRange): string {
