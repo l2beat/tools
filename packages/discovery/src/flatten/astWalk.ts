@@ -1,30 +1,27 @@
 import { assert } from '@l2beat/backend-tools'
-
 // TODO(radomski): The parser does not expose the AST types for SOME reason.
 // Either we ignore this error or we fork the parser and expose the types.
 // eslint-disable-next-line import/no-unresolved
 import {
-  ContractDefinition,
-  UsingForDeclaration,
   BaseASTNode,
+  Block,
   CustomErrorDefinition,
+  EmitStatement,
   EventDefinition,
   Expression,
-  Block,
-  EmitStatement,
   ExpressionStatement,
-  TypeDefinition,
-  RevertStatement,
-  IndexRangeAccess,
-  TypeName,
-  IfStatement,
   Identifier,
-  VariableDeclarationStatement,
-  ReturnStatement,
-  VariableDeclaration,
+  IfStatement,
   ModifierDefinition,
+  ReturnStatement,
+  RevertStatement,
   StateVariableDeclaration,
   StructDefinition,
+  TypeDefinition,
+  TypeName,
+  UsingForDeclaration,
+  VariableDeclaration,
+  VariableDeclarationStatement,
 } from '@solidity-parser/parser/dist/src/ast-types'
 
 export function getUniqueIdentifiers(

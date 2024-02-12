@@ -1,4 +1,5 @@
 import { assert, Logger } from '@l2beat/backend-tools'
+
 import { ByteRange, FileContent, ParsedFileManager } from './ParsedFilesManager'
 
 export class ContractFlattener {
@@ -62,8 +63,8 @@ export class ContractFlattener {
       visited.add(`${currentFile.path}-${entry.contractName}`)
 
       const result = this.parsedFileManager.tryFindContract(
-          entry.contractName,
-          currentFile,
+        entry.contractName,
+        currentFile,
       )
 
       assert(result)
@@ -71,16 +72,16 @@ export class ContractFlattener {
 
       flatSource = pushSource(flatSource, file.content, contract.byteRange)
       stack.push(
-          ...contract.inheritsFrom
+        ...contract.inheritsFrom
           .map((contractName) => ({
-              contractName,
-              fromFile: file,
+            contractName,
+            fromFile: file,
           }))
           .concat(
-              contract.librariesUsed.map((contractName) => ({
-                  contractName,
-                  fromFile: file,
-              })),
+            contract.librariesUsed.map((contractName) => ({
+              contractName,
+              fromFile: file,
+            })),
           ),
       )
     }

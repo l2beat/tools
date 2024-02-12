@@ -2,8 +2,9 @@ import { assert } from '@l2beat/backend-tools'
 import { parse } from '@solidity-parser/parser'
 // eslint-disable-next-line import/no-unresolved
 import { ContractDefinition } from '@solidity-parser/parser/dist/src/ast-types'
-import { getUniqueIdentifiers } from './astWalk'
 import * as path from 'path'
+
+import { getUniqueIdentifiers } from './astWalk'
 
 type ParseResult = ReturnType<typeof parse>
 
@@ -55,8 +56,6 @@ export interface ParsedFile extends FileContent {
 export class ParsedFileManager {
   private files: ParsedFile[] = []
   private remappings: string[] = []
-
-  constructor() {}
 
   parseFiles(files: FileContent[], remappings: string[]) {
     this.remappings = remappings
@@ -113,7 +112,7 @@ export class ParsedFileManager {
   }
 
   resolveLibrariesUsed(file: ParsedFile, c: ContractDefinition): string[] {
-    let path: string[] = []
+    const path: string[] = []
     const identifiers = new Set(
       c.subNodes
         .flatMap((k) => getUniqueIdentifiers(k, path, file.content))
@@ -193,18 +192,20 @@ export class ParsedFileManager {
   tryFindContract(
     contractName: string,
     file: ParsedFile,
-  ): {
-    contract: ContractDeclaration
-    file: ParsedFile
-  } | undefined {
+  ):
+    | {
+        contract: ContractDeclaration
+        file: ParsedFile
+      }
+    | undefined {
     const matchingContracts = file.contractDeclarations.filter(
       (c) => c.name === contractName,
     )
 
     if (matchingContracts.length === 1 && matchingContracts[0] !== undefined) {
       return {
-          contract: matchingContracts[0],
-          file
+        contract: matchingContracts[0],
+        file,
       }
     }
 
