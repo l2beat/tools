@@ -9,6 +9,7 @@ import {
 } from '@solidity-parser/parser/dist/src/ast-types'
 import * as path from 'path'
 import { getUniqueIdentifiers } from './astWalk'
+import { isEqual } from 'lodash'
 
 type ParseResult = ReturnType<typeof parse>
 
@@ -17,12 +18,17 @@ interface ByteRange {
   end: number
 }
 
+type ContractType = 'contract' | 'interface' | 'library' | 'abstract'
+
 interface ContractDecl {
-  ast: ContractDefinition,
+  name: string
+  type: ContractType
+
+  ast: ContractDefinition
+  byteRange: ByteRange
+
   inheritsFrom: string[]
   librariesUsed: string[]
-  name: string
-  byteRange: ByteRange
 }
 
 // If import is:
@@ -100,6 +106,7 @@ export class ContractFlattener {
         return {
           ast: c,
           name: c.name,
+          type: c.kind as ContractType,
           inheritsFrom: c.baseContracts.map((bc) => bc.baseName.namePath),
           librariesUsed: [],
           byteRange: {
@@ -118,31 +125,37 @@ export class ContractFlattener {
 
     // Pass 3: Resolve all libraries used
     for (const file of this.files) {
-        for(const contract of file.contractDeclarations) {
-            contract.librariesUsed = this.resolveLibrariesUsed(file, contract.ast)
-        }
+      for (const contract of file.contractDeclarations) {
+        contract.librariesUsed = this.resolveLibrariesUsed(file, contract.ast)
+      }
     }
   }
 
   resolveLibrariesUsed(file: ParsedFile, c: ContractDefinition): string[] {
-    const fromUsingDirectives = c.subNodes
-      .filter((sn) => sn.type === 'UsingForDeclaration')
-      .map((sn) => {
-        assert(sn.type === 'UsingForDeclaration')
-        const usingNode = sn as UsingForDeclaration
-        assert(usingNode.libraryName !== null)
-
-        return usingNode.libraryName
-      })
-
     let path: string[] = []
-    const identifiers = new Set(c.subNodes.flatMap((k) =>
-      getUniqueIdentifiers(k, path, file.content),
-    ))
+    const identifiers = new Set(
+      c.subNodes
+        .flatMap((k) => getUniqueIdentifiers(k, path, file.content))
+        .map(ContractFlattener.extractNamespace),
+    )
 
-    console.log(identifiers)
+    const fromMagic = []
+    for (const identifier of identifiers) {
+      const contract = this.tryFindContract(file, identifier)
+      if (contract !== undefined && contract.type === 'library') {
+          fromMagic.push(identifier)
+      } 
+    }
 
-    return fromUsingDirectives
+    return fromMagic
+  }
+
+  static extractNamespace(identifier: string): string {
+    const dotIndex = identifier.indexOf('.')
+    if (dotIndex === -1) {
+      return identifier
+    }
+    return identifier.substring(0, dotIndex)
   }
 
   // There are two parts to this equation:
@@ -307,6 +320,31 @@ export class ContractFlattener {
     return result
   }
 
+  tryFindContract(
+    file: ParsedFile,
+    contractName: string,
+  ): ContractDecl | undefined {
+    const matchingContracts = file.contractDeclarations.filter(
+      (c) => c.name === contractName,
+    )
+    if (matchingContracts.length === 1 && matchingContracts[0] !== undefined) {
+      return matchingContracts[0]
+    }
+
+    const matchingImports = file.importDirectives.filter(
+      (c) => c.importedName === contractName,
+    )
+
+    if (matchingImports.length === 1 && matchingImports[0] !== undefined) {
+      return this.tryFindContract(
+        this.resolveImportPath(file, matchingImports[0].absolutePath),
+        contractName,
+      )
+    }
+
+    return undefined
+  }
+
   findFileDeclaringContract(contractName: string): ParsedFile {
     const matchingFiles = this.files.filter((f) =>
       f.contractDeclarations.some((c) => c.name === contractName),
@@ -364,9 +402,6 @@ export class ContractFlattener {
   }
 
   resolveImportPath(fromFile: ParsedFile, importPath: string): ParsedFile {
-    // TODO(radomski): This is the biggest unknown and I should really
-    // consider if this simple string comparison will solve every single
-    // possible case.
     const remappedPath = this.resolveRemappings(importPath)
     const resolvedPath = remappedPath.startsWith('.')
       ? path.join(path.dirname(fromFile.path), remappedPath)

@@ -1,4 +1,8 @@
 import { assert } from '@l2beat/backend-tools'
+
+// TODO(radomski): The parser does not expose the AST types for SOME reason.
+// Either we ignore this error or we fork the parser and expose the types.
+// eslint-disable-next-line import/no-unresolved
 import {
   ContractDefinition,
   UsingForDeclaration,
@@ -69,7 +73,11 @@ export function getUniqueIdentifiers(
       const ifStatement = node as IfStatement
       const condition = parseExpression(ifStatement.condition, path, content)
       const trueBody = getUniqueIdentifiers(ifStatement.trueBody, path, content)
-      const falseBody = getUniqueIdentifiers(ifStatement.falseBody, path, content)
+      const falseBody = getUniqueIdentifiers(
+        ifStatement.falseBody,
+        path,
+        content,
+      )
 
       return condition.concat(trueBody).concat(falseBody)
     }
@@ -151,8 +159,11 @@ export function getUniqueIdentifiers(
       return parseTypeName(typeDefinition.definition)
     }
     case 'UsingForDeclaration': {
-      // NOTE(radomski): We might actually want to use this in the future
-      return []
+        const declaration = node as UsingForDeclaration
+        const typeName = parseTypeName(declaration.typeName)
+        const libraryName = declaration.libraryName ?? []
+
+      return typeName.concat(libraryName)
     }
     case 'IndexAccess':
     case 'IndexRangeAccess':
@@ -281,7 +292,6 @@ function parseTypeName(type: TypeName | null): string[] {
       return [type.name]
     }
     case 'UserDefinedTypeName': {
-      // NOTE(radomski): Parse the dot here?
       return [type.namePath]
     }
     case 'Mapping': {
@@ -291,7 +301,6 @@ function parseTypeName(type: TypeName | null): string[] {
       return parseTypeName(type.baseTypeName)
     }
     case 'FunctionTypeName': {
-      // NOTE(radomski): I think this is useless
       return []
     }
   }
