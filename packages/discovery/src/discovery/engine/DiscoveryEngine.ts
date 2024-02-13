@@ -109,7 +109,8 @@ export class DiscoveryEngine {
   }
 
   private checkErrors(resolved: Analysis[]): void {
-    const errors = []
+    const errorMsgs = []
+    let errorCount = 0
     for (const analysis of resolved) {
       if (
         analysis.type === 'Contract' &&
@@ -121,12 +122,13 @@ export class DiscoveryEngine {
           ([field, error]) => `\n\t${field}: ${error}`,
         )
 
-        errors.push([msgStart, ...errorMessages, msgEnd].join(''))
+        errorCount += errorMessages.length
+        errorMsgs.push([msgStart, ...errorMessages, msgEnd].join(''))
       }
     }
-    if (errors.length > 0) {
-      this.logger.logError(`Errors during discovery: ${errors.length}`)
-      for (const error of errors) {
+    if (errorCount > 0) {
+      this.logger.logError(`Errors during discovery: ${errorCount}`)
+      for (const error of errorMsgs) {
         this.logger.logError(error)
       }
     }
