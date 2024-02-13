@@ -5,7 +5,7 @@ import {
   ContractDeclaration,
   ContractFilePair,
   ParsedFile,
-  ParsedFileManager,
+  ParsedFilesManager,
 } from './ParsedFilesManager'
 
 describe(flattenStartingFrom.name, () => {
@@ -61,7 +61,7 @@ describe(flattenStartingFrom.name, () => {
 
   it('flattens the source code', () => {
     const rootContractName = 'Contract1'
-    const parsedFileManager = mockObject<ParsedFileManager>({
+    const parsedFileManager = mockObject<ParsedFilesManager>({
       findContractDeclaration: mockFn((contractName): ContractFilePair => {
         expect(contractName).toEqual(rootContractName)
 
@@ -98,7 +98,7 @@ describe(flattenStartingFrom.name, () => {
 
   it('throws if fails to find a contract', () => {
     const rootContractName = 'Contract1'
-    const parsedFileManager = mockObject<ParsedFileManager>({
+    const parsedFileManager = mockObject<ParsedFilesManager>({
       findContractDeclaration: mockFn((contractName): ContractFilePair => {
         expect(contractName).toEqual(rootContractName)
 

@@ -4,7 +4,7 @@ import { basename } from 'path'
 
 import { listFilesRecursively } from '../utils/fsLayer'
 import { flattenStartingFrom } from './flattenStartingFrom'
-import { ParsedFileManager } from './ParsedFilesManager'
+import { ParsedFilesManager } from './ParsedFilesManager'
 
 const DEFAULT_ETHERSCAN_REMAPPINGS: string[] = [
   '@base-contracts/=base-contracts/',
@@ -35,7 +35,7 @@ export async function runFlatten(
   const solidityFiles = filterOutNonSolidityFiles(allFiles)
   const files = await Promise.all(solidityFiles.map((f) => read(f)))
 
-  const parsedFileManager = ParsedFileManager.parseFiles(
+  const parsedFileManager = ParsedFilesManager.parseFiles(
     files,
     DEFAULT_ETHERSCAN_REMAPPINGS,
   )

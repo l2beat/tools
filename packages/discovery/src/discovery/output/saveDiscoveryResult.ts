@@ -4,7 +4,7 @@ import path, { dirname, posix } from 'path'
 import { rimraf } from 'rimraf'
 
 import { flattenStartingFrom } from '../../flatten/flattenStartingFrom'
-import { ParsedFileManager } from '../../flatten/ParsedFilesManager'
+import { ParsedFilesManager } from '../../flatten/ParsedFilesManager'
 import { EthereumAddress } from '../../utils/EthereumAddress'
 import { Analysis } from '../analysis/AddressAnalyzer'
 import { DiscoveryConfig } from '../config/DiscoveryConfig'
@@ -89,7 +89,7 @@ export async function saveDiscoveryResult(
           }))
           .filter((e) => e.path.endsWith('.sol'))
 
-        const parsedFileManager = ParsedFileManager.parseFiles(
+        const parsedFileManager = ParsedFilesManager.parseFiles(
           input,
           contract.remappings,
         )

@@ -2,7 +2,7 @@ import { assert } from '@l2beat/backend-tools'
 import { parse } from '@solidity-parser/parser'
 // eslint-disable-next-line import/no-unresolved
 import { ContractDefinition } from '@solidity-parser/parser/dist/src/ast-types'
-import * as path from 'path'
+import * as posix from 'path'
 
 import { getASTIdentifiers } from './getASTIdentifiers'
 
@@ -45,6 +45,11 @@ export interface FileContent {
   content: string
 }
 
+export interface Remapping {
+  prefix: string
+  target: string
+}
+
 export interface ParsedFile extends FileContent {
   ast: ParseResult
 
@@ -57,14 +62,15 @@ export interface ContractFilePair {
   file: ParsedFile
 }
 
-export class ParsedFileManager {
+export class ParsedFilesManager {
   private files: ParsedFile[] = []
 
   static parseFiles(
     files: FileContent[],
-    remappings: string[],
-  ): ParsedFileManager {
-    const result = new ParsedFileManager()
+    remappingStrings: string[],
+  ): ParsedFilesManager {
+    const result = new ParsedFilesManager()
+    const remappings = decodeRemappings(remappingStrings)
 
     result.files = files.map(({ path, content }) => ({
       path: resolveRemappings(path, remappings),
@@ -149,7 +155,7 @@ export class ParsedFileManager {
 
   resolveFileImports(
     file: ParsedFile,
-    remappings: string[],
+    remappings: Remapping[],
     visitedPaths: string[],
   ): ImportDirective[] {
     const importDirectives = file.ast.children.filter(
@@ -211,7 +217,7 @@ export class ParsedFileManager {
 
     if (matchingImport !== undefined) {
       return this.tryFindContract(
-        contractName,
+        matchingImport.originalName,
         this.resolveImportPath(file, matchingImport.absolutePath),
       )
     }
@@ -223,7 +229,10 @@ export class ParsedFileManager {
     const matchingFile = findOne(this.files, (f) =>
       f.contractDeclarations.some((c) => c.name === contractName),
     )
-    assert(matchingFile !== undefined, 'File not found')
+    assert(
+      matchingFile !== undefined,
+      `Failed to find file declaring contract ${contractName}`,
+    )
 
     return matchingFile
   }
@@ -248,7 +257,7 @@ export class ParsedFileManager {
 
   resolveImportPath(fromFile: ParsedFile, importPath: string): ParsedFile {
     const resolvedPath = importPath.startsWith('.')
-      ? path.join(path.dirname(fromFile.path), importPath)
+      ? posix.join(posix.dirname(fromFile.path), importPath)
       : importPath
 
     const matchingFile = findOne(this.files, (f) => f.path === resolvedPath)
@@ -266,17 +275,25 @@ function extractNamespace(identifier: string): string {
   return identifier.substring(0, dotIndex)
 }
 
-function resolveRemappings(path: string, remappings: string[]): string {
-  for (const remapping of remappings) {
-    const [prefix, target] = remapping.split('=')
+function decodeRemappings(remappingStrings: string[]): Remapping[] {
+  return remappingStrings.map((r) => {
+    const [prefix, target] = r.split('=')
 
-    assert(remapping.includes('='), 'Invalid remapping, lacking "=" sign.')
+    assert(r.includes('='), 'Invalid remapping, lacking "=" sign.')
     assert(prefix !== undefined, 'Invalid remapping, missing prefix.')
     assert(target !== undefined, 'Invalid remapping, missing target.')
+    return { prefix, target }
+  })
+}
 
-    if (path.startsWith(prefix)) {
-      return target + path.slice(prefix.length)
-    }
+function resolveRemappings(path: string, remappings: Remapping[]): string {
+  const matchingRemappings = remappings.filter((r) => path.startsWith(r.prefix))
+  if (matchingRemappings.length > 0) {
+    const longest = matchingRemappings.reduce((a, b) =>
+      a.prefix.length > b.prefix.length ? a : b,
+    )
+
+    return posix.join(longest.target, path.slice(longest.prefix.length))
   }
 
   return path

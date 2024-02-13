@@ -4,7 +4,7 @@ import {
   ByteRange,
   ContractFilePair,
   ParsedFile,
-  ParsedFileManager,
+  ParsedFilesManager,
 } from './ParsedFilesManager'
 
 interface ContractNameFilePair {
@@ -14,7 +14,7 @@ interface ContractNameFilePair {
 
 export function flattenStartingFrom(
   rootContractName: string,
-  parsedFileManager: ParsedFileManager,
+  parsedFileManager: ParsedFilesManager,
 ): string {
   const rootContract =
     parsedFileManager.findContractDeclaration(rootContractName)
