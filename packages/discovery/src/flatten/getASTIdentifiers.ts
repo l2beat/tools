@@ -1,37 +1,42 @@
-import { assert } from '@l2beat/backend-tools'
 // TODO(radomski): The parser does not expose the AST types for SOME reason.
 // Either we ignore this error or we fork the parser and expose the types.
 /* eslint-disable import/no-unresolved */
 import {
   BaseASTNode,
   Block,
+  CatchClause,
+  ContractDefinition,
   CustomErrorDefinition,
   EmitStatement,
   EventDefinition,
   Expression,
   ExpressionStatement,
+  ForStatement,
   FunctionDefinition,
   Identifier,
   IfStatement,
+  InheritanceSpecifier,
   ModifierDefinition,
+  NameValueList,
   ReturnStatement,
   RevertStatement,
   StateVariableDeclaration,
   StructDefinition,
+  TryStatement,
   TypeDefinition,
   TypeName,
+  UncheckedStatement,
   UsingForDeclaration,
   VariableDeclaration,
   VariableDeclarationStatement,
+  WhileStatement,
 } from '@solidity-parser/parser/dist/src/ast-types'
 /* eslint-enable */
 
-export function getUniqueIdentifiers(node: BaseASTNode | null): string[] {
+export function getASTIdentifiers(node: BaseASTNode | null): string[] {
   if (node === null) {
     return []
   }
-
-  assert(node.range !== undefined)
 
   switch (node.type) {
     case 'Identifier': {
@@ -47,9 +52,10 @@ export function getUniqueIdentifiers(node: BaseASTNode | null): string[] {
     case 'Block': {
       const block = node as Block
       return block.statements.flatMap((statement) =>
-        getUniqueIdentifiers(statement),
+        getASTIdentifiers(statement),
       )
     }
+    case 'BreakStatement':
     case 'InlineAssemblyStatement': {
       return []
     }
@@ -60,8 +66,8 @@ export function getUniqueIdentifiers(node: BaseASTNode | null): string[] {
     case 'IfStatement': {
       const ifStatement = node as IfStatement
       const condition = parseExpression(ifStatement.condition)
-      const trueBody = getUniqueIdentifiers(ifStatement.trueBody)
-      const falseBody = getUniqueIdentifiers(ifStatement.falseBody)
+      const trueBody = getASTIdentifiers(ifStatement.trueBody)
+      const falseBody = getASTIdentifiers(ifStatement.falseBody)
 
       return condition.concat(trueBody).concat(falseBody)
     }
@@ -69,52 +75,15 @@ export function getUniqueIdentifiers(node: BaseASTNode | null): string[] {
       const expressionStatement = node as ExpressionStatement
       return parseExpression(expressionStatement.expression)
     }
-    case 'CustomErrorDefinition': {
-      return (node as CustomErrorDefinition).parameters.flatMap((p) =>
-        getUniqueIdentifiers(p),
-      )
-    }
-    case 'EventDefinition': {
-      return (node as EventDefinition).parameters.flatMap((p) =>
-        getUniqueIdentifiers(p),
-      )
-    }
-    case 'FunctionDefinition': {
-      return (node as FunctionDefinition).parameters.flatMap((p) =>
-        getUniqueIdentifiers(p),
-      )
-    }
-    case 'ModifierDefinition': {
-      const mod = node as ModifierDefinition
-      const params = mod.parameters ?? []
-
-      const paramTypes = params.flatMap((p) => getUniqueIdentifiers(p))
-      const librariesFromBlock = getUniqueIdentifiers(mod.body)
-
-      return paramTypes.concat(librariesFromBlock)
-    }
     case 'VariableDeclarationStatement': {
       const declaration = node as VariableDeclarationStatement
 
       const variables = declaration.variables.flatMap((v) =>
-        getUniqueIdentifiers(v),
+        getASTIdentifiers(v),
       )
       const initialValue = parseExpression(declaration.initialValue)
 
       return variables.concat(initialValue)
-    }
-    case 'StateVariableDeclaration': {
-      const decl = node as StateVariableDeclaration
-
-      const varTypes = decl.variables.flatMap((v) => getUniqueIdentifiers(v))
-      const expr = parseExpression(decl.initialValue)
-
-      return expr.concat(varTypes)
-    }
-    case 'StructDefinition': {
-      return (node as StructDefinition).members.flatMap((m) =>
-        getUniqueIdentifiers(m),
-      )
     }
     case 'ReturnStatement': {
       const returnStatement = node as ReturnStatement
@@ -124,8 +93,91 @@ export function getUniqueIdentifiers(node: BaseASTNode | null): string[] {
       const emitStatement = node as EmitStatement
       return parseExpression(emitStatement.eventCall)
     }
-    case 'EnumDefinition': {
-      return []
+    case 'ForStatement': {
+      const forStatement = node as ForStatement
+      const init = getASTIdentifiers(forStatement.initExpression)
+      const condition = parseExpression(
+        forStatement.conditionExpression ?? null,
+      )
+      const loopExpression = getASTIdentifiers(forStatement.loopExpression)
+      const body = getASTIdentifiers(forStatement.body)
+      return init.concat(condition).concat(loopExpression).concat(body)
+    }
+    case 'WhileStatement': {
+      const whileStatement = node as WhileStatement
+      const condition = parseExpression(whileStatement.condition)
+      const body = getASTIdentifiers(whileStatement.body)
+      return condition.concat(body)
+    }
+    case 'TryStatement': {
+      const tryStatement = node as TryStatement
+      const expression = parseExpression(tryStatement.expression)
+      const returnParameters = (tryStatement.returnParameters ?? []).flatMap(
+        (p) => getASTIdentifiers(p),
+      )
+      const body = getASTIdentifiers(tryStatement.body)
+      const catchClauses = tryStatement.catchClauses.flatMap((c) =>
+        getASTIdentifiers(c),
+      )
+      return expression
+        .concat(returnParameters)
+        .concat(body)
+        .concat(catchClauses)
+    }
+    case 'CatchClause': {
+      const catchClause = node as CatchClause
+      const parameters = (catchClause.parameters ?? []).flatMap((p) =>
+        getASTIdentifiers(p),
+      )
+      const body = getASTIdentifiers(catchClause.body)
+      return parameters.concat(body)
+    }
+    case 'UncheckedStatement': {
+      return getASTIdentifiers((node as UncheckedStatement).block)
+    }
+    case 'CustomErrorDefinition': {
+      return (node as CustomErrorDefinition).parameters.flatMap((p) =>
+        getASTIdentifiers(p),
+      )
+    }
+    case 'EventDefinition': {
+      return (node as EventDefinition).parameters.flatMap((p) =>
+        getASTIdentifiers(p),
+      )
+    }
+    case 'FunctionDefinition': {
+      const defintion = node as FunctionDefinition
+      const params = defintion.parameters.flatMap((p) =>
+        getASTIdentifiers(p),
+      )
+      const returnParams = (defintion.returnParameters ?? []).flatMap((p) =>
+        getASTIdentifiers(p),
+      )
+      const body = getASTIdentifiers(defintion.body)
+
+      return params.concat(returnParams).concat(body)
+    }
+    case 'ModifierDefinition': {
+      const mod = node as ModifierDefinition
+      const params = mod.parameters ?? []
+
+      const paramTypes = params.flatMap((p) => getASTIdentifiers(p))
+      const librariesFromBlock = getASTIdentifiers(mod.body)
+
+      return paramTypes.concat(librariesFromBlock)
+    }
+    case 'StateVariableDeclaration': {
+      const decl = node as StateVariableDeclaration
+
+      const varTypes = decl.variables.flatMap((v) => getASTIdentifiers(v))
+      const expr = parseExpression(decl.initialValue)
+
+      return expr.concat(varTypes)
+    }
+    case 'StructDefinition': {
+      return (node as StructDefinition).members.flatMap((m) =>
+        getASTIdentifiers(m),
+      )
     }
     case 'TypeDefinition': {
       const typeDefinition = node as TypeDefinition
@@ -138,6 +190,38 @@ export function getUniqueIdentifiers(node: BaseASTNode | null): string[] {
 
       return typeName.concat(libraryName)
     }
+    case 'InheritanceSpecifier': {
+      const specifier = node as InheritanceSpecifier
+      const baseName = parseTypeName(specifier.baseName)
+      const args = specifier.arguments.flatMap((a) => parseExpression(a))
+
+      return args.concat(baseName)
+    }
+    case 'ContractDefinition': {
+      const defintion = node as ContractDefinition
+      const name = defintion.name
+      const baseContracts = defintion.baseContracts.flatMap((c) =>
+        getASTIdentifiers(c),
+      )
+      const subNodes = defintion.subNodes.flatMap((n) =>
+        getASTIdentifiers(n),
+      )
+
+      return [name].concat(baseContracts).concat(subNodes)
+    }
+    case 'NameValueList': {
+      const valueList = node as NameValueList
+      const identifiers = valueList.identifiers.flatMap((i) =>
+        getASTIdentifiers(i),
+      )
+      const args = valueList.arguments.flatMap((a) => parseExpression(a))
+      return identifiers.concat(args)
+    }
+    case 'PragmaDirective':
+    case 'ImportDirective':
+    case 'EnumDefinition': {
+      return []
+    }
     case 'BinaryOperation':
     case 'IndexAccess':
     case 'IndexRangeAccess':
@@ -147,6 +231,9 @@ export function getUniqueIdentifiers(node: BaseASTNode | null): string[] {
     case 'FunctionCall':
     case 'UnaryOperation':
     case 'NewExpression':
+    case 'BooleanLiteral':
+    case 'NumberLiteral':
+    case 'StringLiteral':
     case 'NameValueExpression': {
       return parseExpression(node as Expression)
     }
@@ -167,7 +254,6 @@ function parseExpression(expr: Expression | null): string[] {
   if (!expr?.type) {
     return []
   }
-  assert(expr.range !== undefined)
 
   switch (expr.type) {
     case 'BinaryOperation': {
@@ -183,7 +269,7 @@ function parseExpression(expr: Expression | null): string[] {
     }
     case 'TupleExpression': {
       return expr.components.flatMap((component) =>
-        getUniqueIdentifiers(component),
+        getASTIdentifiers(component),
       )
     }
     case 'MemberAccess': {
@@ -212,6 +298,11 @@ function parseExpression(expr: Expression | null): string[] {
     }
     case 'ElementaryTypeName': {
       return parseTypeName(expr)
+    }
+    case 'NameValueExpression': {
+      return parseExpression(expr.expression).concat(
+        getASTIdentifiers(expr.arguments),
+      )
     }
     case 'NumberLiteral':
     case 'BooleanLiteral':

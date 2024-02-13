@@ -4,7 +4,7 @@ import { parse } from '@solidity-parser/parser'
 import { ContractDefinition } from '@solidity-parser/parser/dist/src/ast-types'
 import * as path from 'path'
 
-import { getUniqueIdentifiers } from './astWalk'
+import { getASTIdentifiers } from './getASTIdentifiers'
 
 type ParseResult = ReturnType<typeof parse>
 
@@ -133,7 +133,7 @@ export class ParsedFileManager {
 
   resolveLibrariesUsed(file: ParsedFile, c: ContractDefinition): string[] {
     const identifiers = new Set(
-      c.subNodes.flatMap((n) => getUniqueIdentifiers(n)).map(extractNamespace),
+      c.subNodes.flatMap((n) => getASTIdentifiers(n)).map(extractNamespace),
     )
 
     const resolvedAsLibraries = []
