@@ -109,14 +109,26 @@ export class DiscoveryEngine {
   }
 
   private checkErrors(resolved: Analysis[]): void {
-    let errors = 0
+    const errors = []
     for (const analysis of resolved) {
-      if (analysis.type === 'Contract') {
-        errors += Object.keys(analysis.errors).length
+      if (
+        analysis.type === 'Contract' &&
+        Object.keys(analysis.errors).length > 0
+      ) {
+        const msgStart = `${analysis.name}(${analysis.address.toString()}): {`
+        const msgEnd = '\n}'
+        const errorMessages = Object.entries(analysis.errors).map(
+          ([field, error]) => `\n\t${field}: ${error}`,
+        )
+
+        errors.push([msgStart, ...errorMessages, msgEnd].join(''))
       }
     }
-    if (errors > 0) {
-      this.logger.logError(`Errors during discovery: ${errors}`)
+    if (errors.length > 0) {
+      this.logger.logError(`Errors during discovery: ${errors.length}`)
+      for (const error of errors) {
+        this.logger.logError(error)
+      }
     }
   }
 }
