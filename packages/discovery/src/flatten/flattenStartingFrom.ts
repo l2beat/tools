@@ -42,7 +42,7 @@ export function flattenStartingFrom(
       entry.file,
     )
 
-    assert(foundContract)
+    assert(foundContract, `Failed to find contract ${entry.contractName}`)
     const { contract, file } = foundContract
 
     flatSource += formatSource(file.content, contract.byteRange)

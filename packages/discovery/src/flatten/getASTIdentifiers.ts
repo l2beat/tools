@@ -147,9 +147,7 @@ export function getASTIdentifiers(node: BaseASTNode | null): string[] {
     }
     case 'FunctionDefinition': {
       const defintion = node as FunctionDefinition
-      const params = defintion.parameters.flatMap((p) =>
-        getASTIdentifiers(p),
-      )
+      const params = defintion.parameters.flatMap((p) => getASTIdentifiers(p))
       const returnParams = (defintion.returnParameters ?? []).flatMap((p) =>
         getASTIdentifiers(p),
       )
@@ -203,9 +201,7 @@ export function getASTIdentifiers(node: BaseASTNode | null): string[] {
       const baseContracts = defintion.baseContracts.flatMap((c) =>
         getASTIdentifiers(c),
       )
-      const subNodes = defintion.subNodes.flatMap((n) =>
-        getASTIdentifiers(n),
-      )
+      const subNodes = defintion.subNodes.flatMap((n) => getASTIdentifiers(n))
 
       return [name].concat(baseContracts).concat(subNodes)
     }

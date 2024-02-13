@@ -15,7 +15,7 @@ export interface ByteRange {
 
 type ContractType = 'contract' | 'interface' | 'library' | 'abstract'
 
-interface ContractDeclaration {
+export interface ContractDeclaration {
   name: string
   type: ContractType
 
