@@ -7,6 +7,7 @@ import {
   CatchClause,
   ContractDefinition,
   CustomErrorDefinition,
+  DoWhileStatement,
   EmitStatement,
   EventDefinition,
   Expression,
@@ -56,6 +57,7 @@ export function getASTIdentifiers(node: BaseASTNode | null): string[] {
       )
     }
     case 'BreakStatement':
+    case 'ContinueStatement':
     case 'InlineAssemblyStatement': {
       return []
     }
@@ -107,6 +109,12 @@ export function getASTIdentifiers(node: BaseASTNode | null): string[] {
       const whileStatement = node as WhileStatement
       const condition = parseExpression(whileStatement.condition)
       const body = getASTIdentifiers(whileStatement.body)
+      return condition.concat(body)
+    }
+    case 'DoWhileStatement': {
+      const doWhileStatement = node as DoWhileStatement
+      const condition = parseExpression(doWhileStatement.condition)
+      const body = getASTIdentifiers(doWhileStatement.body)
       return condition.concat(body)
     }
     case 'TryStatement': {
