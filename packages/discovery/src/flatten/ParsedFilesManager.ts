@@ -87,11 +87,16 @@ export class ParsedFilesManager {
 
     // Pass 2: Resolve all imports
     for (const file of result.files) {
-      const visitedPaths: string[] = [file.path]
+      const alreadyImportedObjects = new Map<string, string[]>()
+      alreadyImportedObjects.set(
+        file.path,
+        file.contractDeclarations.map((c) => c.name),
+      )
+
       file.importDirectives = result.resolveFileImports(
         file,
         remappings,
-        visitedPaths,
+        alreadyImportedObjects,
       )
     }
 
@@ -156,7 +161,7 @@ export class ParsedFilesManager {
   resolveFileImports(
     file: ParsedFile,
     remappings: Remapping[],
-    visitedPaths: string[],
+    alreadyImportedObjects: Map<string, string[]>,
   ): ImportDirective[] {
     const importDirectives = file.ast.children.filter(
       (n) => n.type === 'ImportDirective',
@@ -167,30 +172,66 @@ export class ParsedFilesManager {
 
       const remappedPath = resolveRemappings(i.path, remappings)
       const importedFile = this.resolveImportPath(file, remappedPath)
-      if (visitedPaths.includes(importedFile.path)) {
+
+      const alreadyImported =
+        alreadyImportedObjects.get(importedFile.path) ?? []
+      assert(
+        alreadyImported.length <= importedFile.contractDeclarations.length,
+        'Already imported more than there are contracts in the file',
+      )
+      if (alreadyImported.length === importedFile.contractDeclarations.length) {
         return []
       }
-      visitedPaths.push(importedFile.path)
 
+      const result = []
       const importEverything = i.symbolAliases === null
       if (importEverything) {
-        return importedFile.contractDeclarations
-          .map((c) => ({
+        for (const contract of importedFile.contractDeclarations) {
+          const object = {
             absolutePath: importedFile.path,
-            originalName: c.name,
-            importedName: c.name,
-          }))
-          .concat(
-            this.resolveFileImports(importedFile, remappings, visitedPaths),
-          )
+            originalName: contract.name,
+            importedName: contract.name,
+          }
+
+          if (!alreadyImported.includes(object.originalName)) {
+            result.push(object)
+          }
+        }
+
+        alreadyImportedObjects.set(
+          importedFile.path,
+          importedFile.contractDeclarations.map((c) => c.name),
+        )
+
+        const recursiveResult = this.resolveFileImports(
+          importedFile,
+          remappings,
+          alreadyImportedObjects,
+        )
+        return result.concat(recursiveResult)
       }
 
       assert(i.symbolAliases !== null)
-      return i.symbolAliases.map((alias) => ({
-        absolutePath: importedFile.path,
-        originalName: alias[0],
-        importedName: alias[1] ?? alias[0],
-      }))
+      for (const alias of i.symbolAliases) {
+        const object = {
+          absolutePath: importedFile.path,
+          originalName: alias[0],
+          importedName: alias[1] ?? alias[0],
+        }
+
+        if (alreadyImported.includes(object.originalName)) {
+          continue
+        }
+
+        alreadyImportedObjects.set(importedFile.path, [
+          ...alreadyImported,
+          object.originalName,
+        ])
+
+        result.push(object)
+      }
+
+      return result
     })
   }
 
