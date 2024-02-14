@@ -6,9 +6,10 @@ import { FileContent, ParsedFilesManager } from './ParsedFilesManager'
 describe('flatten', () => {
   it('handles multiple files, imports, remappings, renames etc.', () => {
     const ROOT_CONTRACT_SOURCE =
-      'contract R1 is C3, C2 { function r1(L1.S1 arg) public {} }'
+      'contract R1 is C3, C2, C4 { function r1(L1.S1 arg) public {} }'
     const CONTRACT2_SOURCE = 'contract C2 { function r3() public {} }'
     const CONTRACT3_SOURCE = 'contract C3 { function r4() public {} }'
+    const CONTRACT4_SOURCE = 'contract C4 { function r4(L1.S1 arg) public {} }'
     const LIBRARY_SOURCE = 'library L1 { struct S1 { uint256 x; } }'
 
     const remappings = ['remappedPath1=path1', 'remappedPath2=path2']
@@ -17,6 +18,7 @@ describe('flatten', () => {
         path: 'Root.sol',
         content: `
                 import { C2 } from "remappedPath2";
+                import { C4 } from "path4";
                 import "remappedPath1";
 
                 ${ROOT_CONTRACT_SOURCE}
@@ -47,7 +49,14 @@ describe('flatten', () => {
       },
       {
         path: 'path4',
-        content: `contract C4 { function r4() public {} }`,
+        content: `
+        ${CONTRACT4_SOURCE}
+        ${LIBRARY_SOURCE}
+        `,
+      },
+      {
+        path: 'path5',
+        content: `contract C5 { function r5() public {} }`,
       },
     ]
 
@@ -55,7 +64,7 @@ describe('flatten', () => {
     const flattened = flattenStartingFrom('R1', manager)
 
     expect(flattened).toEqual(
-      `${ROOT_CONTRACT_SOURCE}\n\n${CONTRACT3_SOURCE}\n\n${CONTRACT2_SOURCE}\n\n${LIBRARY_SOURCE}\n\n`,
+      `${LIBRARY_SOURCE}\n\n${CONTRACT4_SOURCE}\n\n${CONTRACT2_SOURCE}\n\n${CONTRACT3_SOURCE}\n\n${ROOT_CONTRACT_SOURCE}\n\n`,
     )
   })
 })
