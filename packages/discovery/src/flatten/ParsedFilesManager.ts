@@ -108,10 +108,10 @@ export class ParsedFilesManager {
     }
 
     for (const file of result.files) {
-      assert(
+      const areTopLevelPresent =
         file.ast.children.filter((n) => n.type === 'FunctionDefinition')
-          .length === 0,
-      )
+          .length !== 0
+      assert(!areTopLevelPresent, 'Function definitions are not supported')
     }
 
     return result
@@ -123,7 +123,7 @@ export class ParsedFilesManager {
     )
 
     return contractDeclarations.map((c) => {
-      assert(c.range !== undefined)
+      assert(c.range !== undefined, 'Invalid contract definition')
       const declaration = c as ContractDefinition
 
       return {
@@ -150,7 +150,7 @@ export class ParsedFilesManager {
     const resolvedAsLibraries = []
     for (const identifier of identifiers) {
       const result = this.tryFindContract(identifier, file)
-      if (result !== undefined && result.contract.type === 'library') {
+      if (result !== undefined) {
         resolvedAsLibraries.push(identifier)
       }
     }
@@ -168,7 +168,10 @@ export class ParsedFilesManager {
     )
 
     return importDirectives.flatMap((i) => {
-      assert(i.type === 'ImportDirective' && i.range !== undefined)
+      assert(
+        i.type === 'ImportDirective' && i.range !== undefined,
+        'Invalid import directive',
+      )
 
       const remappedPath = resolveRemappings(i.path, remappings)
       const importedFile = this.resolveImportPath(file, remappedPath)
@@ -211,7 +214,7 @@ export class ParsedFilesManager {
         return result.concat(recursiveResult)
       }
 
-      assert(i.symbolAliases !== null)
+      assert(i.symbolAliases !== null, 'Invalid import directive')
       for (const alias of i.symbolAliases) {
         const object = {
           absolutePath: importedFile.path,
