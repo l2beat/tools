@@ -24,7 +24,7 @@ describe(ParsedFilesManager.name, () => {
         {
           name: 'Library1',
           type: 'library',
-          librariesUsed: [],
+          referencedContracts: [],
           inheritsFrom: [],
         },
       )
@@ -33,7 +33,7 @@ describe(ParsedFilesManager.name, () => {
       ).toHaveSubset({
         name: 'Interface1',
         type: 'interface',
-        librariesUsed: [],
+        referencedContracts: [],
         inheritsFrom: [],
       })
       expect(
@@ -41,7 +41,7 @@ describe(ParsedFilesManager.name, () => {
       ).toHaveSubset({
         name: 'Abstract1',
         type: 'abstract',
-        librariesUsed: [],
+        referencedContracts: [],
         inheritsFrom: [],
       })
       expect(
@@ -49,7 +49,7 @@ describe(ParsedFilesManager.name, () => {
       ).toHaveSubset({
         name: 'Contract1',
         type: 'contract',
-        librariesUsed: [],
+        referencedContracts: [],
         inheritsFrom: [],
       })
     })
@@ -84,7 +84,7 @@ describe(ParsedFilesManager.name, () => {
         contract: expect.subset({
           name: 'Contract1',
           type: 'contract',
-          librariesUsed: [],
+          referencedContracts: [],
           inheritsFrom: [],
         }),
         file: expect.subset({
@@ -236,7 +236,9 @@ describe(ParsedFilesManager.name, () => {
       const manager = ParsedFilesManager.parseFiles(files, EMPTY_REMAPPINGS)
       const root = manager.findContractDeclaration('R1')
 
-      expect(root.contract.librariesUsed.sort()).toEqual(['L1', 'L2'].sort())
+      expect(root.contract.referencedContracts.sort()).toEqual(
+        ['L1', 'L2'].sort(),
+      )
     })
   })
 })

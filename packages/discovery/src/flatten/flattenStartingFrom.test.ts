@@ -25,7 +25,7 @@ describe(flattenStartingFrom.name, () => {
       end: LIBRARY_SOURCE.length - 1,
     },
     inheritsFrom: [],
-    librariesUsed: [],
+    referencedContracts: [],
   }
 
   const BASE_CONTRACT: ContractDeclaration = {
@@ -37,7 +37,7 @@ describe(flattenStartingFrom.name, () => {
       end: LIBRARY_SOURCE.length + BASE_SOURCE.length - 1,
     },
     inheritsFrom: [],
-    librariesUsed: [LIBRARY_CONTRACT.name],
+    referencedContracts: [LIBRARY_CONTRACT.name],
   }
 
   const ROOT_CONTRACT: ContractDeclaration = {
@@ -49,7 +49,7 @@ describe(flattenStartingFrom.name, () => {
       end: LIBRARY_SOURCE.length + BASE_SOURCE.length + ROOT_SOURCE.length - 1,
     },
     inheritsFrom: [BASE_CONTRACT.name],
-    librariesUsed: [LIBRARY_CONTRACT.name],
+    referencedContracts: [LIBRARY_CONTRACT.name],
   }
 
   const ROOT_PARSED_FILE: Omit<ParsedFile, 'ast'> = {

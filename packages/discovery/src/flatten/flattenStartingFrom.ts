@@ -65,7 +65,7 @@ function getUniqueContractId(entry: ContractFilePair): string {
 
 function getStackEntries(pair: ContractFilePair): ContractNameFilePair[] {
   const contractNames = pair.contract.inheritsFrom.concat(
-    pair.contract.librariesUsed,
+    pair.contract.referencedContracts,
   )
   return contractNames.map((contractName) => ({
     contractName,

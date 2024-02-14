@@ -23,7 +23,7 @@ export interface ContractDeclaration {
   byteRange: ByteRange
 
   inheritsFrom: string[]
-  librariesUsed: string[]
+  referencedContracts: string[]
 }
 
 // If import is:
@@ -100,10 +100,13 @@ export class ParsedFilesManager {
       )
     }
 
-    // Pass 3: Resolve all libraries used
+    // Pass 3: Resolve all references to other contracts
     for (const file of result.files) {
       for (const contract of file.contractDeclarations) {
-        contract.librariesUsed = result.resolveLibrariesUsed(file, contract.ast)
+        contract.referencedContracts = result.resolveReferencedContracts(
+          file,
+          contract.ast,
+        )
       }
     }
 
@@ -133,7 +136,7 @@ export class ParsedFilesManager {
         inheritsFrom: declaration.baseContracts.map(
           (bc) => bc.baseName.namePath,
         ),
-        librariesUsed: [],
+        referencedContracts: [],
         byteRange: {
           start: c.range[0],
           end: c.range[1],
@@ -142,20 +145,23 @@ export class ParsedFilesManager {
     })
   }
 
-  resolveLibrariesUsed(file: ParsedFile, c: ContractDefinition): string[] {
+  resolveReferencedContracts(
+    file: ParsedFile,
+    c: ContractDefinition,
+  ): string[] {
     const identifiers = new Set(
       c.subNodes.flatMap((n) => getASTIdentifiers(n)).map(extractNamespace),
     )
 
-    const resolvedAsLibraries = []
+    const referenced = []
     for (const identifier of identifiers) {
       const result = this.tryFindContract(identifier, file)
-      if (result !== undefined) {
-        resolvedAsLibraries.push(identifier)
+      if (result !== undefined && result.contract.type === 'library') {
+        referenced.push(identifier)
       }
     }
 
-    return resolvedAsLibraries
+    return referenced
   }
 
   resolveFileImports(
