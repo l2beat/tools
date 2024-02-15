@@ -22,6 +22,26 @@ export async function saveDiscoveryResult(
     discoveryFilename?: string
   },
 ): Promise<void> {
+  const root =
+    options.rootFolder ?? path.join('discovery', config.name, config.chain)
+  await mkdirp(root)
+
+  await saveDiscoveredJson(root, results, config, blockNumber, options)
+  await saveSources(root, results, options)
+  await saveFlatSources(root, results, options)
+}
+
+async function saveDiscoveredJson(
+  rootPath: string,
+  results: Analysis[],
+  config: DiscoveryConfig,
+  blockNumber: number,
+  options: {
+    rootFolder?: string
+    sourcesFolder?: string
+    discoveryFilename?: string
+  },
+): Promise<void> {
   const project = toDiscoveryOutput(
     config.name,
     config.chain,
@@ -30,23 +50,26 @@ export async function saveDiscoveryResult(
     results,
   )
   const json = await toPrettyJson(project)
-
-  const root =
-    options.rootFolder ?? path.join('discovery', config.name, config.chain)
-  await mkdirp(root)
-
   const discoveryFilename = options.discoveryFilename ?? 'discovered.json'
-  await writeFile(path.join(root, discoveryFilename), json)
+  await writeFile(path.join(rootPath, discoveryFilename), json)
+}
 
+async function saveSources(
+  rootPath: string,
+  results: Analysis[],
+  options: {
+    rootFolder?: string
+    sourcesFolder?: string
+    discoveryFilename?: string
+  },
+): Promise<void> {
   const sourcesFolder = options.sourcesFolder ?? '.code'
-  const flatSourcesFolder = `${sourcesFolder}-flat`
-  const sourcesPath = path.join(root, sourcesFolder)
-  const flatSourcesPath = path.join(root, flatSourcesFolder)
+  const sourcesPath = path.join(rootPath, sourcesFolder)
   const allContractNames = results.map((c) =>
     c.type !== 'EOA' ? c.name : 'EOA',
   )
+
   await rimraf(sourcesPath)
-  await rimraf(flatSourcesPath)
   for (const contract of results) {
     if (contract.type === 'EOA') {
       continue
@@ -69,6 +92,21 @@ export async function saveDiscoveryResult(
       }
     }
   }
+}
+
+async function saveFlatSources(
+  rootPath: string,
+  results: Analysis[],
+  options: {
+    rootFolder?: string
+    sourcesFolder?: string
+    discoveryFilename?: string
+  },
+): Promise<void> {
+  const sourcesFolder = options.sourcesFolder ?? '.code'
+  const flatSourcesFolder = `${sourcesFolder}-flat`
+  const flatSourcesPath = path.join(rootPath, flatSourcesFolder)
+  await rimraf(flatSourcesPath)
 
   for (const contract of results) {
     try {
@@ -77,8 +115,8 @@ export async function saveDiscoveryResult(
       }
 
       for (const [i, files] of contract.sources.entries()) {
-        // SKip the proxy
-        if (contract.sources.length > 1 && i === 0) {
+        const isProxy = contract.sources.length > 1 && i === 0
+        if (isProxy) {
           continue
         }
 
