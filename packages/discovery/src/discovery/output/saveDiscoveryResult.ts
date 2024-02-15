@@ -4,14 +4,18 @@ import path, { dirname, posix } from 'path'
 import { rimraf } from 'rimraf'
 
 import { flattenStartingFrom } from '../../flatten/flattenStartingFrom'
-import { ParsedFilesManager } from '../../flatten/ParsedFilesManager'
+import {
+  FileContent,
+  ParsedFilesManager,
+} from '../../flatten/ParsedFilesManager'
 import { EthereumAddress } from '../../utils/EthereumAddress'
+import { formatSI, getThroughput, timed } from '../../utils/timing'
 import { Analysis } from '../analysis/AddressAnalyzer'
 import { DiscoveryConfig } from '../config/DiscoveryConfig'
+import { DiscoveryLogger } from '../DiscoveryLogger'
 import { removeSharedNesting } from '../source/removeSharedNesting'
 import { toDiscoveryOutput } from './toDiscoveryOutput'
 import { toPrettyJson } from './toPrettyJson'
-import { DiscoveryLogger } from '../DiscoveryLogger'
 
 export async function saveDiscoveryResult(
   results: Analysis[],
@@ -124,27 +128,32 @@ async function saveFlatSources(
           continue
         }
 
-        const input = Object.entries(files)
+        const input: FileContent[] = Object.entries(files)
           .map(([fileName, content]) => ({
             path: fileName,
             content,
           }))
           .filter((e) => e.path.endsWith('.sol'))
 
-        const parsedFileManager = ParsedFilesManager.parseFiles(
-          input,
-          contract.remappings,
-        )
-        const output = flattenStartingFrom(
-          contract.derivedName ?? contract.name,
-          parsedFileManager,
-        )
+        const result = timed(() => {
+          const parsedFileManager = ParsedFilesManager.parseFiles(
+            input,
+            contract.remappings,
+          )
+          const output = flattenStartingFrom(
+            contract.derivedName ?? contract.name,
+            parsedFileManager,
+          )
 
+          return output
+        })
+
+        const throughput = formatThroughput(input, result.executionTime)
         const path = posix.join(flatSourcesPath, `${contract.name}.sol`)
         await mkdirp(dirname(path))
-        await writeFile(path, output)
+        await writeFile(path, result.value)
 
-        logger.log(`[ OK ]: ${contract.name}`)
+        logger.log(`[ OK ]: ${contract.name} @ ${throughput}/s`)
       }
     } catch (e) {
       console.log(
@@ -156,6 +165,22 @@ async function saveFlatSources(
       )
     }
   }
+}
+
+function formatThroughput(
+  input: FileContent[],
+  executionTimeMilliseconds: number,
+): string {
+  const sourceLineCount = input.reduce(
+    (acc, { content }) => acc + content.split('\n').length,
+    0,
+  )
+  const throughput = formatSI(
+    getThroughput(sourceLineCount, executionTimeMilliseconds),
+    'lines',
+  )
+
+  return throughput
 }
 
 function stringifyError(e: unknown): string {

@@ -54,9 +54,15 @@ export async function singleDiscoveryCommand(
   const rootFolder = `./cache/single-discovery`
   await rimraf(rootFolder)
 
-  await saveDiscoveryResult(results, projectConfig, blockNumber, DiscoveryLogger.CLI, {
-    rootFolder,
-  })
+  await saveDiscoveryResult(
+    results,
+    projectConfig,
+    blockNumber,
+    DiscoveryLogger.CLI,
+    {
+      rootFolder,
+    },
+  )
 
   logger.info(
     'Opening discovered.json in the browser, please use firefox or other browser with JSON viewer extension',
