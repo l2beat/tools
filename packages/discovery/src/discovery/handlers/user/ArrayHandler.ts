@@ -20,6 +20,7 @@ export const ArrayHandlerDefinition = z.strictObject({
   maxLength: z.optional(z.number().int().nonnegative()),
   startIndex: z.optional(z.number().int().nonnegative()),
   ignoreRelative: z.optional(z.boolean()),
+  returnTupleIndices: z.optional(z.array(z.number())),
 })
 
 const DEFAULT_MAX_LENGTH = 100
@@ -190,7 +191,8 @@ function isArrayFragment(fragment: utils.FunctionFragment): boolean {
     (fragment.stateMutability === 'view' ||
       fragment.stateMutability === 'pure') &&
     fragment.inputs.length === 1 &&
-    (fragment.inputs[0]?.type === 'uint256' ||
-      fragment.inputs[0]?.type === 'uint16')
+    ['uint16', 'uint32', 'uint64', 'uint256'].includes(
+      fragment.inputs[0]?.type ?? '',
+    )
   )
 }
