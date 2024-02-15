@@ -52,7 +52,7 @@ describe(flattenStartingFrom.name, () => {
     referencedContracts: [LIBRARY_CONTRACT.name],
   }
 
-  const ROOT_PARSED_FILE: Omit<ParsedFile, 'ast'> = {
+  const ROOT_PARSED_FILE: Omit<ParsedFile, 'rootASTNode'> = {
     path: 'path',
     content: ROOT_FILE_SOURCE,
     contractDeclarations: [ROOT_CONTRACT, LIBRARY_CONTRACT],

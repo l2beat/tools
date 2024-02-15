@@ -1,6 +1,7 @@
+import { assert } from '@l2beat/backend-tools'
 import { writeFile } from 'fs/promises'
 import { mkdirp } from 'mkdirp'
-import path, { dirname, posix } from 'path'
+import { dirname, posix } from 'path'
 import { rimraf } from 'rimraf'
 
 import { flattenStartingFrom } from '../../flatten/flattenStartingFrom'
@@ -14,6 +15,7 @@ import { Analysis } from '../analysis/AddressAnalyzer'
 import { DiscoveryConfig } from '../config/DiscoveryConfig'
 import { DiscoveryLogger } from '../DiscoveryLogger'
 import { removeSharedNesting } from '../source/removeSharedNesting'
+import { PerContractSource } from '../source/SourceCodeService'
 import { toDiscoveryOutput } from './toDiscoveryOutput'
 import { toPrettyJson } from './toPrettyJson'
 
@@ -29,7 +31,7 @@ export async function saveDiscoveryResult(
   },
 ): Promise<void> {
   const root =
-    options.rootFolder ?? path.join('discovery', config.name, config.chain)
+    options.rootFolder ?? posix.join('discovery', config.name, config.chain)
   await mkdirp(root)
 
   await saveDiscoveredJson(root, results, config, blockNumber, options)
@@ -57,7 +59,7 @@ async function saveDiscoveredJson(
   )
   const json = await toPrettyJson(project)
   const discoveryFilename = options.discoveryFilename ?? 'discovered.json'
-  await writeFile(path.join(rootPath, discoveryFilename), json)
+  await writeFile(posix.join(rootPath, discoveryFilename), json)
 }
 
 async function saveSources(
@@ -70,7 +72,7 @@ async function saveSources(
   },
 ): Promise<void> {
   const sourcesFolder = options.sourcesFolder ?? '.code'
-  const sourcesPath = path.join(rootPath, sourcesFolder)
+  const sourcesPath = posix.join(rootPath, sourcesFolder)
   const allContractNames = results.map((c) =>
     c.type !== 'EOA' ? c.name : 'EOA',
   )
@@ -111,7 +113,7 @@ async function saveFlatSources(
   },
 ): Promise<void> {
   const flatSourcesFolder = `.flat${options.sourcesFolder ?? ''}`
-  const flatSourcesPath = path.join(rootPath, flatSourcesFolder)
+  const flatSourcesPath = posix.join(rootPath, flatSourcesFolder)
   const allContractNames = results.map((c) =>
     c.type !== 'EOA' ? c.name : 'EOA',
   )
@@ -125,8 +127,7 @@ async function saveFlatSources(
         continue
       }
 
-      const hasProxy = contract.source.length > 1
-      for (const [i, source] of contract.source.entries()) {
+      for (const [sourceIndex, source] of contract.source.entries()) {
         const input: FileContent[] = Object.entries(source.files)
           .map(([fileName, content]) => ({
             path: fileName,
@@ -146,19 +147,17 @@ async function saveFlatSources(
 
         const throughput = formatThroughput(input, result.executionTime)
 
-        const hasNameClash =
-          allContractNames.filter((n) => n === source.name).length > 1
-        const isProxy = contract.source.length > 1 && i === 0
-        const implementationPostfix =
-          contract.implementations.length > 1 ? `.${i}` : ''
-        const proxyPostfix = isProxy ? '.p' : ''
-        const postfix = isProxy ? proxyPostfix : implementationPostfix
-        const uniquenessSuffix = hasNameClash
-          ? `-${source.address.toString()}`
-          : ''
+        const containingDirectory = getFlatContainingDirectoryName(
+          contract,
+          allContractNames,
+        )
 
-        const fileName = `${source.name}${uniquenessSuffix}${postfix}.sol`
-        const containingDirectory = hasProxy ? contract.name : ''
+        const fileName = getFlatSourceFileName(
+          contract,
+          sourceIndex,
+          source,
+          allContractNames,
+        )
 
         const path = posix.join(flatSourcesPath, containingDirectory, fileName)
         await mkdirp(dirname(path))
@@ -167,15 +166,49 @@ async function saveFlatSources(
         logger.log(`[ OK ]: ${source.name} @ ${throughput}/s`)
       }
     } catch (e) {
-      console.log(
-        `[FAIL]: ${
-          contract.type !== 'EOA'
-            ? contract.derivedName ?? contract.name
-            : 'EOA'
-        } - ${stringifyError(e)}`,
-      )
+      assert(contract.type !== 'EOA', 'This should never happen')
+      const contractName = contract.derivedName ?? contract.name
+
+      logger.log(`[FAIL]: ${contractName} - ${stringifyError(e)}`)
     }
   }
+}
+
+function getFlatContainingDirectoryName(
+  contract: Analysis,
+  allContractNames: string[],
+): string {
+  assert(contract.type !== 'EOA', 'Invalid execution path')
+
+  const hasNameClash =
+    allContractNames.filter((n) => n === contract.name).length > 1
+  const uniquenessSuffix = hasNameClash ? `-${contract.address.toString()}` : ''
+
+  const hasProxy = contract.source.length > 1
+  return hasProxy ? `${contract.name}${uniquenessSuffix}` : ''
+}
+
+function getFlatSourceFileName(
+  contract: Analysis,
+  sourceIndex: number,
+  source: PerContractSource,
+  allContractNames: string[],
+): string {
+  assert(contract.type !== 'EOA', 'Invalid execution path')
+
+  const hasProxy = contract.source.length > 1
+  const isProxy = hasProxy && sourceIndex === 0
+
+  const hasNameClash =
+    allContractNames.filter((n) => n === source.name).length > 1
+  const uniquenessSuffix =
+    hasNameClash && !hasProxy ? `-${source.address.toString()}` : ''
+  const hasManyImplementations = contract.implementations.length > 1
+
+  const implementationPostfix = hasManyImplementations ? `.${sourceIndex}` : ''
+  const proxyPostfix = isProxy ? '.p' : ''
+  const postfix = isProxy ? proxyPostfix : implementationPostfix
+  return `${source.name}${uniquenessSuffix}${postfix}.sol`
 }
 
 function formatThroughput(
@@ -221,7 +254,7 @@ export function getSourceOutputPath(
 
   const implementationFolder = getImplementationFolder(fileIndex, filesCount)
 
-  return path.join(
+  return posix.join(
     root,
     `${contractName}${uniquenessSuffix}`,
     implementationFolder,

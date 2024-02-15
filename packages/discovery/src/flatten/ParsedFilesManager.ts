@@ -51,7 +51,7 @@ export interface Remapping {
 }
 
 export interface ParsedFile extends FileContent {
-  ast: ParseResult
+  rootASTNode: ParseResult
 
   contractDeclarations: ContractDeclaration[]
   importDirectives: ImportDirective[]
@@ -75,7 +75,7 @@ export class ParsedFilesManager {
     result.files = files.map(({ path, content }) => ({
       path: resolveRemappings(path, remappings),
       content,
-      ast: parse(content, { range: true }),
+      rootASTNode: parse(content, { range: true }),
       contractDeclarations: [],
       importDirectives: [],
     }))
@@ -103,16 +103,17 @@ export class ParsedFilesManager {
     // Pass 3: Resolve all references to other contracts
     for (const file of result.files) {
       for (const contract of file.contractDeclarations) {
-        contract.referencedContracts = result.resolveReferencedContracts(
+        contract.referencedContracts = result.resolveReferencedLibraries(
           file,
           contract.ast,
         )
       }
     }
 
+    // Pass 4: Make sure that there are no top-level function definitions
     for (const file of result.files) {
       const areTopLevelPresent =
-        file.ast.children.filter((n) => n.type === 'FunctionDefinition')
+        file.rootASTNode.children.filter((n) => n.type === 'FunctionDefinition')
           .length !== 0
       assert(!areTopLevelPresent, 'Function definitions are not supported')
     }
@@ -121,7 +122,7 @@ export class ParsedFilesManager {
   }
 
   resolveContractDeclarations(file: ParsedFile): ContractDeclaration[] {
-    const contractDeclarations = file.ast.children.filter(
+    const contractDeclarations = file.rootASTNode.children.filter(
       (n) => n.type === 'ContractDefinition',
     )
 
@@ -145,31 +146,12 @@ export class ParsedFilesManager {
     })
   }
 
-  resolveReferencedContracts(
-    file: ParsedFile,
-    c: ContractDefinition,
-  ): string[] {
-    const identifiers = new Set(
-      c.subNodes.flatMap((n) => getASTIdentifiers(n)).map(extractNamespace),
-    )
-
-    const referenced = []
-    for (const identifier of identifiers) {
-      const result = this.tryFindContract(identifier, file)
-      if (result !== undefined && result.contract.type === 'library') {
-        referenced.push(identifier)
-      }
-    }
-
-    return referenced
-  }
-
   resolveFileImports(
     file: ParsedFile,
     remappings: Remapping[],
     alreadyImportedObjects: Map<string, string[]>,
   ): ImportDirective[] {
-    const importDirectives = file.ast.children.filter(
+    const importDirectives = file.rootASTNode.children.filter(
       (n) => n.type === 'ImportDirective',
     )
 
@@ -188,7 +170,9 @@ export class ParsedFilesManager {
         alreadyImported.length <= importedFile.contractDeclarations.length,
         'Already imported more than there are contracts in the file',
       )
-      if (alreadyImported.length === importedFile.contractDeclarations.length) {
+      const gotEverything =
+        alreadyImported.length === importedFile.contractDeclarations.length
+      if (gotEverything) {
         return []
       }
 
@@ -228,18 +212,35 @@ export class ParsedFilesManager {
           importedName: alias[1] ?? alias[0],
         }
 
-        if (alreadyImported.includes(object.originalName)) {
-          continue
+        if (!alreadyImported.includes(object.originalName)) {
+          alreadyImported.push(object.originalName)
+          result.push(object)
         }
-
-        alreadyImported.push(object.originalName)
-        result.push(object)
       }
 
       alreadyImportedObjects.set(importedFile.path, alreadyImported)
 
       return result
     })
+  }
+
+  resolveReferencedLibraries(
+    file: ParsedFile,
+    c: ContractDefinition,
+  ): string[] {
+    const identifiers = new Set(
+      c.subNodes.flatMap((n) => getASTIdentifiers(n)).map(extractNamespace),
+    )
+
+    const referenced = []
+    for (const identifier of identifiers) {
+      const result = this.tryFindContract(identifier, file)
+      if (result !== undefined && result.contract.type === 'library') {
+        referenced.push(identifier)
+      }
+    }
+
+    return referenced
   }
 
   tryFindContract(
@@ -321,6 +322,8 @@ export class ParsedFilesManager {
   }
 }
 
+// Takes a user defined type name such as `MyLibrary.MyStructInLibrary` and
+// returns only the namespace - the part before the dot.
 function extractNamespace(identifier: string): string {
   const dotIndex = identifier.indexOf('.')
   if (dotIndex === -1) {
