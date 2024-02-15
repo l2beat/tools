@@ -232,13 +232,11 @@ export class ParsedFilesManager {
           continue
         }
 
-        alreadyImportedObjects.set(importedFile.path, [
-          ...alreadyImported,
-          object.originalName,
-        ])
-
+        alreadyImported.push(object.originalName)
         result.push(object)
       }
+
+      alreadyImportedObjects.set(importedFile.path, alreadyImported)
 
       return result
     })
@@ -310,8 +308,14 @@ export class ParsedFilesManager {
       ? posix.join(posix.dirname(fromFile.path), importPath)
       : importPath
 
-    const matchingFile = findOne(this.files, (f) => f.path === resolvedPath)
-    assert(matchingFile !== undefined, 'File not found')
+    const matchingFile = findOne(
+      this.files,
+      (f) => posix.normalize(f.path) === posix.normalize(resolvedPath),
+    )
+    assert(
+      matchingFile !== undefined,
+      `File [${fromFile.path}][${resolvedPath}] not found`,
+    )
 
     return matchingFile
   }
@@ -343,7 +347,8 @@ function resolveRemappings(path: string, remappings: Remapping[]): string {
       a.prefix.length > b.prefix.length ? a : b,
     )
 
-    return posix.join(longest.target, path.slice(longest.prefix.length))
+    const result = posix.join(longest.target, path.slice(longest.prefix.length))
+    return result
   }
 
   return path

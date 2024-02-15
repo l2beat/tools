@@ -116,8 +116,8 @@ describe(ParsedFilesManager.name, () => {
         {
           path: 'ImportedAsAll.sol',
           content: `
-          contract A1 { function f1() public {} } 
-          contract A2 { function f2() public {} } 
+          contract A1 { function f1() public {} }
+          contract A2 { function f2() public {} }
           `,
         },
         {
@@ -132,6 +132,47 @@ describe(ParsedFilesManager.name, () => {
           content: `
           import "./ImportedAsAll.sol";
           import { S1 as Alias1 } from "./ImportedSelective.sol";
+          contract R1 { function r1() public {} }
+          `,
+        },
+      ]
+
+      const manager = ParsedFilesManager.parseFiles(files, EMPTY_REMAPPINGS)
+      const root = manager.findContractDeclaration('R1')
+
+      expect(
+        manager.tryFindContract('Alias1', root.file)?.contract.name,
+      ).toEqual('S1')
+      expect(manager.tryFindContract('S2', root.file)).toEqual(undefined)
+      expect(manager.tryFindContract('A1', root.file)?.contract.name).toEqual(
+        'A1',
+      )
+      expect(manager.tryFindContract('A2', root.file)?.contract.name).toEqual(
+        'A2',
+      )
+    })
+
+    it('normalizes imports', () => {
+      const files = [
+        {
+          path: 'src//ImportedAsAll.sol',
+          content: `
+          contract A1 { function f1() public {} }
+          contract A2 { function f2() public {} }
+          `,
+        },
+        {
+          path: 'src/ImportedSelective.sol',
+          content: `
+          contract S1 { function s1() public {} }
+          contract S2 { function s2() public {} }
+          `,
+        },
+        {
+          path: 'Importing.sol',
+          content: `
+          import "./src/////ImportedAsAll.sol";
+          import { S1 as Alias1 } from ".////src//ImportedSelective.sol";
           contract R1 { function r1() public {} }
           `,
         },
