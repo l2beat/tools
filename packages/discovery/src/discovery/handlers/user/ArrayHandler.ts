@@ -20,7 +20,6 @@ export const ArrayHandlerDefinition = z.strictObject({
   maxLength: z.optional(z.number().int().nonnegative()),
   startIndex: z.optional(z.number().int().nonnegative()),
   ignoreRelative: z.optional(z.boolean()),
-  returnTupleIndices: z.optional(z.array(z.number())),
 })
 
 const DEFAULT_MAX_LENGTH = 100
