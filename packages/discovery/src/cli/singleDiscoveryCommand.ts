@@ -54,7 +54,7 @@ export async function singleDiscoveryCommand(
   const rootFolder = `./cache/single-discovery`
   await rimraf(rootFolder)
 
-  await saveDiscoveryResult(results, projectConfig, blockNumber, {
+  await saveDiscoveryResult(results, projectConfig, blockNumber, DiscoveryLogger.CLI, {
     rootFolder,
   })
 

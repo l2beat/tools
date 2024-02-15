@@ -11,11 +11,13 @@ import { DiscoveryConfig } from '../config/DiscoveryConfig'
 import { removeSharedNesting } from '../source/removeSharedNesting'
 import { toDiscoveryOutput } from './toDiscoveryOutput'
 import { toPrettyJson } from './toPrettyJson'
+import { DiscoveryLogger } from '../DiscoveryLogger'
 
 export async function saveDiscoveryResult(
   results: Analysis[],
   config: DiscoveryConfig,
   blockNumber: number,
+  logger: DiscoveryLogger,
   options: {
     rootFolder?: string
     sourcesFolder?: string
@@ -28,7 +30,7 @@ export async function saveDiscoveryResult(
 
   await saveDiscoveredJson(root, results, config, blockNumber, options)
   await saveSources(root, results, options)
-  await saveFlatSources(root, results, options)
+  await saveFlatSources(root, results, logger, options)
 }
 
 async function saveDiscoveredJson(
@@ -97,6 +99,7 @@ async function saveSources(
 async function saveFlatSources(
   rootPath: string,
   results: Analysis[],
+  logger: DiscoveryLogger,
   options: {
     rootFolder?: string
     sourcesFolder?: string
@@ -108,6 +111,7 @@ async function saveFlatSources(
   const flatSourcesPath = path.join(rootPath, flatSourcesFolder)
   await rimraf(flatSourcesPath)
 
+  logger.log(`Saving flattened sources`)
   for (const contract of results) {
     try {
       if (contract.type === 'EOA') {
@@ -140,11 +144,11 @@ async function saveFlatSources(
         await mkdirp(dirname(path))
         await writeFile(path, output)
 
-        console.log(`Successfully flattened contract ${contract.name}`)
+        logger.log(`[ OK ]: ${contract.name}`)
       }
     } catch (e) {
       console.log(
-        `Error flattening contract ${
+        `[FAIL]: ${
           contract.type !== 'EOA'
             ? contract.derivedName ?? contract.name
             : 'EOA'

@@ -48,7 +48,7 @@ export async function runDiscovery(
     blockNumber,
     config.chain.rpcGetLogsMaxRange,
   )
-  await saveDiscoveryResult(result, projectConfig, blockNumber, {
+  await saveDiscoveryResult(result, projectConfig, blockNumber, logger, {
     sourcesFolder: config.sourcesFolder,
     discoveryFilename: config.discoveryFilename,
   })
