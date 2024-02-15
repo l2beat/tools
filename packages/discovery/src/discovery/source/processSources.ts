@@ -1,9 +1,5 @@
-import { assert } from '@l2beat/backend-tools'
-import path from 'path'
-
 import { EthereumAddress } from '../../utils/EthereumAddress'
 import { ContractMetadata } from '../provider/DiscoveryProvider'
-import { removeSharedNesting } from './removeSharedNesting'
 import { decodeEtherscanSource } from './sourceToEntries'
 
 export function processSources(
