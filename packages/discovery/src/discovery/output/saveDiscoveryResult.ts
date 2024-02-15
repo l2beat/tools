@@ -81,13 +81,13 @@ async function saveSources(
       continue
     }
 
-    for (const [i, files] of contract.sources.entries()) {
-      const simplified = removeSharedNesting(Object.entries(files))
+    for (const [i, source] of contract.source.entries()) {
+      const simplified = removeSharedNesting(Object.entries(source.files))
       for (const [fileName, content] of simplified) {
         const path = getSourceOutputPath(
           fileName,
           i,
-          contract.sources.length,
+          contract.source.length,
           contract.name,
           contract.address,
           sourcesPath,
@@ -110,9 +110,12 @@ async function saveFlatSources(
     discoveryFilename?: string
   },
 ): Promise<void> {
-  const sourcesFolder = options.sourcesFolder ?? '.code'
-  const flatSourcesFolder = `${sourcesFolder}-flat`
+  const flatSourcesFolder = `.flat${options.sourcesFolder ?? ''}`
   const flatSourcesPath = path.join(rootPath, flatSourcesFolder)
+  const allContractNames = results.map((c) =>
+    c.type !== 'EOA' ? c.name : 'EOA',
+  )
+
   await rimraf(flatSourcesPath)
 
   logger.log(`Saving flattened sources`)
@@ -122,13 +125,9 @@ async function saveFlatSources(
         continue
       }
 
-      for (const [i, files] of contract.sources.entries()) {
-        const isProxy = contract.sources.length > 1 && i === 0
-        if (isProxy) {
-          continue
-        }
-
-        const input: FileContent[] = Object.entries(files)
+      const hasProxy = contract.source.length > 1
+      for (const [i, source] of contract.source.entries()) {
+        const input: FileContent[] = Object.entries(source.files)
           .map(([fileName, content]) => ({
             path: fileName,
             content,
@@ -138,22 +137,34 @@ async function saveFlatSources(
         const result = timed(() => {
           const parsedFileManager = ParsedFilesManager.parseFiles(
             input,
-            contract.remappings,
+            source.remappings,
           )
-          const output = flattenStartingFrom(
-            contract.derivedName ?? contract.name,
-            parsedFileManager,
-          )
+          const output = flattenStartingFrom(source.name, parsedFileManager)
 
           return output
         })
 
         const throughput = formatThroughput(input, result.executionTime)
-        const path = posix.join(flatSourcesPath, `${contract.name}.sol`)
+
+        const hasNameClash =
+          allContractNames.filter((n) => n === source.name).length > 1
+        const isProxy = contract.source.length > 1 && i === 0
+        const implementationPostfix =
+          contract.implementations.length > 1 ? `.${i}` : ''
+        const proxyPostfix = isProxy ? '.p' : ''
+        const postfix = isProxy ? proxyPostfix : implementationPostfix
+        const uniquenessSuffix = hasNameClash
+          ? `-${source.address.toString()}`
+          : ''
+
+        const fileName = `${source.name}${uniquenessSuffix}${postfix}.sol`
+        const containingDirectory = hasProxy ? contract.name : ''
+
+        const path = posix.join(flatSourcesPath, containingDirectory, fileName)
         await mkdirp(dirname(path))
         await writeFile(path, result.value)
 
-        logger.log(`[ OK ]: ${contract.name} @ ${throughput}/s`)
+        logger.log(`[ OK ]: ${source.name} @ ${throughput}/s`)
       }
     } catch (e) {
       console.log(

@@ -13,7 +13,10 @@ import { DiscoveryLogger } from '../DiscoveryLogger'
 import { HandlerExecutor } from '../handlers/HandlerExecutor'
 import { DiscoveryProvider } from '../provider/DiscoveryProvider'
 import { ProxyDetector } from '../proxies/ProxyDetector'
-import { SourceCodeService } from '../source/SourceCodeService'
+import {
+  PerContractSource,
+  SourceCodeService,
+} from '../source/SourceCodeService'
 import { getRelatives } from './getRelatives'
 
 export type Analysis = AnalyzedContract | AnalyzedEOA
@@ -31,8 +34,7 @@ export interface AnalyzedContract {
   values: Record<string, ContractValue>
   errors: Record<string, string>
   abis: Record<string, string[]>
-  sources: Record<string, string>[]
-  remappings: string[]
+  source: PerContractSource[]
 }
 
 export interface AnalyzedEOA {
@@ -99,8 +101,7 @@ export class AddressAnalyzer {
         values: values ?? {},
         errors: errors ?? {},
         abis: sources.abis,
-        sources: sources.files,
-        remappings: sources.remappings,
+        source: sources.sources,
       },
       relatives: getRelatives(
         results,
