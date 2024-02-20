@@ -31,7 +31,7 @@ export interface ContractDeclaration {
 // import { foo as bar } from 'baz'
 //
 // Then:
-// path: 'baz'
+// absolutePath: 'baz'
 // originalName: 'foo'
 // importedName: 'bar'
 interface ImportDirective {
@@ -121,7 +121,7 @@ export class ParsedFilesManager {
     return result
   }
 
-  resolveContractDeclarations(file: ParsedFile): ContractDeclaration[] {
+  private resolveContractDeclarations(file: ParsedFile): ContractDeclaration[] {
     const contractDeclarations = file.rootASTNode.children.filter(
       (n) => n.type === 'ContractDefinition',
     )
@@ -146,7 +146,7 @@ export class ParsedFilesManager {
     })
   }
 
-  resolveFileImports(
+  private resolveFileImports(
     file: ParsedFile,
     remappings: Remapping[],
     alreadyImportedObjects: Map<string, string[]>,
@@ -224,7 +224,7 @@ export class ParsedFilesManager {
     })
   }
 
-  resolveReferencedLibraries(
+  private resolveReferencedLibraries(
     file: ParsedFile,
     c: ContractDefinition,
   ): string[] {
@@ -304,7 +304,10 @@ export class ParsedFilesManager {
     }
   }
 
-  resolveImportPath(fromFile: ParsedFile, importPath: string): ParsedFile {
+  private resolveImportPath(
+    fromFile: ParsedFile,
+    importPath: string,
+  ): ParsedFile {
     const resolvedPath = importPath.startsWith('.')
       ? posix.join(posix.dirname(fromFile.path), importPath)
       : importPath

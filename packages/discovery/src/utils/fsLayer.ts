@@ -21,11 +21,11 @@ export function fileExistsCaseSensitive(path: string): boolean {
 }
 
 export async function listFilesRecursively(path: string): Promise<string[]> {
-  const dirents = await readdir(path, { withFileTypes: true })
+  const entries = await readdir(path, { withFileTypes: true })
   const files = await Promise.all(
-    dirents.map((dirent) => {
-      const res = resolve(path, dirent.name)
-      return dirent.isDirectory() ? listFilesRecursively(res) : res
+    entries.map((entry) => {
+      const resolved = resolve(path, entry.name)
+      return entry.isDirectory() ? listFilesRecursively(resolved) : resolved
     }),
   )
 
