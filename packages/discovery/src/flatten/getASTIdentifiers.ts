@@ -44,9 +44,7 @@ export function getASTIdentifiers(baseNode: AST.BaseASTNode | null): string[] {
       return parseExpression(node.expression)
     }
     case 'VariableDeclarationStatement': {
-      const variables = node.variables.flatMap((v) =>
-        getASTIdentifiers(v),
-      )
+      const variables = node.variables.flatMap((v) => getASTIdentifiers(v))
       const initialValue = parseExpression(node.initialValue)
 
       return variables.concat(initialValue)
@@ -59,9 +57,7 @@ export function getASTIdentifiers(baseNode: AST.BaseASTNode | null): string[] {
     }
     case 'ForStatement': {
       const init = getASTIdentifiers(node.initExpression)
-      const condition = parseExpression(
-        node.conditionExpression ?? null,
-      )
+      const condition = parseExpression(node.conditionExpression ?? null)
       const loopExpression = getASTIdentifiers(node.loopExpression)
       const body = getASTIdentifiers(node.body)
       return init.concat(condition).concat(loopExpression).concat(body)
@@ -78,8 +74,8 @@ export function getASTIdentifiers(baseNode: AST.BaseASTNode | null): string[] {
     }
     case 'TryStatement': {
       const expression = parseExpression(node.expression)
-      const returnParameters = (node.returnParameters ?? []).flatMap(
-        (p) => getASTIdentifiers(p),
+      const returnParameters = (node.returnParameters ?? []).flatMap((p) =>
+        getASTIdentifiers(p),
       )
       const body = getASTIdentifiers(node.body)
       const catchClauses = node.catchClauses.flatMap((c) =>
@@ -101,14 +97,10 @@ export function getASTIdentifiers(baseNode: AST.BaseASTNode | null): string[] {
       return getASTIdentifiers(node.block)
     }
     case 'CustomErrorDefinition': {
-      return node.parameters.flatMap((p) =>
-        getASTIdentifiers(p),
-      )
+      return node.parameters.flatMap((p) => getASTIdentifiers(p))
     }
     case 'EventDefinition': {
-      return node.parameters.flatMap((p) =>
-        getASTIdentifiers(p),
-      )
+      return node.parameters.flatMap((p) => getASTIdentifiers(p))
     }
     case 'FunctionDefinition': {
       const params = node.parameters.flatMap((p) => getASTIdentifiers(p))
@@ -134,9 +126,7 @@ export function getASTIdentifiers(baseNode: AST.BaseASTNode | null): string[] {
       return expr.concat(varTypes)
     }
     case 'StructDefinition': {
-      return node.members.flatMap((m) =>
-        getASTIdentifiers(m),
-      )
+      return node.members.flatMap((m) => getASTIdentifiers(m))
     }
     case 'TypeDefinition': {
       return parseTypeName(node.definition)
@@ -163,9 +153,7 @@ export function getASTIdentifiers(baseNode: AST.BaseASTNode | null): string[] {
       return [name].concat(baseContracts).concat(subNodes)
     }
     case 'NameValueList': {
-      const identifiers = node.identifiers.flatMap((i) =>
-        getASTIdentifiers(i),
-      )
+      const identifiers = node.identifiers.flatMap((i) => getASTIdentifiers(i))
       const args = node.arguments.flatMap((a) => parseExpression(a))
       return identifiers.concat(args)
     }

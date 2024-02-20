@@ -64,13 +64,13 @@ describe('flatten', () => {
     const flattened = flattenStartingFrom('R1', manager)
 
     expect(flattened).toEqual(
-        [
-            LIBRARY_SOURCE,
-            CONTRACT4_SOURCE,
-            CONTRACT2_SOURCE,
-            CONTRACT3_SOURCE,
-            ROOT_CONTRACT_SOURCE
-        ].join('\n\n')
+      [
+        LIBRARY_SOURCE,
+        CONTRACT4_SOURCE,
+        CONTRACT2_SOURCE,
+        CONTRACT3_SOURCE,
+        ROOT_CONTRACT_SOURCE,
+      ].join('\n\n'),
     )
   })
 })
