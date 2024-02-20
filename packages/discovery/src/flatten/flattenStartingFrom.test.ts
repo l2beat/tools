@@ -92,7 +92,11 @@ describe(flattenStartingFrom.name, () => {
     const result = flattenStartingFrom(rootContractName, parsedFileManager)
 
     expect(result).toEqual(
-      `${LIBRARY_SOURCE}\n\n${BASE_SOURCE}\n\n${ROOT_SOURCE}\n\n`,
+        [
+            LIBRARY_SOURCE,
+            BASE_SOURCE,
+            ROOT_SOURCE,
+        ].join('\n\n'),
     )
   })
 

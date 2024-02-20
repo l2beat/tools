@@ -49,7 +49,7 @@ export function flattenStartingFrom(
     stack.push(...getStackEntries(foundContract))
   }
 
-  return flatSource
+  return flatSource.trimEnd()
 }
 
 function formatSource(source: string, byteRange: ByteRange): string {
