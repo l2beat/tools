@@ -163,7 +163,7 @@ async function saveFlatSources(
         await mkdirp(dirname(path))
         await writeFile(path, result.value)
 
-        logger.log(`[ OK ]: ${source.name} @ ${throughput}/s`)
+        logger.log(`[ OK ]: ${source.name} @ ${throughput}`)
       }
     } catch (e) {
       assert(contract.type !== 'EOA', 'This should never happen')
@@ -221,7 +221,7 @@ function formatThroughput(
   )
   const throughput = formatSI(
     getThroughput(sourceLineCount, executionTimeMilliseconds),
-    'lines',
+    'lines/s',
   )
 
   return throughput
