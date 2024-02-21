@@ -34,29 +34,18 @@ const CONTRACT_B: AnalyzedContract = {
   ...base,
   address: ADDRESS_B,
   name: 'B',
-  values: {
-    foo: 'foo',
-    bar: 'bar',
-  },
+  values: { foo: 'foo', bar: 'bar' },
 }
 
 describe(toMetaOutput.name, () => {
   it('returns a meta for a single contract with values and using old meta', () => {
     const result = toMetaOutput([CONTRACT_B], {
-      metas: [
+      contracts: [
         {
           name: 'B',
           values: {
-            foo: {
-              description: 'foo',
-              severity: 'foo',
-              type: 'foo',
-            },
-            baz: {
-              description: 'baz',
-              severity: 'baz',
-              type: 'baz',
-            },
+            foo: { description: 'foo', severity: 'LOW', type: 'L2' },
+            baz: { description: 'baz', severity: 'HIGH', type: 'PERMISSION' },
           },
         },
       ],
@@ -64,20 +53,12 @@ describe(toMetaOutput.name, () => {
 
     expect(result).toEqual({
       $schema: '../../meta.schema.json',
-      metas: [
+      contracts: [
         {
           name: 'B',
           values: {
-            foo: {
-              description: 'foo',
-              severity: 'foo',
-              type: 'foo',
-            },
-            bar: {
-              description: 'UNKNOWN',
-              severity: 'UNKNOWN',
-              type: 'UNKNOWN',
-            },
+            foo: { description: 'foo', severity: 'LOW', type: 'L2' },
+            bar: { description: null, severity: null, type: null },
           },
         },
       ],
@@ -88,20 +69,12 @@ describe(toMetaOutput.name, () => {
     const result = toMetaOutput([CONTRACT_B], undefined)
     expect(result).toEqual({
       $schema: '../../meta.schema.json',
-      metas: [
+      contracts: [
         {
           name: 'B',
           values: {
-            foo: {
-              description: 'UNKNOWN',
-              severity: 'UNKNOWN',
-              type: 'UNKNOWN',
-            },
-            bar: {
-              description: 'UNKNOWN',
-              severity: 'UNKNOWN',
-              type: 'UNKNOWN',
-            },
+            foo: { description: null, severity: null, type: null },
+            bar: { description: null, severity: null, type: null },
           },
         },
       ],
@@ -112,12 +85,7 @@ describe(toMetaOutput.name, () => {
     const result = toMetaOutput([CONTRACT_A], undefined)
     expect(result).toEqual({
       $schema: '../../meta.schema.json',
-      metas: [
-        {
-          name: 'A',
-          values: {},
-        },
-      ],
+      contracts: [{ name: 'A', values: {} }],
     })
   })
 
@@ -125,7 +93,7 @@ describe(toMetaOutput.name, () => {
     const result = toMetaOutput([], undefined)
     expect(result).toEqual({
       $schema: '../../meta.schema.json',
-      metas: [],
+      contracts: [],
     })
   })
 })

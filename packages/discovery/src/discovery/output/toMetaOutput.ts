@@ -1,52 +1,45 @@
 import { assert } from '@l2beat/backend-tools'
 import { ContractValue } from '@l2beat/discovery-types'
 
-import { Analysis } from '../analysis/AddressAnalyzer'
-import {
-  ContractMeta,
-  DiscoveryMeta,
-  ReviewMeta,
-} from '../config/DiscoveryMeta'
+import { Analysis, AnalyzedContract } from '../analysis/AddressAnalyzer'
+import { ContractMeta, DiscoveryMeta, ValueMeta } from '../config/DiscoveryMeta'
 
 export function toMetaOutput(
   results: Analysis[],
   oldMeta: DiscoveryMeta | undefined,
 ): DiscoveryMeta {
-  const contracts = results.filter((r) => r.type === 'Contract')
+  const contracts = results.filter(
+    (r): r is AnalyzedContract => r.type === 'Contract',
+  )
 
   return {
     ['$schema']: getSchemaPath(oldMeta),
-    metas: contracts.map((c) =>
+    contracts: contracts.map((c) =>
       toContractMeta(c, getOldContractMeta(c, oldMeta)),
     ),
   }
 }
 
 function toContractMeta(
-  contract: Analysis,
+  contract: AnalyzedContract,
   oldContractMeta: ContractMeta,
 ): ContractMeta {
-  assert(
-    contract.type === 'Contract',
-    `Expected a contract, got an ${contract.type}`,
-  )
-
   return {
     name: contract.name,
-    values: toReviewMeta(contract.values, oldContractMeta),
+    values: toValueMeta(contract.values, oldContractMeta),
   }
 }
 
-function toReviewMeta(
+function toValueMeta(
   value: Record<string, ContractValue>,
   oldContractMeta: ContractMeta,
-): Record<string, ReviewMeta> {
+): Record<string, ValueMeta> {
   const keys = Object.keys(value)
 
   const DEFAULT_REVIEW = {
-    description: 'UNKNOWN',
-    severity: 'UNKNOWN',
-    type: 'UNKNOWN',
+    description: null,
+    severity: null,
+    type: null,
   }
 
   return Object.fromEntries(
@@ -72,6 +65,6 @@ function getOldContractMeta(
     return DEFAULT_CONTRACT_META
   }
 
-  const oldContract = oldMeta.metas.find((m) => m.name === contract.name)
+  const oldContract = oldMeta.contracts.find((m) => m.name === contract.name)
   return oldContract ?? DEFAULT_CONTRACT_META
 }

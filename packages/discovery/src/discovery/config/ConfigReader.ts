@@ -33,10 +33,7 @@ export class ConfigReader {
       throw new Error('Cannot parse file')
     }
     const rawConfig = RawDiscoveryConfig.parse(parsed)
-    const config = new DiscoveryConfig(
-      rawConfig,
-      await this.readMeta(name, chain),
-    )
+    const config = new DiscoveryConfig(rawConfig)
 
     assert(config.chain === chain, 'Chain mismatch in config.jsonc')
 

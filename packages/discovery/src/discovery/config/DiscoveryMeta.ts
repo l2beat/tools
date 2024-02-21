@@ -1,21 +1,29 @@
 import { z } from 'zod'
 
-export type ReviewMeta = z.infer<typeof ReviewMeta>
-export const ReviewMeta = z.object({
-  description: z.string().default('UNKNOWN'),
-  severity: z.string().default('UNKNOWN'),
-  type: z.string().default('UNKNOWN'),
+export const ValueType = z.enum([
+  'STRUCTURE',
+  'L2',
+  'EXTERNAL',
+  'RISK_PARAMETER',
+  'PERMISSION',
+])
+
+export type ValueMeta = z.infer<typeof ValueMeta>
+export const ValueMeta = z.object({
+  description: z.string().nullable(),
+  severity: z.enum(['HIGH', 'MEDIUM', 'LOW']).nullable(),
+  type: z.union([ValueType, z.array(ValueType)]).nullable(),
 })
 
 export type ContractMeta = z.infer<typeof ContractMeta>
 export const ContractMeta = z.object({
   name: z.string(),
   description: z.string().optional(),
-  values: z.record(z.string(), ReviewMeta),
+  values: z.record(z.string(), ValueMeta),
 })
 
 export type DiscoveryMeta = z.infer<typeof DiscoveryMeta>
 export const DiscoveryMeta = z.object({
   ['$schema']: z.string().optional(),
-  metas: z.array(ContractMeta),
+  contracts: z.array(ContractMeta),
 })
