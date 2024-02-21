@@ -1,7 +1,6 @@
 import { EthereumAddress } from '../../utils/EthereumAddress'
 import { Hash256 } from '../../utils/Hash256'
 import { hashJson } from '../../utils/HashJson'
-import { DiscoveryMeta } from './DiscoveryMeta'
 import { DiscoveryOverrides } from './DiscoveryOverrides'
 import { getDiscoveryConfigEntries } from './getDiscoveryConfigEntries'
 import { RawDiscoveryConfig } from './RawDiscoveryConfig'
@@ -11,10 +10,7 @@ import { RawDiscoveryConfig } from './RawDiscoveryConfig'
 export class DiscoveryConfig {
   readonly overrides: DiscoveryOverrides
 
-  constructor(
-    private readonly config: RawDiscoveryConfig,
-    private readonly rawMeta?: DiscoveryMeta,
-  ) {
+  constructor(private readonly config: RawDiscoveryConfig) {
     this.overrides = new DiscoveryOverrides(config)
   }
 
@@ -50,14 +46,6 @@ export class DiscoveryConfig {
     return this.config.sharedModules
       ? Object.values(this.config.sharedModules)
       : []
-  }
-
-  get meta(): DiscoveryMeta {
-    return (
-      this.rawMeta ?? {
-        metas: [],
-      }
-    )
   }
 
   get hash(): Hash256 {

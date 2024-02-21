@@ -13,6 +13,7 @@ import { EthereumAddress } from '../../utils/EthereumAddress'
 import { formatSI, getThroughput, timed } from '../../utils/timing'
 import { Analysis } from '../analysis/AddressAnalyzer'
 import { DiscoveryConfig } from '../config/DiscoveryConfig'
+import { DiscoveryMeta } from '../config/DiscoveryMeta'
 import { DiscoveryLogger } from '../DiscoveryLogger'
 import { removeSharedNesting } from '../source/removeSharedNesting'
 import { PerContractSource } from '../source/SourceCodeService'
@@ -30,6 +31,7 @@ export interface SaveDiscoveryResultOptions {
 export async function saveDiscoveryResult(
   results: Analysis[],
   config: DiscoveryConfig,
+  meta: DiscoveryMeta | undefined,
   blockNumber: number,
   logger: DiscoveryLogger,
   options: SaveDiscoveryResultOptions,
@@ -39,7 +41,7 @@ export async function saveDiscoveryResult(
   await mkdirp(root)
 
   await saveDiscoveredJson(root, results, config, blockNumber, options)
-  await saveMetaJson(root, results, config, options)
+  await saveMetaJson(root, results, meta, options)
   await saveSources(root, results, options)
   await saveFlatSources(root, results, logger, options)
 }
@@ -66,10 +68,10 @@ async function saveDiscoveredJson(
 async function saveMetaJson(
   rootPath: string,
   results: Analysis[],
-  config: DiscoveryConfig,
+  meta: DiscoveryMeta | undefined,
   options: SaveDiscoveryResultOptions,
 ): Promise<void> {
-  const project = toMetaOutput(results, config.meta)
+  const project = toMetaOutput(results, meta)
   const json = await toPrettyJson(project)
   const metaFilename = options.metaFilename ?? 'meta.json'
   await writeFile(posix.join(rootPath, metaFilename), json)
