@@ -77,4 +77,19 @@ describe(DiscoveryConfig.name, () => {
       expect(config.raw).toEqual(copiedConfig)
     })
   })
+
+  describe('meta', () => {
+    it('returns default meta if not provided', () => {
+      expect(CONFIG.meta).toEqual({ metas: [] })
+    })
+
+    it('returns meta if provided', () => {
+      const meta = {
+        metas: [{ name: 'a', values: {} }],
+      }
+      const config = new DiscoveryConfig(CONFIG.raw, meta)
+
+      expect(config.meta).toEqual(meta)
+    })
+  })
 })
