@@ -48,7 +48,7 @@ function toValueMeta(
 }
 
 function getSchemaPath(oldMeta: DiscoveryMeta | undefined): string {
-  return oldMeta?.$schema ?? '../../meta.schema.json'
+  return oldMeta?.$schema ?? 'https://raw.githubusercontent.com/l2beat/tools/main/schemas/meta.schema.json'
 }
 
 function getOldContractMeta(
