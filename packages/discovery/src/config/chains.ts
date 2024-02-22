@@ -72,4 +72,9 @@ export const chains: ChainConfig[] = [
       getContractCreation: true,
     },
   },
+  {
+    name: 'zksync2',
+    multicall: getMulticall3Config(3908235),
+    etherscanUrl: 'https://api-era.zksync.network/api',
+  },
 ]
