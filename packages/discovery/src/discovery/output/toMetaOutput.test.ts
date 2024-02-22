@@ -52,7 +52,8 @@ describe(toMetaOutput.name, () => {
     })
 
     expect(result).toEqual({
-      $schema: 'https://raw.githubusercontent.com/l2beat/tools/main/schemas/meta.schema.json',
+      $schema:
+        'https://raw.githubusercontent.com/l2beat/tools/main/schemas/meta.schema.json',
       contracts: [
         {
           name: 'B',
@@ -68,7 +69,8 @@ describe(toMetaOutput.name, () => {
   it('returns a meta for a single contract with values', () => {
     const result = toMetaOutput([CONTRACT_B], undefined)
     expect(result).toEqual({
-      $schema: 'https://raw.githubusercontent.com/l2beat/tools/main/schemas/meta.schema.json',
+      $schema:
+        'https://raw.githubusercontent.com/l2beat/tools/main/schemas/meta.schema.json',
       contracts: [
         {
           name: 'B',
@@ -84,7 +86,8 @@ describe(toMetaOutput.name, () => {
   it('returns a meta for a single contract without values', () => {
     const result = toMetaOutput([CONTRACT_A], undefined)
     expect(result).toEqual({
-      $schema: 'https://raw.githubusercontent.com/l2beat/tools/main/schemas/meta.schema.json',
+      $schema:
+        'https://raw.githubusercontent.com/l2beat/tools/main/schemas/meta.schema.json',
       contracts: [{ name: 'A', values: {} }],
     })
   })
@@ -92,7 +95,8 @@ describe(toMetaOutput.name, () => {
   it('returns an empty meta for empty analysis', () => {
     const result = toMetaOutput([], undefined)
     expect(result).toEqual({
-      $schema: 'https://raw.githubusercontent.com/l2beat/tools/main/schemas/meta.schema.json',
+      $schema:
+        'https://raw.githubusercontent.com/l2beat/tools/main/schemas/meta.schema.json',
       contracts: [],
     })
   })
