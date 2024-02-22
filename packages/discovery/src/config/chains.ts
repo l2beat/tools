@@ -1,5 +1,6 @@
 import { getMulticall3Config } from '../discovery/provider/multicall/MulticallConfig'
 import { MulticallConfig } from '../discovery/provider/multicall/types'
+import { EthereumAddress } from '../utils/EthereumAddress'
 
 export interface ChainConfig {
   name: string
@@ -74,7 +75,7 @@ export const chains: ChainConfig[] = [
   },
   {
     name: 'zksync2',
-    multicall: getMulticall3Config(3908235),
+    multicall: getMulticall3Config(3908235, EthereumAddress('0xF9cda624FBC7e059355ce98a31693d299FACd963')),
     etherscanUrl: 'https://api-era.zksync.network/api',
   },
 ]
