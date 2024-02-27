@@ -7,6 +7,11 @@ export type {
   InversionConfig,
   SingleDiscoveryModuleConfig,
 } from './config/types'
+export type {
+    ValueMeta,
+    ContractMeta,
+    DiscoveryMeta,
+} from './discovery/config/DiscoveryMeta'
 export { AddressAnalyzer } from './discovery/analysis/AddressAnalyzer'
 export { ConfigReader } from './discovery/config/ConfigReader'
 export { DiscoveryConfig } from './discovery/config/DiscoveryConfig'
