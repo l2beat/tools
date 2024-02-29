@@ -13,7 +13,8 @@ export function discoveryDiffToMarkdown(
 ): string {
   const result = []
 
-  const countOfNewLines = 2 * (diffs.length - 1)
+  const joinerString = '\n\n'
+  const countOfNewLines = joinerString.length * (diffs.length - 1)
   let lengthAccumulator = 0
   for (const diff of diffs) {
     const contractMeta = getContractMeta(meta, diff.name)
@@ -22,15 +23,16 @@ export function discoveryDiffToMarkdown(
       contractMeta,
       maxLength - countOfNewLines,
     )
+
     lengthAccumulator += markdown.length
-    if (lengthAccumulator <= maxLength) {
-      result.push(markdown)
-    } else {
+    if (lengthAccumulator > maxLength) {
       break
     }
+
+    result.push(markdown)
   }
 
-  const joined = result.join('\n\n')
+  const joined = result.join(joinerString)
   return joined
 }
 
@@ -46,10 +48,9 @@ export function contractDiffToMarkdown(
     result.push(`${marker}   Status: ${toUpper(diff.type)}`)
   }
 
+  const contractDescription = contractMeta?.description ?? 'None'
   const contractLine = `    contract ${diff.name} (${diff.address.toString()})`
-  const descriptionLine = `    +++ description: ${
-    contractMeta?.description ?? 'None'
-  }`
+  const descriptionLine = `    +++ description: ${contractDescription}`
   if (diff.diff) {
     result.push(`${contractLine} {`)
     result.push(descriptionLine)
