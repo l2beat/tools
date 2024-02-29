@@ -7,7 +7,11 @@ describe(normalizeDiffPath.name, () => {
     expect(normalizeDiffPath('values.test')).toEqual('test')
   })
 
-  it('should do nothing if no vaules. prefix', () => {
+  it('should remove upgradeability. prefix', () => {
+    expect(normalizeDiffPath('upgradeability.test')).toEqual('test')
+  })
+
+  it('should do nothing if no prefix', () => {
     expect(normalizeDiffPath('test')).toEqual('test')
   })
 
@@ -17,6 +21,12 @@ describe(normalizeDiffPath.name, () => {
     expect(normalizeDiffPath('values.test.12')).toEqual('test')
     expect(normalizeDiffPath('values.test.01')).toEqual('test')
     expect(normalizeDiffPath('values.test.21')).toEqual('test')
+
+    expect(normalizeDiffPath('upgradeability.test.0')).toEqual('test')
+    expect(normalizeDiffPath('upgradeability.test.1')).toEqual('test')
+    expect(normalizeDiffPath('upgradeability.test.12')).toEqual('test')
+    expect(normalizeDiffPath('upgradeability.test.01')).toEqual('test')
+    expect(normalizeDiffPath('upgradeability.test.21')).toEqual('test')
   })
 
   it('should remove array suffix when no values. prefix', () => {

@@ -1,11 +1,17 @@
 import { assert } from '@l2beat/backend-tools'
 
-const VALUES_PREFIX = 'values.'
+const PREFIXES = ['values.', 'upgradeability.']
 
 export function normalizeDiffPath(path: string): string {
-  const pathWithoutPrefix = path.startsWith(VALUES_PREFIX)
-    ? path.substring(VALUES_PREFIX.length)
-    : path
+  let pathWithoutPrefix = path
+
+  for (const prefix of PREFIXES) {
+    if (path.startsWith(prefix)) {
+      pathWithoutPrefix = path.substring(prefix.length)
+      break
+    }
+  }
+
   return removeArraySuffix(pathWithoutPrefix)
 }
 
