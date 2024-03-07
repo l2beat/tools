@@ -57,7 +57,7 @@ function formatSource(source: string, byteRange: ByteRange): string {
 }
 
 function changeLineEndingsToUnix(source: string): string {
-    return source.replace(/\r\n/g, '\n')
+  return source.replace(/\r\n/g, '\n')
 }
 
 function getUniqueContractId(entry: ContractFilePair): string {
