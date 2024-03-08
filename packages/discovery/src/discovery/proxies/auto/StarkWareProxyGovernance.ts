@@ -3,9 +3,9 @@ import { utils } from 'ethers'
 
 import { EthereumAddress } from '../../../utils/EthereumAddress'
 import { Semver } from '../../../utils/semver'
+import { fetchAccessControl } from '../../handlers/user/AccessControlHandler'
 import { DiscoveryProvider } from '../../provider/DiscoveryProvider'
 import { getCallResult } from '../../utils/getCallResult'
-import { fetchAccessControl } from '../../handlers/user/AccessControlHandler'
 
 export async function getProxyGovernance(
   provider: DiscoveryProvider,
@@ -27,11 +27,16 @@ async function getProxyGovernanceV5(
   address: EthereumAddress,
   blockNumber: number,
 ): Promise<EthereumAddress[]> {
-    // int.from_bytes(Web3.keccak(text="ROLE_UPGRADE_GOVERNOR"), "big") & MASK_250 .
-    const UPGRADE_GOVERNOR_HASH = "0x0251e864ca2a080f55bce5da2452e8cfcafdbc951a3e7fff5023d558452ec228"
-    const unnamedRoles = await fetchAccessControl(provider, address, blockNumber)
+  // int.from_bytes(Web3.keccak(text="ROLE_UPGRADE_GOVERNOR"), "big") & MASK_250 .
+  const UPGRADE_GOVERNOR_HASH =
+    '0x0251e864ca2a080f55bce5da2452e8cfcafdbc951a3e7fff5023d558452ec228'
+  const unnamedRoles = await fetchAccessControl(provider, address, blockNumber)
 
-  return unnamedRoles[UPGRADE_GOVERNOR_HASH]?.members.map((address) => EthereumAddress(address)) ?? []
+  return (
+    unnamedRoles[UPGRADE_GOVERNOR_HASH]?.members.map((address) =>
+      EthereumAddress(address),
+    ) ?? []
+  )
 }
 
 async function getProxyGovernanceV4Down(
