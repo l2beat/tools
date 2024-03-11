@@ -35,6 +35,7 @@ describe(getCliParameters.name, () => {
       chain: 'ethereum',
       project: 'foo',
       dryRun: false,
+      interactive: false,
       dev: false,
       sourcesFolder: undefined,
       flatSourcesFolder: undefined,
@@ -50,6 +51,7 @@ describe(getCliParameters.name, () => {
       chain: 'ethereum',
       project: 'foo',
       dryRun: true,
+      interactive: false,
       dev: false,
       sourcesFolder: undefined,
       flatSourcesFolder: undefined,
@@ -72,6 +74,7 @@ describe(getCliParameters.name, () => {
       chain: 'ethereum',
       project: 'foo',
       dryRun: false,
+      interactive: false,
       dev: true,
       sourcesFolder: '.code@1234',
       flatSourcesFolder: undefined,
@@ -111,19 +114,21 @@ describe(getCliParameters.name, () => {
     expect(cli).toEqual({ mode: 'help', error: 'Too many arguments' })
   })
 
-  it('discover ethereum --block-number=5678 foo --dry-run', () => {
+  it('discover ethereum --block-number=5678 foo --dry-run --interactive', () => {
     const cli = getCliParameters([
       'discover',
       'ethereum',
       '--block-number=5678',
       'foo',
       '--dry-run',
+      '--interactive',
     ])
     expect(cli).toEqual({
       mode: 'discover',
       chain: 'ethereum',
       project: 'foo',
       dryRun: true,
+      interactive: true,
       dev: false,
       sourcesFolder: undefined,
       flatSourcesFolder: undefined,

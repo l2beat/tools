@@ -67,6 +67,7 @@ export function discover(
     project: config.project,
     chain: config.chain.name,
     dryRun: config.dryRun === true,
+    interactive: config.interactive === true,
     dev: config.dev === true,
     sourcesFolder: config.sourcesFolder,
     flatSourcesFolder: config.flatSourcesFolder,

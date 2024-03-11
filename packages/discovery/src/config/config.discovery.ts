@@ -32,6 +32,7 @@ export function getDiscoveryCliConfig(cli: CliParameters): DiscoveryCliConfig {
       project: cli.project,
       chain: getChainConfig(cli.chain),
       dryRun: cli.dryRun,
+      interactive: cli.interactive,
       dev: cli.dev,
       blockNumber: cli.blockNumber,
       sourcesFolder: cli.sourcesFolder,
