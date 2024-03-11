@@ -67,10 +67,16 @@ export class OpStackDAHandler implements ClassicHandler {
       (tx) => tx.input.length === OP_STACK_CELESTIA_DA_EXAMPLE_INPUT.length,
     )
 
+    const rpcTxs = await Promise.all(
+      last10Txs.map((tx) => provider.getTransaction(tx.hash)),
+    )
+    const isSequencerSendingBlobTx = rpcTxs.some((tx) => tx.type === 3)
+
     return {
       field: this.field,
       value: {
         isSomeTxsLengthEqualToCelestiaDAExample,
+        isSequencerSendingBlobTx,
       },
     }
   }
