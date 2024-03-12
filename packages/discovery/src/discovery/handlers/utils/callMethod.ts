@@ -42,7 +42,9 @@ export function decodeMethodResult(
   filter?: (string | number)[],
 ) {
   const decoded = abi.decodeFunctionResult(fragment, result.toString())
-  const filtered = filter ? filter.map((i) => decoded[i]) : decoded
+  const filtered = filter
+    ? filter.map((i) => decoded[i] as utils.Result)
+    : decoded
   const mapped = filtered.map(toContractValue)
   return mapped.length === 1 ? mapped[0] : mapped
 }

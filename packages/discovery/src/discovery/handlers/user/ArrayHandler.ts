@@ -139,7 +139,14 @@ function createCallIndex(
   filter?: (string | number)[],
 ) {
   return async (index: number) => {
-    return await callMethod(provider, address, fragment, [index], blockNumber, filter)
+    return await callMethod(
+      provider,
+      address,
+      fragment,
+      [index],
+      blockNumber,
+      filter,
+    )
   }
 }
 
