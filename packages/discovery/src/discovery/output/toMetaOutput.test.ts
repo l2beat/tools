@@ -43,6 +43,7 @@ describe(toMetaOutput.name, () => {
       contracts: [
         {
           name: 'B',
+          description: 'old description',
           values: {
             foo: { description: 'foo', severity: 'LOW', type: 'L2' },
             baz: { description: 'baz', severity: 'HIGH', type: 'PERMISSION' },
@@ -56,6 +57,7 @@ describe(toMetaOutput.name, () => {
         'https://raw.githubusercontent.com/l2beat/tools/main/schemas/meta.schema.json',
       contracts: [
         {
+          description: 'old description',
           name: 'B',
           values: {
             foo: { description: 'foo', severity: 'LOW', type: 'L2' },
@@ -73,6 +75,7 @@ describe(toMetaOutput.name, () => {
         'https://raw.githubusercontent.com/l2beat/tools/main/schemas/meta.schema.json',
       contracts: [
         {
+          description: null,
           name: 'B',
           values: {
             foo: { description: null, severity: null, type: null },
@@ -88,7 +91,7 @@ describe(toMetaOutput.name, () => {
     expect(result).toEqual({
       $schema:
         'https://raw.githubusercontent.com/l2beat/tools/main/schemas/meta.schema.json',
-      contracts: [{ name: 'A', values: {} }],
+      contracts: [{ name: 'A', description: null, values: {} }],
     })
   })
 

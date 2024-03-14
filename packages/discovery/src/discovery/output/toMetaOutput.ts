@@ -26,6 +26,7 @@ function toContractMeta(
 ): ContractMeta {
   return {
     name: contract.name,
+    description: oldContractMeta.description,
     values: toValueMeta(contract.values, oldContractMeta),
   }
 }
@@ -63,7 +64,11 @@ function getOldContractMeta(
     `Expected a contract, got an ${contract.type}`,
   )
 
-  const DEFAULT_CONTRACT_META = { name: contract.name, values: {} }
+  const DEFAULT_CONTRACT_META = {
+    name: contract.name,
+    description: null,
+    values: {},
+  }
   if (!oldMeta) {
     return DEFAULT_CONTRACT_META
   }
