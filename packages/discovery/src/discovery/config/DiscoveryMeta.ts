@@ -18,7 +18,7 @@ export const ValueMeta = z.object({
 export type ContractMeta = z.infer<typeof ContractMeta>
 export const ContractMeta = z.object({
   name: z.string(),
-  description: z.string().nullable(),
+  description: z.string().optional(),
   values: z.record(z.string(), ValueMeta),
 })
 
