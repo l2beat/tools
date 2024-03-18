@@ -12,11 +12,11 @@ import { ClassicHandler, HandlerResult } from '../Handler'
 import { callMethod } from '../utils/callMethod'
 import { toContractValue } from '../utils/toContractValue'
 
-export type ArbitrumGovernanceHandlerDefinition = z.infer<
-  typeof ArbitrumGovernanceHandlerDefinition
+export type ArbitrumScheduledTransactionsHandlerDefinition = z.infer<
+  typeof ArbitrumScheduledTransactionsHandlerDefinition
 >
-export const ArbitrumGovernanceHandlerDefinition = z.strictObject({
-  type: z.literal('arbitrumGovernance'),
+export const ArbitrumScheduledTransactionsHandlerDefinition = z.strictObject({
+  type: z.literal('arbitrumScheduledTransactions'),
 })
 
 const ExecutorInterface = new utils.Interface([
@@ -32,7 +32,7 @@ const L2Inboxes: Record<string, string | undefined> = {
   '0xc4448b71118c9071Bcb9734A0EAc55D18A153949': 'nova',
 }
 
-export class ArbitrumGovernanceHandler implements ClassicHandler {
+export class ArbitrumScheduledTransactionsHandler implements ClassicHandler {
   readonly dependencies: string[] = []
   readonly timelockInterface: utils.Interface
 
