@@ -49,37 +49,6 @@ export class ArbitrumScheduledTransactionsHandler implements ClassicHandler {
     address: EthereumAddress,
     blockNumber: number,
   ): Promise<HandlerResult> {
-    let result
-    try {
-      result = await this._execute(provider, address, blockNumber)
-    } catch (e) {
-      console.log(e)
-      process.exit(1)
-    }
-    console.log(JSON.stringify(result, null, 2))
-    process.exit(1)
-  }
-
-  async getRetryableTicketMagic(
-    provider: DiscoveryProvider,
-    address: EthereumAddress,
-    blockNumber: number,
-  ): Promise<EthereumAddress> {
-    const res = await callMethod(
-      provider,
-      address,
-      this.timelockInterface.getFunction('RETRYABLE_TICKET_MAGIC'),
-      [],
-      blockNumber,
-    )
-    return EthereumAddress(res.value as string)
-  }
-
-  async _execute(
-    provider: DiscoveryProvider,
-    address: EthereumAddress,
-    blockNumber: number,
-  ): Promise<HandlerResult> {
     const retryableTicketMagic = await this.getRetryableTicketMagic(
       provider,
       address,
@@ -104,7 +73,23 @@ export class ArbitrumScheduledTransactionsHandler implements ClassicHandler {
     return {
       field: this.field,
       value: result,
+      ignoreRelative: true
     }
+  }
+
+  async getRetryableTicketMagic(
+    provider: DiscoveryProvider,
+    address: EthereumAddress,
+    blockNumber: number,
+  ): Promise<EthereumAddress> {
+    const res = await callMethod(
+      provider,
+      address,
+      this.timelockInterface.getFunction('RETRYABLE_TICKET_MAGIC'),
+      [],
+      blockNumber,
+    )
+    return EthereumAddress(res.value as string)
   }
 
   async decodeLog(
