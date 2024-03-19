@@ -8,6 +8,22 @@ export function getEnv(): Env {
 export class Env {
   constructor(private readonly env: Record<string, string | undefined>) {}
 
+  private resolve(
+    key: string | string[],
+  ): { value: string; key: string } | undefined {
+    if (Array.isArray(key)) {
+      for (const k of key) {
+        const value = this.env[k]
+        if (value !== undefined) {
+          return { value, key: k }
+        }
+      }
+      return undefined
+    }
+    const value = this.env[key]
+    return value !== undefined ? { value, key } : value
+  }
+
   string(key: string | string[], fallback?: string): string {
     const value = this.optionalString(key)
     if (value !== undefined) {
@@ -16,20 +32,11 @@ export class Env {
     if (fallback !== undefined) {
       return fallback
     }
-    throw new Error(`Missing environment variable ${key}!`)
+    throwMissingEnvVar(key)
   }
 
   optionalString(key: string | string[]): string | undefined {
-    if (Array.isArray(key)) {
-      for (const k of key) {
-        const value = this.env[k]
-        if (value !== undefined) {
-          return value
-        }
-      }
-      return undefined
-    }
-    return this.env[key]
+    return this.resolve(key)?.value
   }
 
   integer(key: string | string[], fallback?: number): number {
@@ -40,17 +47,17 @@ export class Env {
     if (fallback !== undefined) {
       return fallback
     }
-    throw new Error(`Missing environment variable ${key}!`)
+    throwMissingEnvVar(key)
   }
 
   optionalInteger(key: string | string[]): number | undefined {
-    const value = this.optionalString(key)
-    if (value !== undefined) {
-      const result = parseInt(value)
-      if (result.toString() === value) {
+    const resolved = this.resolve(key)
+    if (resolved) {
+      const result = parseInt(resolved.value)
+      if (result.toString() === resolved.value) {
         return result
       }
-      throw new Error(`Environment variable ${key} is not an integer!`)
+      throw new Error(`Environment variable ${resolved.key} is not an integer!`)
     }
   }
 
@@ -62,13 +69,13 @@ export class Env {
     if (fallback !== undefined) {
       return fallback
     }
-    throw new Error(`Missing environment variable ${key}!`)
+    throwMissingEnvVar(key)
   }
 
   optionalBoolean(key: string | string[]): boolean | undefined {
-    const value = this.optionalString(key)
-    if (value !== undefined) {
-      const lowerCased = value.toLowerCase()
+    const resolved = this.resolve(key)
+    if (resolved) {
+      const lowerCased = resolved.value.toLowerCase()
 
       const trueValues = ['true', 'yes', '1']
       const falseValues = ['false', 'no', '0']
@@ -76,7 +83,17 @@ export class Env {
       if (trueValues.includes(lowerCased)) return true
       if (falseValues.includes(lowerCased)) return false
 
-      throw new Error(`Environment variable ${key} is not a boolean value!`)
+      throw new Error(
+        `Environment variable ${resolved.key} is not a boolean value!`,
+      )
     }
+  }
+}
+
+function throwMissingEnvVar(keys: string | string[]): never {
+  if (Array.isArray(keys)) {
+    throw new Error(`Missing environment variables: ${keys.join(', ')}!`)
+  } else {
+    throw new Error(`Missing environment variable: ${keys}!`)
   }
 }
