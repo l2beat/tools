@@ -8,8 +8,8 @@ export function getEnv(): Env {
 export class Env {
   constructor(private readonly env: Record<string, string | undefined>) {}
 
-  string(key: string, fallback?: string): string {
-    const value = this.env[key]
+  string(key: string | string[], fallback?: string): string {
+    const value = this.optionalString(key)
     if (value !== undefined) {
       return value
     }
@@ -19,11 +19,20 @@ export class Env {
     throw new Error(`Missing environment variable ${key}!`)
   }
 
-  optionalString(key: string): string | undefined {
+  optionalString(key: string | string[]): string | undefined {
+    if (Array.isArray(key)) {
+      for (const k of key) {
+        const value = this.env[k]
+        if (value !== undefined) {
+          return value
+        }
+      }
+      return undefined
+    }
     return this.env[key]
   }
 
-  integer(key: string, fallback?: number): number {
+  integer(key: string | string[], fallback?: number): number {
     const value = this.optionalInteger(key)
     if (value !== undefined) {
       return value
@@ -34,8 +43,8 @@ export class Env {
     throw new Error(`Missing environment variable ${key}!`)
   }
 
-  optionalInteger(key: string): number | undefined {
-    const value = this.env[key]
+  optionalInteger(key: string | string[]): number | undefined {
+    const value = this.optionalString(key)
     if (value !== undefined) {
       const result = parseInt(value)
       if (result.toString() === value) {
@@ -45,7 +54,7 @@ export class Env {
     }
   }
 
-  boolean(key: string, fallback?: boolean): boolean {
+  boolean(key: string | string[], fallback?: boolean): boolean {
     const value = this.optionalBoolean(key)
     if (value !== undefined) {
       return value
@@ -56,8 +65,8 @@ export class Env {
     throw new Error(`Missing environment variable ${key}!`)
   }
 
-  optionalBoolean(key: string): boolean | undefined {
-    const value = this.env[key]
+  optionalBoolean(key: string | string[]): boolean | undefined {
+    const value = this.optionalString(key)
     if (value !== undefined) {
       const lowerCased = value.toLowerCase()
 
