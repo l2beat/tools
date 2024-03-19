@@ -73,7 +73,7 @@ export class ArbitrumScheduledTransactionsHandler implements ClassicHandler {
     return {
       field: this.field,
       value: result,
-      ignoreRelative: true
+      ignoreRelative: true,
     }
   }
 
@@ -110,6 +110,7 @@ export class ArbitrumScheduledTransactionsHandler implements ClassicHandler {
         ? await this.decodeL2Call(log)
         : await this.decodeExecuteCall(
             'ethereum',
+            target,
             log.args.data as string,
             provider,
           )
@@ -128,9 +129,10 @@ export class ArbitrumScheduledTransactionsHandler implements ClassicHandler {
 
   async decodeExecuteCall(
     chain: string,
+    executorAddress: EthereumAddress,
     executeCalldata: string,
     provider: DiscoveryProvider | undefined,
-  ): Promise<ContractValue> {
+  ): Promise<Record<string, ContractValue | undefined>> {
     const parsed = ExecutorInterface.parseTransaction({ data: executeCalldata })
     const addrToCall = EthereumAddress(parsed.args.upgrade as string)
     const calldata = parsed.args.upgradeCallData as string
@@ -149,6 +151,7 @@ export class ArbitrumScheduledTransactionsHandler implements ClassicHandler {
       ...decoded,
       address: addrToCall.toString(),
       calldata,
+      executor: executorAddress.toString(),
     }
     return result
   }
@@ -194,9 +197,19 @@ export class ArbitrumScheduledTransactionsHandler implements ClassicHandler {
         `Unknown inbox address ${targetInbox.toString()} for L2 call`,
       )
     }
+    const l2Executor = EthereumAddress(res.l2Target as string)
     const l2Calldata = res.l2Calldata as string
     const providerForChain = this.createProviderForChain(chain)
-    return await this.decodeExecuteCall(chain, l2Calldata, providerForChain)
+    const decoded = await this.decodeExecuteCall(
+      chain,
+      l2Executor,
+      l2Calldata,
+      providerForChain,
+    )
+    return {
+      ...decoded,
+      inboxOnEthereum: targetInbox.toString(),
+    }
   }
 
   createProviderForChain(chain: string): DiscoveryProvider | undefined {
