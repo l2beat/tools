@@ -1,3 +1,4 @@
+import { Height } from '../../height'
 import { IndexerReducerResult } from '../types/IndexerReducerResult'
 import { IndexerState } from '../types/IndexerState'
 
@@ -21,8 +22,8 @@ export function finishInitialization(
   }
 
   if (state.parents.every((x) => x.initialized)) {
-    const parentHeight = Math.min(...state.parents.map((x) => x.safeHeight))
-    const height = Math.min(parentHeight, state.height)
+    const parentHeight = Height.min(...state.parents.map((x) => x.safeHeight))
+    const height = Height.min(parentHeight, state.height)
 
     return [
       {

@@ -1,5 +1,6 @@
 import assert from 'node:assert'
 
+import { Height } from '../../height'
 import { IndexerEffect } from '../types/IndexerEffect'
 import { IndexerReducerResult } from '../types/IndexerReducerResult'
 import { IndexerState } from '../types/IndexerState'
@@ -13,25 +14,30 @@ export function continueOperations(
   } = {},
 ): IndexerReducerResult {
   const initializedParents = state.parents.filter((x) => x.initialized)
-  const parentHeight = Math.min(...initializedParents.map((x) => x.safeHeight))
+  const parentHeight = Height.min(
+    ...initializedParents.map((x) => x.safeHeight),
+  )
 
   if (initializedParents.length > 0) {
     state = {
       ...state,
-      invalidateToHeight: Math.min(state.invalidateToHeight, parentHeight),
+      invalidateToHeight: Height.min(state.invalidateToHeight, parentHeight),
     }
   }
 
   const effects: IndexerEffect[] = []
 
-  if (state.invalidateToHeight < state.safeHeight || options.updateFinished) {
-    const safeHeight = Math.min(state.invalidateToHeight, state.height)
+  if (
+    Height.lt(state.invalidateToHeight, state.safeHeight) ||
+    options.updateFinished
+  ) {
+    const safeHeight = Height.min(state.invalidateToHeight, state.height)
 
     if (safeHeight !== state.safeHeight) {
       effects.push({ type: 'SetSafeHeight', safeHeight })
     }
 
-    if (safeHeight < state.safeHeight) {
+    if (Height.lt(safeHeight, state.safeHeight)) {
       state = {
         ...state,
         safeHeight,
@@ -85,11 +91,12 @@ export function continueOperations(
   }
 
   const shouldInvalidate =
-    state.forceInvalidate || state.invalidateToHeight < state.height
+    state.forceInvalidate || Height.lt(state.invalidateToHeight, state.height)
   const shouldUpdate =
     !shouldInvalidate &&
     initializedParents.length > 0 &&
-    parentHeight > state.height
+    Height.gt(parentHeight, state.height) &&
+    parentHeight !== undefined
 
   if (shouldInvalidate) {
     if (state.invalidateBlocked || state.waiting || state.status !== 'idle') {

@@ -3,6 +3,7 @@ import { assert } from 'node:console'
 import { Logger } from '@l2beat/backend-tools'
 
 import { assertUnreachable } from './assertUnreachable'
+import { Height } from './height'
 import { Indexer } from './Indexer'
 import { getInitialState } from './reducer/getInitialState'
 import { indexerReducer } from './reducer/indexerReducer'
@@ -21,8 +22,8 @@ export abstract class BaseIndexer implements Indexer {
 
   /**
    * This can be overridden to provide a custom retry strategy. It will be
-   * used for all indexers in the app that don't specify their own strategy.
-   * @returns A default retry strategy that will be used for all indexers in the app
+   * used for all indexers that don't specify their own strategy.
+   * @returns A default retry strategy that will be used for all indexers
    */
   static GET_DEFAULT_RETRY_STRATEGY: () => RetryStrategy = () =>
     Retries.exponentialBackOff({
@@ -32,37 +33,93 @@ export abstract class BaseIndexer implements Indexer {
     })
 
   /**
-   * Should read the height from the database. It must return a height, so
-   * if database is empty a fallback value has to be chosen.
-   */
-  abstract getSafeHeight(): Promise<number>
-
-  /**
-   * Should write the height to the database. The height given is the most
-   * pessimistic value and the indexer is expected to actually operate at a
-   * higher height in runtime.
-   */
-  protected abstract setSafeHeight(height: number): Promise<void>
-
-  /**
-   * To be used in ChildIndexer.
+   * Initializes the indexer. It should return a height that the indexer has
+   * synced up to. If the indexer has not synced any data, it should return
+   * undefined.
    *
-   * @param from - current height of the indexer, exclusive
-   * @param to - inclusive
+   * This method is expected to read the height that was saved previously with
+   * `setSafeHeight`. It shouldn't call `setSafeHeight` itself.
+   *
+   * For root indexers this method should also schedule a process to request
+   * ticks. For example with `setInterval(() => this.requestTick(), 1000)`.
+   * Since a root indexer probably doesn't save the height to a database, it
+   * can `return this.tick()` instead.
    */
-  // TODO: do we need to pass the current height?
-  protected abstract update(from: number, to: number): Promise<number>
+  abstract initialize(): Promise<number | undefined>
 
   /**
-   * Only to be used in RootIndexer. It provides a way to start the height
-   * update process.
+   * Saves the height (most likely to a database). The height given is the
+   * smallest height from all parents and what the indexer itself synced to
+   * previously. It can be undefined.
+   *
+   * When `initialize` is called it is expected that it will read the same
+   * height that was saved here.
+   */
+  protected abstract setSafeHeight(height: number | undefined): Promise<void>
+
+  /**
+   * This method should only be implemented for a child indexer.
+   *
+   * It is responsible for the main data fetching process. It is up to the
+   * indexer to decide how much data to fetch. For example given
+   * `.update(100, 200)`, the indexer can only fetch data up to 110 and return
+   * 110. The next time this method will be called with `.update(110, 200)`.
+   *
+   * @param from The height that the indexer has synced up to previously. Can
+   * be undefined if no data was synced. This value is inclusive so the indexer
+   * should not fetch data for this height.
+   *
+   * @param to The height that the indexer should sync up to. This value is
+   * exclusive so the indexer should fetch data for this height.
+   *
+   * @returns The height that the indexer has synced up to. Returning `from`
+   * means that the indexer has not synced any data. Returning a value greater
+   * than `from` means that the indexer has synced up to that height. Returning
+   * a value less than `from` will trigger invalidation down to the returned
+   * value. Returning `undefined` will invalidate all data. Returning a value
+   * greater than `to` is not permitted.
+   */
+  protected abstract update(
+    from: number | undefined,
+    to: number,
+  ): Promise<number | undefined>
+
+  /**
+   * This method should only be implemented for a child indexer.
+   *
+   * It is responsible for invalidating data that was synced previously. It is
+   * possible that no data was synced and this method is still called.
+   *
+   * Invalidation can, but doesn't have to remove data from the database. If
+   * you only want to rely on the safe height, you can just return the target
+   * height and the system will take care of the rest.
+   *
+   * This method doesn't have to invalidate all data. If you want to do it in
+   * steps, you can return a height that is larger than the target height.
+   *
+   * @param targetHeight The height that the indexer should invalidate down to.
+   * Can be undefined. If it is undefined, the indexer should invalidate all
+   * data.
+   *
+   * @returns The height that the indexer has invalidated down to. Returning
+   * `targetHeight` means that the indexer has invalidated all the required
+   * data. Returning a value greater than `targetHeight` means that the indexer
+   * has invalidated down to that height.
+   */
+  protected abstract invalidate(
+    targetHeight: number | undefined,
+  ): Promise<number | undefined>
+
+  /**
+   * This method should only be implemented for a root indexer.
+   *
+   * It is responsible for providing the target height for the entire system.
+   * Some good examples of this are: the current time or the last block number.
+   *
+   * As opposed to `update` and `invalidate`, this method cannot return
+   * `undefined`.
    */
   protected abstract tick(): Promise<number>
-
-  /**
-   * @param targetHeight - every value > `targetHeight` is invalid, but `targetHeight` itself is valid
-   */
-  protected abstract invalidate(targetHeight: number): Promise<number>
 
   private state: IndexerState
   private started = false
@@ -99,7 +156,7 @@ export abstract class BaseIndexer implements Indexer {
   async start(): Promise<void> {
     assert(!this.started, 'Indexer already started')
     this.started = true
-    const height = await this.getSafeHeight()
+    const height = await this.initialize()
     this.dispatch({
       type: 'Initialized',
       safeHeight: height,
@@ -120,13 +177,13 @@ export abstract class BaseIndexer implements Indexer {
     this.dispatch({ type: 'ChildReady', index })
   }
 
-  notifyUpdate(parent: Indexer, to: number): void {
+  notifyUpdate(parent: Indexer, safeHeight: number | undefined): void {
     this.logger.debug('Someone has updated', {
       parent: parent.constructor.name,
     })
     const index = this.parents.indexOf(parent)
     assert(index !== -1, 'Received update from unknown parent')
-    this.dispatch({ type: 'ParentUpdated', index, safeHeight: to })
+    this.dispatch({ type: 'ParentUpdated', index, safeHeight })
   }
 
   getState(): IndexerState {
@@ -167,19 +224,18 @@ export abstract class BaseIndexer implements Indexer {
   // #region Child methods
 
   private async executeUpdate(effect: UpdateEffect): Promise<void> {
-    // TODO: maybe from should be inclusive?
     const from = this.state.height
     this.logger.info('Updating', { from, to: effect.targetHeight })
     try {
-      const to = await this.update(from, effect.targetHeight)
-      if (to > effect.targetHeight) {
+      const newHeight = await this.update(from, effect.targetHeight)
+      if (Height.gt(newHeight, effect.targetHeight)) {
         this.logger.critical('Update returned invalid height', {
-          returned: to,
+          newHeight,
           max: effect.targetHeight,
         })
         this.dispatch({ type: 'UpdateFailed', fatal: true })
       } else {
-        this.dispatch({ type: 'UpdateSucceeded', from, targetHeight: to })
+        this.dispatch({ type: 'UpdateSucceeded', from, newHeight })
         this.updateRetryStrategy.clear()
       }
     } catch (e) {
@@ -299,18 +355,12 @@ export abstract class RootIndexer extends BaseIndexer {
     super(logger, [], opts)
   }
 
-  // eslint-disable-next-line @typescript-eslint/require-await
   override async update(): Promise<number> {
-    throw new Error('RootIndexer cannot update')
+    return Promise.reject(new Error('RootIndexer cannot update'))
   }
 
-  // eslint-disable-next-line @typescript-eslint/require-await
   override async invalidate(): Promise<number> {
-    throw new Error('RootIndexer cannot invalidate')
-  }
-
-  override async getSafeHeight(): Promise<number> {
-    return this.tick()
+    return Promise.reject(new Error('RootIndexer cannot invalidate'))
   }
 
   override async setSafeHeight(): Promise<void> {
@@ -319,20 +369,7 @@ export abstract class RootIndexer extends BaseIndexer {
 }
 
 export abstract class ChildIndexer extends BaseIndexer {
-  // eslint-disable-next-line @typescript-eslint/no-useless-constructor
-  constructor(
-    logger: Logger,
-    parents: Indexer[],
-    opts?: {
-      updateRetryStrategy?: RetryStrategy
-      invalidateRetryStrategy?: RetryStrategy
-    },
-  ) {
-    super(logger, parents, opts)
-  }
-
-  // eslint-disable-next-line @typescript-eslint/require-await
   override async tick(): Promise<number> {
-    throw new Error('ChildIndexer cannot tick')
+    return Promise.reject(new Error('ChildIndexer cannot tick'))
   }
 }

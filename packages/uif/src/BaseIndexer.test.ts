@@ -21,7 +21,7 @@ describe(BaseIndexer.name, () => {
 
       await child.finishUpdate(1)
 
-      expect(await child.getSafeHeight()).toEqual(1)
+      expect(await child.initialize()).toEqual(1)
     })
 
     it('first parent update then invalidate', async () => {
@@ -37,7 +37,7 @@ describe(BaseIndexer.name, () => {
 
       await child.finishUpdate(1)
 
-      expect(await child.getSafeHeight()).toEqual(1)
+      expect(await child.initialize()).toEqual(1)
     })
   })
 
@@ -276,7 +276,7 @@ export class TestRootIndexer extends RootIndexer {
     })
   }
 
-  override async getSafeHeight(): Promise<number> {
+  override async initialize(): Promise<number> {
     const promise = this.tick()
     this.resolveTick(this.safeHeight)
     await promise
@@ -339,7 +339,7 @@ class TestChildIndexer extends ChildIndexer {
     })
   }
 
-  override getSafeHeight(): Promise<number> {
+  override initialize(): Promise<number> {
     return Promise.resolve(this.safeHeight)
   }
 

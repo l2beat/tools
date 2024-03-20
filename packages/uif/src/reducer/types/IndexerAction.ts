@@ -1,13 +1,13 @@
 export interface InitializedAction {
   type: 'Initialized'
-  safeHeight: number
+  safeHeight: number | undefined
   childCount: number
 }
 
 export interface ParentUpdatedAction {
   type: 'ParentUpdated'
   index: number
-  safeHeight: number
+  safeHeight: number | undefined
 }
 
 export interface ChildReadyAction {
@@ -17,8 +17,8 @@ export interface ChildReadyAction {
 
 export interface UpdateSucceededAction {
   type: 'UpdateSucceeded'
-  from: number
-  targetHeight: number
+  from: number | undefined
+  newHeight: number | undefined
 }
 
 export interface UpdateFailedAction {
@@ -32,7 +32,7 @@ export interface RetryUpdateAction {
 
 export interface InvalidateSucceededAction {
   type: 'InvalidateSucceeded'
-  targetHeight: number
+  targetHeight: number | undefined
 }
 
 export interface InvalidateFailedAction {

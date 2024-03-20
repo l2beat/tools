@@ -244,7 +244,7 @@ describe(indexerReducer.name, () => {
         expect(effects1).toEqual([{ type: 'Update', targetHeight: 150 }])
 
         const [state2, effects2] = reduceWithIndexerReducer(state1, [
-          { type: 'UpdateSucceeded', from: 100, targetHeight: 150 },
+          { type: 'UpdateSucceeded', from: 100, newHeight: 150 },
         ])
 
         expect(state2).toEqual({
@@ -415,7 +415,7 @@ describe(indexerReducer.name, () => {
 
         const [state2, effects2] = reduceWithIndexerReducer(state, [
           { type: 'ParentUpdated', index: 0, safeHeight: 50 },
-          { type: 'UpdateSucceeded', from: 100, targetHeight: 200 },
+          { type: 'UpdateSucceeded', from: 100, newHeight: 200 },
         ])
 
         expect(state2).toEqual({
@@ -470,7 +470,7 @@ describe(indexerReducer.name, () => {
 
         const [state1, effects1] = reduceWithIndexerReducer(initState, [
           { type: 'ParentUpdated', index: 0, safeHeight: 200 },
-          { type: 'UpdateSucceeded', from: 100, targetHeight: 150 },
+          { type: 'UpdateSucceeded', from: 100, newHeight: 150 },
         ])
 
         expect(effects1).toEqual([
@@ -485,7 +485,7 @@ describe(indexerReducer.name, () => {
         expect(effects2).toEqual([{ type: 'SetSafeHeight', safeHeight: 140 }])
 
         const [, effects3] = reduceWithIndexerReducer(state2, [
-          { type: 'UpdateSucceeded', from: 150, targetHeight: 200 },
+          { type: 'UpdateSucceeded', from: 150, newHeight: 200 },
         ])
 
         expect(effects3).toEqual([
@@ -841,7 +841,7 @@ describe(indexerReducer.name, () => {
         expect(effects3).toEqual([{ type: 'Update', targetHeight: 300 }])
 
         const [state4, effects4] = reduceWithIndexerReducer(state3, [
-          { type: 'UpdateSucceeded', from: 100, targetHeight: 300 },
+          { type: 'UpdateSucceeded', from: 100, newHeight: 300 },
         ])
 
         // continues update as usual

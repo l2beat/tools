@@ -1,3 +1,4 @@
+import { Height } from '../../height'
 import { continueOperations } from '../helpers/continueOperations'
 import { finishInitialization } from '../helpers/finishInitialization'
 import { ParentUpdatedAction } from '../types/IndexerAction'
@@ -12,7 +13,8 @@ export function handleParentUpdated(
     ...state,
     parents: state.parents.map((parent, index) => {
       if (index === action.index) {
-        const waiting = parent.waiting || action.safeHeight < parent.safeHeight
+        const waiting =
+          parent.waiting || Height.lt(action.safeHeight, parent.safeHeight)
         return {
           ...parent,
           safeHeight: action.safeHeight,

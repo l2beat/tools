@@ -52,9 +52,9 @@ interface IndexerRepository {
 }
 
 export class ClockIndexer extends RootIndexer {
-  override async start(): Promise<void> {
-    await super.start()
+  override async initialize(): Promise<number> {
     setInterval(() => this.requestTick(), 4 * 1000)
+    return this.tick()
   }
 
   async tick(): Promise<number> {
@@ -82,9 +82,9 @@ export class BlockDownloader extends ChildIndexer {
     this.id = 'BlockDownloader' // this should be unique across all indexers
   }
 
-  override async start(): Promise<void> {
-    await super.start()
+  override async initialize(): Promise<number> {
     this.lastKnownNumber = (await this.blockRepository.findLast())?.number ?? 0
+    return this.indexerRepository.getSafeHeight(this.id)
   }
 
   protected async update(
@@ -153,10 +153,6 @@ export class BlockDownloader extends ChildIndexer {
 
   protected async setSafeHeight(height: number): Promise<void> {
     await this.indexerRepository.setSafeHeight(this.id, height)
-  }
-
-  getSafeHeight(): Promise<number> {
-    return this.indexerRepository.getSafeHeight(this.id)
   }
 
   private async getKnownBlock(blockNumber: number): Promise<BlockRecord> {

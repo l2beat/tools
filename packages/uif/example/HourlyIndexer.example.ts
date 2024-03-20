@@ -1,21 +1,19 @@
 import { RootIndexer } from '../src/BaseIndexer'
 
-const MS_IN_HOUR = 60 * 60 * 1000
-
 export class HourlyIndexer extends RootIndexer {
-  override async start(): Promise<void> {
-    await super.start()
-    setInterval(() => this.requestTick(), MS_IN_HOUR)
+  // initialize is only called once when the indexer is started
+  async initialize() {
+    // check every second
+    setInterval(() => this.requestTick(), 1000)
+    return this.tick()
   }
 
+  // tick is called every time we request a new tick
+  // It should return the new target height
   tick(): Promise<number> {
-    const time = getLastFullHourTimestampSeconds()
-    return Promise.resolve(time)
+    const ONE_HOUR = 60 * 60 * 1000
+    const now = Date.now()
+    const lastHour = now - (now % ONE_HOUR)
+    return Promise.resolve(lastHour)
   }
-}
-
-function getLastFullHourTimestampSeconds(): number {
-  const now = Date.now()
-  const lastFullHour = now - (now % MS_IN_HOUR)
-  return Math.floor(lastFullHour / 1000)
 }

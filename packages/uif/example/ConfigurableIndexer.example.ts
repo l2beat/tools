@@ -30,18 +30,18 @@ export class ConfigurableIndexer extends ChildIndexer {
     super(logger, [parentIndexer])
   }
 
-  override async start(): Promise<void> {
+  override async initialize(): Promise<number> {
     const oldConfigHash = await this.stateRepository.getConfigHash()
     const newConfigHash = this.config.getConfigHash()
     if (oldConfigHash !== newConfigHash) {
       await this.stateRepository.setSafeHeight(0)
       await this.stateRepository.setConfigHash(newConfigHash)
     }
-    await super.start()
+    return this.stateRepository.getSafeHeight()
   }
 
   override async update(from: number, to: number): Promise<number> {
-    const data = []
+    const data: number[] = []
     for (let i = from + 1; i <= to; i++) {
       data.push(i)
     }
@@ -53,11 +53,6 @@ export class ConfigurableIndexer extends ChildIndexer {
   override async invalidate(targetHeight: number): Promise<number> {
     await this.dataRepository.removeAfter(targetHeight)
     return targetHeight
-  }
-
-  override async getSafeHeight(): Promise<number> {
-    const height = await this.stateRepository.getSafeHeight()
-    return height
   }
 
   override async setSafeHeight(height: number): Promise<void> {

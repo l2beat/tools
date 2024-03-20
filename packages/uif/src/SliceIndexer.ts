@@ -44,7 +44,7 @@ export abstract class SliceIndexer extends ChildIndexer {
     return to
   }
 
-  override async getSafeHeight(): Promise<number> {
+  override async initialize(): Promise<number> {
     const sliceStates = await this.getSliceStates()
     const mainSafeHeight = await this.getMainSafeHeight()
     return Math.min(...sliceStates.map((s) => s.height), mainSafeHeight)
