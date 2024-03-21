@@ -5,7 +5,7 @@ import { PriceIndexer } from './prices/PriceIndexer'
 import { PriceIndexerRepository } from './prices/PriceIndexerRepository'
 import { PriceRepository } from './prices/PriceRepository'
 import { PriceService } from './prices/PriceService'
-import { msToHours } from './utils'
+import { msToHours, ONE_HOUR_MS } from './utils'
 
 export class Application {
   start: () => Promise<void>
@@ -15,7 +15,7 @@ export class Application {
 
     const hourlyIndexer = new HourlyIndexer(logger)
 
-    const priceService = new PriceService()
+    const priceService = new PriceService(logger)
     const priceRepository = new PriceRepository()
     const priceIndexerRepository = new PriceIndexerRepository()
 
@@ -31,13 +31,13 @@ export class Application {
           // could be a hash of properties & minHeight instead
           id: 'eth-ethereum',
           properties: { tokenSymbol: 'ETH', apiId: 'ethereum' },
-          minHeight: msToHours(new Date('2021-01-01T00:00:00Z').getTime()),
+          minHeight: msToHours(Date.now() - 48 * ONE_HOUR_MS),
           maxHeight: null,
         },
         {
           id: 'weth-ethereum',
           properties: { tokenSymbol: 'WETH', apiId: 'ethereum' },
-          minHeight: msToHours(new Date('2022-01-01T00:00:00Z').getTime()),
+          minHeight: msToHours(Date.now() - 32 * ONE_HOUR_MS),
           maxHeight: null,
         },
       ],
@@ -53,7 +53,7 @@ export class Application {
         {
           id: 'btc-bitcoin',
           properties: { tokenSymbol: 'BTC', apiId: 'bitcoin' },
-          minHeight: msToHours(new Date('2022-01-01T00:00:00Z').getTime()),
+          minHeight: msToHours(Date.now() - 72 * ONE_HOUR_MS),
           maxHeight: null,
         },
       ],

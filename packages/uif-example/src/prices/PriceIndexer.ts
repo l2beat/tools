@@ -29,14 +29,7 @@ export class PriceIndexer extends MultiIndexer<PriceConfig> {
     options?: IndexerOptions,
   ) {
     super(logger, parents, configurations, options)
-    const apiId = configurations[0]?.properties.apiId
-    if (!apiId) {
-      throw new Error('At least one configuration is required')
-    }
-    if (configurations.some((c) => c.properties.apiId !== apiId)) {
-      throw new Error('All configurations must have the same apiId')
-    }
-    this.apiId = apiId
+    this.apiId = getCommonApiId(configurations)
   }
 
   override async multiInitialize(): Promise<SavedConfiguration<PriceConfig>[]> {
@@ -87,4 +80,15 @@ export class PriceIndexer extends MultiIndexer<PriceConfig> {
   ): Promise<void> {
     return this.priceIndexerRepository.save(this.indexerId, configurations)
   }
+}
+
+function getCommonApiId(configurations: Configuration<PriceConfig>[]): string {
+  const apiId = configurations[0]?.properties.apiId
+  if (!apiId) {
+    throw new Error('At least one configuration is required')
+  }
+  if (configurations.some((c) => c.properties.apiId !== apiId)) {
+    throw new Error('All configurations must have the same apiId')
+  }
+  return apiId
 }

@@ -493,6 +493,7 @@ describe(indexerReducer.name, () => {
           { type: 'Invalidate', targetHeight: 140 },
         ])
       })
+
       it('if partially invalidating, does not update until done invalidating fully', () => {
         const initState = getAfterInit({
           safeHeight: 100,
@@ -624,6 +625,27 @@ describe(indexerReducer.name, () => {
           { type: 'SetSafeHeight', safeHeight: 150 },
           { type: 'Tick' },
         ])
+      })
+
+      it('does not save the same safe height', () => {
+        const initState = getInitialState(0)
+        const [state, effects] = reduceWithIndexerReducer(initState, [
+          { type: 'Initialized', safeHeight: 100, childCount: 0 },
+          { type: 'RequestTick' },
+          { type: 'TickSucceeded', safeHeight: 100 },
+          { type: 'RequestTick' },
+          { type: 'TickSucceeded', safeHeight: 100 },
+        ])
+
+        expect(state).toEqual({
+          ...initState,
+          status: 'idle',
+          height: 100,
+          safeHeight: 100,
+          invalidateToHeight: 100,
+          initializedSelf: true,
+        })
+        expect(effects).toEqual([])
       })
     })
 

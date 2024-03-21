@@ -1,8 +1,16 @@
 export class PriceRepository {
+  data = new Map<string, Map<number, number>>()
+
   async save(
     prices: { tokenSymbol: string; timestamp: number; price: number }[],
   ): Promise<void> {
-    prices // use it so that eslint doesn't complain
+    for (const { tokenSymbol, timestamp, price } of prices) {
+      const tokenPrices =
+        this.data.get(tokenSymbol) ?? new Map<number, number>()
+      this.data.set(tokenSymbol, tokenPrices)
+
+      tokenPrices.set(timestamp, price)
+    }
     return Promise.resolve()
   }
 
@@ -11,9 +19,20 @@ export class PriceRepository {
     fromTimestampInclusive: number,
     toTimestampInclusive: number,
   ): Promise<void> {
-    tokenSymbol // use it so that eslint doesn't complain
-    fromTimestampInclusive // use it so that eslint doesn't complain
-    toTimestampInclusive // use it so that eslint doesn't complain
+    const tokenPrices = this.data.get(tokenSymbol)
+    if (!tokenPrices) {
+      return
+    }
+
+    for (const [timestamp] of tokenPrices) {
+      if (
+        timestamp >= fromTimestampInclusive &&
+        timestamp <= toTimestampInclusive
+      ) {
+        tokenPrices.delete(timestamp)
+      }
+    }
+
     return Promise.resolve()
   }
 }

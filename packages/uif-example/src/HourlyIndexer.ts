@@ -4,7 +4,7 @@ import { ONE_HOUR_MS } from './utils'
 
 export class HourlyIndexer extends RootIndexer {
   async initialize(): Promise<number> {
-    setInterval(() => this.requestTick(), 60 * 1000)
+    setInterval(() => this.requestTick(), 10 * 1000)
     return this.tick()
   }
 
