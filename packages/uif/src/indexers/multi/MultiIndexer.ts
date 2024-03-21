@@ -23,7 +23,7 @@ export interface IMultiIndexer<T> {
    * previously with `setStoredConfigurations`. It shouldn't call
    * `setStoredConfigurations` itself.
    */
-  multiInitialize: () => Promise<StoredConfiguration<T>[]>
+  multiInitialize: () => Promise<StoredConfiguration[]>
 
   /**
    * Removes data that was previously synced but because configurations changed
@@ -34,7 +34,7 @@ export interface IMultiIndexer<T> {
    * This method is only called during the initialization of the indexer, after
    * `multiInitialize` returns.
    */
-  removeData: (configurations: RemovalConfiguration<T>[]) => Promise<void>
+  removeData: (configurations: RemovalConfiguration[]) => Promise<void>
 
   /**
    * Implements the main data fetching process. It is up to the indexer to
@@ -67,7 +67,7 @@ export interface IMultiIndexer<T> {
   ) => Promise<number | null>
 
   setStoredConfigurations: (
-    configurations: StoredConfiguration<T>[],
+    configurations: StoredConfiguration[],
   ) => Promise<void>
 }
 
@@ -90,15 +90,15 @@ export abstract class MultiIndexer<T>
     this.ranges = toRanges(configurations)
   }
 
-  abstract multiInitialize(): Promise<StoredConfiguration<T>[]>
+  abstract multiInitialize(): Promise<StoredConfiguration[]>
   abstract multiUpdate(
     currentHeight: number | null,
     targetHeight: number,
     configurations: Configuration<T>[],
   ): Promise<number | null>
-  abstract removeData(configurations: RemovalConfiguration<T>[]): Promise<void>
+  abstract removeData(configurations: RemovalConfiguration[]): Promise<void>
   abstract setStoredConfigurations(
-    configurations: StoredConfiguration<T>[],
+    configurations: StoredConfiguration[],
   ): Promise<void>
 
   async initialize(): Promise<number | null> {

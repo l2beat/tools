@@ -5,16 +5,14 @@ export interface Configuration<T> {
   maxHeight: number | null
 }
 
-export interface StoredConfiguration<T> {
+export interface StoredConfiguration {
   id: string
-  properties: T
   minHeight: number
   currentHeight: number
 }
 
-export interface RemovalConfiguration<T> {
+export interface RemovalConfiguration {
   id: string
-  properties: T
   fromHeightInclusive: number
   toHeightInclusive: number
 }

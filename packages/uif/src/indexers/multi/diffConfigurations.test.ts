@@ -183,7 +183,7 @@ function actual(id: string, minHeight: number, maxHeight: number | null) {
 }
 
 function stored(id: string, minHeight: number, currentHeight: number) {
-  return { id, properties: null, minHeight, currentHeight }
+  return { id, minHeight, currentHeight }
 }
 
 function removal(
@@ -191,5 +191,5 @@ function removal(
   fromHeightInclusive: number,
   toHeightInclusive: number,
 ) {
-  return { id, properties: null, fromHeightInclusive, toHeightInclusive }
+  return { id, fromHeightInclusive, toHeightInclusive }
 }

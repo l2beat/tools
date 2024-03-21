@@ -5,11 +5,11 @@ import {
   StoredConfiguration,
 } from './types'
 
-export function diffConfigurations<T>(
-  actual: Configuration<T>[],
-  stored: StoredConfiguration<T>[],
+export function diffConfigurations(
+  actual: Configuration<unknown>[],
+  stored: StoredConfiguration[],
 ): {
-  toRemove: RemovalConfiguration<T>[]
+  toRemove: RemovalConfiguration[]
   safeHeight: number | null
 } {
   let safeHeight: number | null = Infinity
@@ -18,11 +18,10 @@ export function diffConfigurations<T>(
   const actualMap = new Map(actual.map((c) => [c.id, c]))
   const storedMap = new Map(stored.map((c) => [c.id, c]))
 
-  const toRemove: RemovalConfiguration<T>[] = stored
+  const toRemove: RemovalConfiguration[] = stored
     .filter((c) => !actualMap.has(c.id))
     .map((c) => ({
       id: c.id,
-      properties: c.properties,
       fromHeightInclusive: c.minHeight,
       toHeightInclusive: c.currentHeight,
     }))
@@ -51,14 +50,12 @@ export function diffConfigurations<T>(
       // We will re-download everything from the beginning
       toRemove.push({
         id: stored.id,
-        properties: stored.properties,
         fromHeightInclusive: stored.minHeight,
         toHeightInclusive: stored.currentHeight,
       })
     } else if (stored.minHeight < c.minHeight) {
       toRemove.push({
         id: stored.id,
-        properties: stored.properties,
         fromHeightInclusive: stored.minHeight,
         toHeightInclusive: c.minHeight - 1,
       })
@@ -67,7 +64,6 @@ export function diffConfigurations<T>(
     if (c.maxHeight !== null && stored.currentHeight > c.maxHeight) {
       toRemove.push({
         id: stored.id,
-        properties: stored.properties,
         fromHeightInclusive: c.maxHeight + 1,
         toHeightInclusive: stored.currentHeight,
       })

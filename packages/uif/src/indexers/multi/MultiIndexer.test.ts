@@ -108,12 +108,12 @@ class TestMultiIndexer
 {
   constructor(
     configurations: Configuration<null>[],
-    private readonly _stored: StoredConfiguration<null>[],
+    private readonly _stored: StoredConfiguration[],
   ) {
     super(Logger.SILENT, [], configurations)
   }
 
-  override multiInitialize(): Promise<StoredConfiguration<null>[]> {
+  override multiInitialize(): Promise<StoredConfiguration[]> {
     return Promise.resolve(this._stored)
   }
 
