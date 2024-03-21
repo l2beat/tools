@@ -336,7 +336,7 @@ export class ParsedFilesManager {
     fromFile: ParsedFile,
     importPath: string,
   ): ParsedFile {
-    const resolvedPath = importPath.startsWith('.')
+    const resolvedPath = importPath.startsWith('./') || importPath.startsWith('../')
       ? posix.join(posix.dirname(fromFile.path), importPath)
       : importPath
 
