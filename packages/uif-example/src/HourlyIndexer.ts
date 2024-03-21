@@ -1,9 +1,9 @@
 import { RootIndexer } from '@l2beat/uif'
 
 export class HourlyIndexer extends RootIndexer {
-  override async start(): Promise<void> {
-    await super.start()
+  async initialize(): Promise<number> {
     setInterval(() => this.requestTick(), 60 * 1000)
+    return this.tick()
   }
 
   async tick(): Promise<number> {
