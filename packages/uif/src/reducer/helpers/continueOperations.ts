@@ -96,7 +96,7 @@ export function continueOperations(
     !shouldInvalidate &&
     initializedParents.length > 0 &&
     Height.gt(parentHeight, state.height) &&
-    parentHeight !== undefined
+    parentHeight !== null
 
   if (shouldInvalidate) {
     if (state.invalidateBlocked || state.waiting || state.status !== 'idle') {

@@ -35,7 +35,7 @@ export abstract class BaseIndexer implements Indexer {
   /**
    * Initializes the indexer. It should return a height that the indexer has
    * synced up to. If the indexer has not synced any data, it should return
-   * undefined.
+   * `null`.
    *
    * This method is expected to read the height that was saved previously with
    * `setSafeHeight`. It shouldn't call `setSafeHeight` itself.
@@ -45,17 +45,17 @@ export abstract class BaseIndexer implements Indexer {
    * Since a root indexer probably doesn't save the height to a database, it
    * can `return this.tick()` instead.
    */
-  abstract initialize(): Promise<number | undefined>
+  protected abstract initialize(): Promise<number | null>
 
   /**
    * Saves the height (most likely to a database). The height given is the
    * smallest height from all parents and what the indexer itself synced to
-   * previously. It can be undefined.
+   * previously. It can be `null`.
    *
    * When `initialize` is called it is expected that it will read the same
    * height that was saved here.
    */
-  protected abstract setSafeHeight(height: number | undefined): Promise<void>
+  protected abstract setSafeHeight(height: number | null): Promise<void>
 
   /**
    * This method should only be implemented for a child indexer.
@@ -66,23 +66,23 @@ export abstract class BaseIndexer implements Indexer {
    * 110. The next time this method will be called with `.update(110, 200)`.
    *
    * @param from The height that the indexer has synced up to previously. Can
-   * be undefined if no data was synced. This value is inclusive so the indexer
+   * be `null` if no data was synced. This value is exclusive so the indexer
    * should not fetch data for this height.
    *
    * @param to The height that the indexer should sync up to. This value is
-   * exclusive so the indexer should fetch data for this height.
+   * inclusive so the indexer should fetch data for this height.
    *
    * @returns The height that the indexer has synced up to. Returning `from`
    * means that the indexer has not synced any data. Returning a value greater
    * than `from` means that the indexer has synced up to that height. Returning
    * a value less than `from` will trigger invalidation down to the returned
-   * value. Returning `undefined` will invalidate all data. Returning a value
+   * value. Returning `null` will invalidate all data. Returning a value
    * greater than `to` is not permitted.
    */
   protected abstract update(
-    from: number | undefined,
+    from: number | null,
     to: number,
-  ): Promise<number | undefined>
+  ): Promise<number | null>
 
   /**
    * This method should only be implemented for a child indexer.
@@ -98,7 +98,7 @@ export abstract class BaseIndexer implements Indexer {
    * steps, you can return a height that is larger than the target height.
    *
    * @param targetHeight The height that the indexer should invalidate down to.
-   * Can be undefined. If it is undefined, the indexer should invalidate all
+   * Can be `null`. If it is `null`, the indexer should invalidate all
    * data.
    *
    * @returns The height that the indexer has invalidated down to. Returning
@@ -107,8 +107,8 @@ export abstract class BaseIndexer implements Indexer {
    * has invalidated down to that height.
    */
   protected abstract invalidate(
-    targetHeight: number | undefined,
-  ): Promise<number | undefined>
+    targetHeight: number | null,
+  ): Promise<number | null>
 
   /**
    * This method should only be implemented for a root indexer.
@@ -117,7 +117,7 @@ export abstract class BaseIndexer implements Indexer {
    * Some good examples of this are: the current time or the last block number.
    *
    * As opposed to `update` and `invalidate`, this method cannot return
-   * `undefined`.
+   * `null`.
    */
   protected abstract tick(): Promise<number>
 
@@ -177,7 +177,7 @@ export abstract class BaseIndexer implements Indexer {
     this.dispatch({ type: 'ChildReady', index })
   }
 
-  notifyUpdate(parent: Indexer, safeHeight: number | undefined): void {
+  notifyUpdate(parent: Indexer, safeHeight: number | null): void {
     this.logger.debug('Someone has updated', {
       parent: parent.constructor.name,
     })
