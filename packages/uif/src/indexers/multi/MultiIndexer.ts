@@ -11,6 +11,7 @@ import {
   ConfigurationRange,
   RemovalConfiguration,
   SavedConfiguration,
+  UpdateConfiguration,
 } from './types'
 
 export interface IMultiIndexer<T> {
@@ -52,7 +53,9 @@ export interface IMultiIndexer<T> {
    *
    * @param configurations The configurations that the indexer should use to
    * sync data. The configurations are guaranteed to be in the range of
-   * `currentHeight` and `targetHeight`.
+   * `currentHeight` and `targetHeight`. Some of those configurations might
+   * have been synced previously for this range. Those configurations
+   * will include the `hasData` flag set to `true`.
    *
    * @returns The height that the indexer has synced up to. Returning
    * `currentHeight` means that the indexer has not synced any data. Returning
@@ -63,7 +66,7 @@ export interface IMultiIndexer<T> {
   multiUpdate: (
     currentHeight: number,
     targetHeight: number,
-    configurations: Configuration<T>[],
+    configurations: UpdateConfiguration<T>[],
   ) => Promise<number>
 
   /**
@@ -101,7 +104,7 @@ export abstract class MultiIndexer<T>
   abstract multiUpdate(
     currentHeight: number,
     targetHeight: number,
-    configurations: Configuration<T>[],
+    configurations: UpdateConfiguration<T>[],
   ): Promise<number>
   abstract removeData(configurations: RemovalConfiguration[]): Promise<void>
   abstract saveConfigurations(
@@ -126,49 +129,36 @@ export abstract class MultiIndexer<T>
     currentHeight: number | null,
     targetHeight: number,
   ): Promise<number | null> {
-    const range = this.ranges.find(
-      (range) =>
-        currentHeight === null ||
-        (range.from <= currentHeight + 1 && range.to > currentHeight),
-    )
-    if (!range) {
-      throw new Error('Programmer error, there should always be a range')
-    }
+    const range = findRange(this.ranges, currentHeight)
     if (
       range.configurations.length === 0 ||
-      // this check is only necessary for TypeScript. If currentHeight is null
+      // This check is only necessary for TypeScript. If currentHeight is null
       // then the first condition will always be true
       currentHeight === null
     ) {
       return Height.min(range.to, targetHeight)
     }
 
-    const minTarget = Math.min(range.to, targetHeight)
+    const { configurations, minCurrentHeight } = getConfigurationsInRange(
+      range,
+      this.saved,
+      currentHeight,
+    )
+    const minTargetHeight = Math.min(range.to, targetHeight, minCurrentHeight)
 
     const newHeight = await this.multiUpdate(
       currentHeight,
-      minTarget,
-      range.configurations,
+      minTargetHeight,
+      configurations,
     )
-    if (newHeight < currentHeight || newHeight > minTarget) {
+    if (newHeight < currentHeight || newHeight > minTargetHeight) {
       throw new Error(
         'Programmer error, returned height must be between currentHeight and targetHeight.',
       )
     }
 
     if (newHeight > currentHeight) {
-      for (const configuration of range.configurations) {
-        const saved = this.saved.find((c) => c.id === configuration.id)
-        if (saved) {
-          saved.currentHeight = newHeight
-        } else {
-          this.saved.push({
-            id: configuration.id,
-            minHeight: configuration.minHeight,
-            currentHeight: newHeight,
-          })
-        }
-      }
+      updateSavedConfigurations(this.saved, configurations, newHeight)
       await this.saveConfigurations(this.saved)
     }
 
@@ -181,5 +171,59 @@ export abstract class MultiIndexer<T>
 
   async setSafeHeight(): Promise<void> {
     return Promise.resolve()
+  }
+}
+
+function findRange<T>(
+  ranges: ConfigurationRange<T>[],
+  currentHeight: number | null,
+): ConfigurationRange<T> {
+  const range = ranges.find(
+    (range) =>
+      currentHeight === null ||
+      (range.from <= currentHeight + 1 && range.to > currentHeight),
+  )
+  if (!range) {
+    throw new Error('Programmer error, there should always be a range')
+  }
+  return range
+}
+
+function getConfigurationsInRange<T>(
+  range: ConfigurationRange<T>,
+  savedConfigurations: SavedConfiguration[],
+  currentHeight: number,
+): { configurations: UpdateConfiguration<T>[]; minCurrentHeight: number } {
+  let minCurrentHeight = Infinity
+  const configurations = range.configurations.map(
+    (configuration): UpdateConfiguration<T> => {
+      const saved = savedConfigurations.find((c) => c.id === configuration.id)
+      if (saved && saved.currentHeight > currentHeight) {
+        minCurrentHeight = Math.min(minCurrentHeight, saved.currentHeight)
+        return { ...configuration, hasData: true }
+      } else {
+        return { ...configuration, hasData: false }
+      }
+    },
+  )
+  return { configurations, minCurrentHeight }
+}
+
+function updateSavedConfigurations(
+  savedConfigurations: SavedConfiguration[],
+  updatedConfigurations: UpdateConfiguration<unknown>[],
+  newHeight: number,
+): void {
+  for (const updated of updatedConfigurations) {
+    const saved = savedConfigurations.find((c) => c.id === updated.id)
+    if (saved) {
+      saved.currentHeight = newHeight
+    } else {
+      savedConfigurations.push({
+        id: updated.id,
+        minHeight: updated.minHeight,
+        currentHeight: newHeight,
+      })
+    }
   }
 }

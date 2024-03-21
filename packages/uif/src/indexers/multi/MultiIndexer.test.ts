@@ -50,7 +50,7 @@ describe(MultiIndexer.name, () => {
 
       expect(newHeight).toEqual(200)
       expect(testIndexer.multiUpdate).toHaveBeenOnlyCalledWith(100, 200, [
-        actual('a', 100, 200),
+        update('a', 100, 200, false),
       ])
       expect(testIndexer.saveConfigurations).toHaveBeenOnlyCalledWith([
         saved('a', 100, 200),
@@ -68,7 +68,7 @@ describe(MultiIndexer.name, () => {
 
       expect(newHeight).toEqual(400)
       expect(testIndexer.multiUpdate).toHaveBeenOnlyCalledWith(300, 400, [
-        actual('b', 300, 400),
+        update('b', 300, 400, false),
       ])
       expect(testIndexer.saveConfigurations).toHaveBeenOnlyCalledWith([
         saved('a', 100, 200),
@@ -76,7 +76,7 @@ describe(MultiIndexer.name, () => {
       ])
     })
 
-    it('calls multiUpdate with a two matching configurations', async () => {
+    it('calls multiUpdate with two matching configurations', async () => {
       const testIndexer = new TestMultiIndexer(
         [actual('a', 100, 200), actual('b', 100, 400)],
         [],
@@ -87,8 +87,8 @@ describe(MultiIndexer.name, () => {
 
       expect(newHeight).toEqual(200)
       expect(testIndexer.multiUpdate).toHaveBeenOnlyCalledWith(100, 200, [
-        actual('a', 100, 200),
-        actual('b', 100, 400),
+        update('a', 100, 200, false),
+        update('b', 100, 400, false),
       ])
       expect(testIndexer.saveConfigurations).toHaveBeenOnlyCalledWith([
         saved('a', 100, 200),
@@ -96,7 +96,7 @@ describe(MultiIndexer.name, () => {
       ])
     })
 
-    it('calls multiUpdate with a two middle matching configurations', async () => {
+    it('calls multiUpdate with two middle matching configurations', async () => {
       const testIndexer = new TestMultiIndexer(
         [actual('a', 100, 400), actual('b', 200, 500)],
         [saved('a', 100, 300), saved('b', 200, 300)],
@@ -107,8 +107,8 @@ describe(MultiIndexer.name, () => {
 
       expect(newHeight).toEqual(400)
       expect(testIndexer.multiUpdate).toHaveBeenOnlyCalledWith(300, 400, [
-        actual('a', 100, 400),
-        actual('b', 200, 500),
+        update('a', 100, 400, false),
+        update('b', 200, 500, false),
       ])
       expect(testIndexer.saveConfigurations).toHaveBeenOnlyCalledWith([
         saved('a', 100, 400),
@@ -156,6 +156,65 @@ describe(MultiIndexer.name, () => {
       expect(newHeight).toEqual(299)
       expect(testIndexer.multiUpdate).not.toHaveBeenCalled()
       expect(testIndexer.saveConfigurations).not.toHaveBeenCalled()
+    })
+
+    it('calls multiUpdate with a matching configuration with data', async () => {
+      const testIndexer = new TestMultiIndexer(
+        [actual('a', 100, 200), actual('b', 100, 400)],
+        [saved('a', 100, 200)],
+      )
+      await testIndexer.initialize()
+
+      const newHeight = await testIndexer.update(100, 500)
+
+      expect(newHeight).toEqual(200)
+      expect(testIndexer.multiUpdate).toHaveBeenOnlyCalledWith(100, 200, [
+        update('a', 100, 200, true),
+        update('b', 100, 400, false),
+      ])
+      expect(testIndexer.saveConfigurations).toHaveBeenOnlyCalledWith([
+        saved('a', 100, 200),
+        saved('b', 100, 200),
+      ])
+    })
+
+    it('multiple update calls', async () => {
+      const testIndexer = new TestMultiIndexer(
+        [actual('a', 100, 200), actual('b', 100, 400)],
+        [saved('a', 100, 200)],
+      )
+      await testIndexer.initialize()
+
+      expect(await testIndexer.update(100, 500)).toEqual(200)
+      expect(testIndexer.multiUpdate).toHaveBeenNthCalledWith(1, 100, 200, [
+        update('a', 100, 200, true),
+        update('b', 100, 400, false),
+      ])
+      expect(testIndexer.saveConfigurations).toHaveBeenNthCalledWith(1, [
+        saved('a', 100, 200),
+        saved('b', 100, 200),
+      ])
+
+      // The same range. In real life might be a result of a parent reorg
+      expect(await testIndexer.update(100, 500)).toEqual(200)
+      expect(testIndexer.multiUpdate).toHaveBeenNthCalledWith(2, 100, 200, [
+        update('a', 100, 200, true),
+        update('b', 100, 400, true),
+      ])
+      expect(testIndexer.saveConfigurations).toHaveBeenNthCalledWith(2, [
+        saved('a', 100, 200),
+        saved('b', 100, 200),
+      ])
+
+      // Next range
+      expect(await testIndexer.update(200, 500)).toEqual(400)
+      expect(testIndexer.multiUpdate).toHaveBeenNthCalledWith(3, 200, 400, [
+        update('b', 100, 400, false),
+      ])
+      expect(testIndexer.saveConfigurations).toHaveBeenNthCalledWith(3, [
+        saved('a', 100, 200),
+        saved('b', 100, 400),
+      ])
     })
   })
 
@@ -269,6 +328,15 @@ function actual(id: string, minHeight: number, maxHeight: number | null) {
 
 function saved(id: string, minHeight: number, currentHeight: number) {
   return { id, minHeight, currentHeight }
+}
+
+function update(
+  id: string,
+  minHeight: number,
+  maxHeight: number | null,
+  hasData: boolean,
+) {
+  return { id, properties: null, minHeight, maxHeight, hasData }
 }
 
 function removal(

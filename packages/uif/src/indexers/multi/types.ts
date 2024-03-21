@@ -5,6 +5,10 @@ export interface Configuration<T> {
   maxHeight: number | null
 }
 
+export interface UpdateConfiguration<T> extends Configuration<T> {
+  hasData: boolean
+}
+
 export interface SavedConfiguration {
   id: string
   minHeight: number
