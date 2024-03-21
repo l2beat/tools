@@ -4,7 +4,6 @@ import { Logger } from '@l2beat/backend-tools'
 
 import { assertUnreachable } from './assertUnreachable'
 import { Height } from './height'
-import { Indexer } from './Indexer'
 import { getInitialState } from './reducer/getInitialState'
 import { indexerReducer } from './reducer/indexerReducer'
 import { IndexerAction } from './reducer/types/IndexerAction'
@@ -17,8 +16,8 @@ import {
 import { IndexerState } from './reducer/types/IndexerState'
 import { Retries, RetryStrategy } from './Retries'
 
-export abstract class BaseIndexer implements Indexer {
-  private readonly children: Indexer[] = []
+export abstract class BaseIndexer {
+  private readonly children: BaseIndexer[] = []
 
   /**
    * This can be overridden to provide a custom retry strategy. It will be
@@ -45,7 +44,7 @@ export abstract class BaseIndexer implements Indexer {
    * Since a root indexer probably doesn't save the height to a database, it
    * can `return this.tick()` instead.
    */
-  protected abstract initialize(): Promise<number | null>
+  abstract initialize(): Promise<number | null>
 
   /**
    * Saves the height (most likely to a database). The height given is the
@@ -55,7 +54,7 @@ export abstract class BaseIndexer implements Indexer {
    * When `initialize` is called it is expected that it will read the same
    * height that was saved here.
    */
-  protected abstract setSafeHeight(height: number | null): Promise<void>
+  abstract setSafeHeight(height: number | null): Promise<void>
 
   /**
    * This method should only be implemented for a child indexer.
@@ -79,7 +78,7 @@ export abstract class BaseIndexer implements Indexer {
    * invalidation down to the returned value. Returning `null` will invalidate
    * all data. Returning a value greater than `targetHeight` is not permitted.
    */
-  protected abstract update(
+  abstract update(
     currentHeight: number | null,
     targetHeight: number,
   ): Promise<number | null>
@@ -106,9 +105,7 @@ export abstract class BaseIndexer implements Indexer {
    * data. Returning a value greater than `targetHeight` means that the indexer
    * has invalidated down to that height.
    */
-  protected abstract invalidate(
-    targetHeight: number | null,
-  ): Promise<number | null>
+  abstract invalidate(targetHeight: number | null): Promise<number | null>
 
   /**
    * This method should only be implemented for a root indexer.
@@ -119,7 +116,7 @@ export abstract class BaseIndexer implements Indexer {
    * As opposed to `update` and `invalidate`, this method cannot return
    * `null`.
    */
-  protected abstract tick(): Promise<number>
+  abstract tick(): Promise<number>
 
   private state: IndexerState
   private started = false
@@ -129,7 +126,7 @@ export abstract class BaseIndexer implements Indexer {
 
   constructor(
     protected logger: Logger,
-    public readonly parents: Indexer[],
+    public readonly parents: BaseIndexer[],
     opts?: {
       tickRetryStrategy?: RetryStrategy
       updateRetryStrategy?: RetryStrategy
@@ -164,20 +161,20 @@ export abstract class BaseIndexer implements Indexer {
     })
   }
 
-  subscribe(child: Indexer): void {
+  subscribe(child: BaseIndexer): void {
     assert(!this.started, 'Indexer already started')
     this.logger.debug('Child subscribed', { child: child.constructor.name })
     this.children.push(child)
   }
 
-  notifyReady(child: Indexer): void {
+  notifyReady(child: BaseIndexer): void {
     this.logger.debug('Someone is ready', { child: child.constructor.name })
     const index = this.children.indexOf(child)
     assert(index !== -1, 'Received ready from unknown child')
     this.dispatch({ type: 'ChildReady', index })
   }
 
-  notifyUpdate(parent: Indexer, safeHeight: number | null): void {
+  notifyUpdate(parent: BaseIndexer, safeHeight: number | null): void {
     this.logger.debug('Someone has updated', {
       parent: parent.constructor.name,
     })
@@ -348,28 +345,4 @@ export abstract class BaseIndexer implements Indexer {
   }
 
   // #endregion
-}
-
-export abstract class RootIndexer extends BaseIndexer {
-  constructor(logger: Logger, opts?: { tickRetryStrategy?: RetryStrategy }) {
-    super(logger, [], opts)
-  }
-
-  override async update(): Promise<number> {
-    return Promise.reject(new Error('RootIndexer cannot update'))
-  }
-
-  override async invalidate(): Promise<number> {
-    return Promise.reject(new Error('RootIndexer cannot invalidate'))
-  }
-
-  override async setSafeHeight(): Promise<void> {
-    return Promise.resolve()
-  }
-}
-
-export abstract class ChildIndexer extends BaseIndexer {
-  override async tick(): Promise<number> {
-    return Promise.reject(new Error('ChildIndexer cannot tick'))
-  }
 }

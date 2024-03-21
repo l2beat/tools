@@ -1,4 +1,4 @@
-import { ChildIndexer } from './BaseIndexer'
+import { ChildIndexer } from './ChildIndexer'
 
 export type SliceHash = string
 
@@ -13,6 +13,7 @@ export interface SliceUpdate {
   to: number
 }
 
+// TODO: implements IChildIndexer
 export abstract class SliceIndexer extends ChildIndexer {
   override async update(from: number, to: number): Promise<number> {
     const sliceStates = await this.getSliceStates()

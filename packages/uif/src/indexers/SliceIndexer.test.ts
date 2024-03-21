@@ -1,10 +1,10 @@
 import { Logger } from '@l2beat/backend-tools'
 import { expect, mockFn } from 'earl'
 
-import { BaseIndexer } from './BaseIndexer'
-import { TestRootIndexer, waitUntil } from './BaseIndexer.test'
-import { IndexerAction } from './reducer/types/IndexerAction'
-import { RetryStrategy } from './Retries'
+import { BaseIndexer } from '../BaseIndexer'
+import { TestRootIndexer, waitUntil } from '../BaseIndexer.test'
+import { IndexerAction } from '../reducer/types/IndexerAction'
+import { RetryStrategy } from '../Retries'
 import {
   diffSlices,
   SliceHash,

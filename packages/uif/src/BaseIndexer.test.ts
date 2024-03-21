@@ -2,7 +2,9 @@ import { Logger } from '@l2beat/backend-tools'
 import { install } from '@sinonjs/fake-timers'
 import { expect, mockFn } from 'earl'
 
-import { BaseIndexer, ChildIndexer, RootIndexer } from './BaseIndexer'
+import { BaseIndexer } from './BaseIndexer'
+import { ChildIndexer } from './indexers/ChildIndexer'
+import { RootIndexer } from './indexers/RootIndexer'
 import { IndexerAction } from './reducer/types/IndexerAction'
 import { RetryStrategy } from './Retries'
 
