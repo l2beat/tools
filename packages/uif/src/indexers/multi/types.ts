@@ -5,7 +5,7 @@ export interface Configuration<T> {
   maxHeight: number | null
 }
 
-export interface StoredConfiguration {
+export interface SavedConfiguration {
   id: string
   minHeight: number
   currentHeight: number

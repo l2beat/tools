@@ -2,23 +2,24 @@ import { Height } from '../../height'
 import {
   Configuration,
   RemovalConfiguration,
-  StoredConfiguration,
+  SavedConfiguration,
 } from './types'
 
 export function diffConfigurations(
   actual: Configuration<unknown>[],
-  stored: StoredConfiguration[],
+  saved: SavedConfiguration[],
 ): {
   toRemove: RemovalConfiguration[]
+  toSave: SavedConfiguration[]
   safeHeight: number | null
 } {
   let safeHeight: number | null = Infinity
 
   const knownIds = new Set<string>()
   const actualMap = new Map(actual.map((c) => [c.id, c]))
-  const storedMap = new Map(stored.map((c) => [c.id, c]))
+  const savedMap = new Map(saved.map((c) => [c.id, c]))
 
-  const toRemove: RemovalConfiguration[] = stored
+  const toRemove: RemovalConfiguration[] = saved
     .filter((c) => !actualMap.has(c.id))
     .map((c) => ({
       id: c.id,
@@ -38,7 +39,7 @@ export function diffConfigurations(
       )
     }
 
-    const stored = storedMap.get(c.id)
+    const stored = savedMap.get(c.id)
     if (!stored) {
       safeHeight = Height.min(safeHeight, c.minHeight - 1)
       continue
@@ -75,5 +76,22 @@ export function diffConfigurations(
     }
   }
 
-  return { toRemove, safeHeight }
+  const toSave = saved
+    .map((c): SavedConfiguration | undefined => {
+      const actual = actualMap.get(c.id)
+      if (!actual || actual.minHeight < c.minHeight) {
+        return undefined
+      }
+      return {
+        id: c.id,
+        minHeight: actual.minHeight,
+        currentHeight:
+          actual.maxHeight === null
+            ? c.currentHeight
+            : Math.min(c.currentHeight, actual.maxHeight),
+      }
+    })
+    .filter((c): c is SavedConfiguration => c !== undefined)
+
+  return { toRemove, toSave, safeHeight }
 }
