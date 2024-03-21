@@ -5,6 +5,7 @@ import { PriceIndexer } from './prices/PriceIndexer'
 import { PriceIndexerRepository } from './prices/PriceIndexerRepository'
 import { PriceRepository } from './prices/PriceRepository'
 import { PriceService } from './prices/PriceService'
+import { msToHours } from './utils'
 
 export class Application {
   start: () => Promise<void>
@@ -30,13 +31,13 @@ export class Application {
           // could be a hash of properties & minHeight instead
           id: 'eth-ethereum',
           properties: { tokenSymbol: 'ETH', apiId: 'ethereum' },
-          minHeight: new Date('2021-01-01T00:00:00Z').getTime(),
+          minHeight: msToHours(new Date('2021-01-01T00:00:00Z').getTime()),
           maxHeight: null,
         },
         {
           id: 'weth-ethereum',
           properties: { tokenSymbol: 'WETH', apiId: 'ethereum' },
-          minHeight: new Date('2022-01-01T00:00:00Z').getTime(),
+          minHeight: msToHours(new Date('2022-01-01T00:00:00Z').getTime()),
           maxHeight: null,
         },
       ],
@@ -52,7 +53,7 @@ export class Application {
         {
           id: 'btc-bitcoin',
           properties: { tokenSymbol: 'BTC', apiId: 'bitcoin' },
-          minHeight: new Date('2022-01-01T00:00:00Z').getTime(),
+          minHeight: msToHours(new Date('2022-01-01T00:00:00Z').getTime()),
           maxHeight: null,
         },
       ],

@@ -1,4 +1,4 @@
-const ONE_HOUR = 60 * 60 * 1000
+import { ONE_HOUR_MS } from '../utils'
 
 export class PriceService {
   async getHourlyPrices(
@@ -9,7 +9,7 @@ export class PriceService {
     apiId // use it so that eslint doesn't complain
 
     const prices: { timestamp: number; price: number }[] = []
-    for (let t = startHourInclusive; t <= endHourInclusive; t += ONE_HOUR) {
+    for (let t = startHourInclusive; t <= endHourInclusive; t += ONE_HOUR_MS) {
       prices.push({ timestamp: t, price: Math.random() * 1000 })
     }
     return Promise.resolve(prices)

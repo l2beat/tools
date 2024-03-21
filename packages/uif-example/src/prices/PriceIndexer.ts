@@ -9,12 +9,11 @@ import {
   UpdateConfiguration,
 } from '@l2beat/uif'
 
+import { ONE_HOUR_MS } from '../utils'
 import { PriceConfig } from './PriceConfig'
 import { PriceIndexerRepository } from './PriceIndexerRepository'
 import { PriceRepository } from './PriceRepository'
 import { PriceService } from './PriceService'
-
-const ONE_HOUR = 60 * 60 * 1000
 
 export class PriceIndexer extends MultiIndexer<PriceConfig> {
   private readonly apiId: string
@@ -49,21 +48,14 @@ export class PriceIndexer extends MultiIndexer<PriceConfig> {
     targetHeight: number,
     configurations: UpdateConfiguration<PriceConfig>[],
   ): Promise<number> {
-    const startHour = currentHeight - (currentHeight % ONE_HOUR) + ONE_HOUR
-    const endHour = Math.min(
-      targetHeight - (targetHeight % ONE_HOUR),
-      // for example the api costs us more money for larger ranges
-      startHour + 23 * ONE_HOUR,
-    )
-
-    if (startHour >= endHour) {
-      return startHour
-    }
+    const startHour = currentHeight + 1
+    // we only query 24 hours at a time
+    const endHour = Math.min(targetHeight, startHour + 23)
 
     const prices = await this.priceService.getHourlyPrices(
       this.apiId,
-      startHour,
-      endHour,
+      startHour * ONE_HOUR_MS,
+      endHour * ONE_HOUR_MS,
     )
 
     const dataToSave = configurations.flatMap((configuration) => {
@@ -75,7 +67,6 @@ export class PriceIndexer extends MultiIndexer<PriceConfig> {
     })
     await this.priceRepository.save(dataToSave)
 
-    // TODO: Maybe if targetHeight is not exactly an hour we can return it?
     return endHour
   }
 

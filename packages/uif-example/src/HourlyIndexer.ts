@@ -1,5 +1,7 @@
 import { RootIndexer } from '@l2beat/uif'
 
+import { ONE_HOUR_MS } from './utils'
+
 export class HourlyIndexer extends RootIndexer {
   async initialize(): Promise<number> {
     setInterval(() => this.requestTick(), 60 * 1000)
@@ -7,8 +9,8 @@ export class HourlyIndexer extends RootIndexer {
   }
 
   async tick(): Promise<number> {
-    const hourInMs = 60 * 60 * 1000
-    const time = (new Date().getTime() % hourInMs) * hourInMs
-    return Promise.resolve(time)
+    const now = new Date().getTime()
+    const hours = Math.floor(now / ONE_HOUR_MS)
+    return Promise.resolve(hours)
   }
 }
