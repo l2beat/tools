@@ -1,7 +1,7 @@
 import { Logger } from '@l2beat/backend-tools'
 import { expect, mockFn } from 'earl'
 
-import { IMultiIndexer, MultiIndexer } from './MultiIndexer'
+import { MultiIndexer } from './MultiIndexer'
 import { Configuration, SavedConfiguration } from './types'
 
 describe(MultiIndexer.name, () => {
@@ -297,10 +297,7 @@ describe(MultiIndexer.name, () => {
   })
 })
 
-class TestMultiIndexer
-  extends MultiIndexer<null>
-  implements IMultiIndexer<null>
-{
+class TestMultiIndexer extends MultiIndexer<null> {
   constructor(
     configurations: Configuration<null>[],
     private readonly _saved: SavedConfiguration[],

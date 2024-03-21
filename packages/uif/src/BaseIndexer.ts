@@ -34,15 +34,16 @@ export abstract class BaseIndexer {
   /**
    * Initializes the indexer. It should return a height that the indexer has
    * synced up to. If the indexer has not synced any data, it should return
-   * `null`.
+   * `null`. For root indexers it should return the initial target height for
+   * the entire system.
    *
    * This method is expected to read the height that was saved previously with
    * `setSafeHeight`. It shouldn't call `setSafeHeight` itself.
    *
-   * For root indexers this method should also schedule a process to request
-   * ticks. For example with `setInterval(() => this.requestTick(), 1000)`.
-   * Since a root indexer probably doesn't save the height to a database, it
-   * can `return this.tick()` instead.
+   * For root indexers if `setSafeHeight` is implemented it should return the
+   * height that was saved previously. If not it can `return this.tick()`.
+   * This method should also schedule a process to request ticks. For example
+   * with `setInterval(() => this.requestTick(), 1000)`.
    */
   abstract initialize(): Promise<number | null>
 
@@ -53,16 +54,16 @@ export abstract class BaseIndexer {
    *
    * When `initialize` is called it is expected that it will read the same
    * height that was saved here.
+   *
+   * Optional in root indexers.
    */
   abstract setSafeHeight(height: number | null): Promise<void>
 
   /**
-   * This method should only be implemented for a child indexer.
-   *
-   * It is responsible for the main data fetching process. It is up to the
-   * indexer to decide how much data to fetch. For example given
-   * `.update(100, 200)`, the indexer can only fetch data up to 110 and return
-   * 110. The next time this method will be called with `.update(110, 200)`.
+   * Implements the main data fetching process. It is up to the indexer to
+   * decide how much data to fetch. For example given `.update(100, 200)`, the
+   * indexer can only fetch data up to 110 and return 110. The next time this
+   * method will be called with `.update(110, 200)`.
    *
    * @param currentHeight The height that the indexer has synced up to previously. Can
    * be `null` if no data was synced. This value is exclusive so the indexer
@@ -84,9 +85,7 @@ export abstract class BaseIndexer {
   ): Promise<number | null>
 
   /**
-   * This method should only be implemented for a child indexer.
-   *
-   * It is responsible for invalidating data that was synced previously. It is
+   * Responsible for invalidating data that was synced previously. It is
    * possible that no data was synced and this method is still called.
    *
    * Invalidation can, but doesn't have to remove data from the database. If
@@ -108,13 +107,11 @@ export abstract class BaseIndexer {
   abstract invalidate(targetHeight: number | null): Promise<number | null>
 
   /**
-   * This method should only be implemented for a root indexer.
+   * This method is responsible for providing the target height for the entire
+   * system. Some candidates for this are: the current time or the latest block
+   * number.
    *
-   * It is responsible for providing the target height for the entire system.
-   * Some good examples of this are: the current time or the last block number.
-   *
-   * As opposed to `update` and `invalidate`, this method cannot return
-   * `null`.
+   * This method cannot return `null`.
    */
   abstract tick(): Promise<number>
 

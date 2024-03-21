@@ -3,7 +3,7 @@ import { Logger } from '@l2beat/backend-tools'
 import { BaseIndexer } from '../../BaseIndexer'
 import { Height } from '../../height'
 import { RetryStrategy } from '../../Retries'
-import { ChildIndexer, IChildIndexer } from '../ChildIndexer'
+import { ChildIndexer } from '../ChildIndexer'
 import { diffConfigurations } from './diffConfigurations'
 import { toRanges } from './toRanges'
 import {
@@ -14,7 +14,23 @@ import {
   UpdateConfiguration,
 } from './types'
 
-export interface IMultiIndexer<T> {
+export abstract class MultiIndexer<T> extends ChildIndexer {
+  private readonly ranges: ConfigurationRange<T>[]
+  private saved: SavedConfiguration[] = []
+
+  constructor(
+    logger: Logger,
+    parents: BaseIndexer[],
+    readonly configurations: Configuration<T>[],
+    opts?: {
+      updateRetryStrategy?: RetryStrategy
+      invalidateRetryStrategy?: RetryStrategy
+    },
+  ) {
+    super(logger, parents, opts)
+    this.ranges = toRanges(configurations)
+  }
+
   /**
    * Initializes the indexer. It returns the configurations that were saved
    * previously. In case no configurations were saved, it should return an empty
@@ -24,18 +40,7 @@ export interface IMultiIndexer<T> {
    * previously with `setStoredConfigurations`. It shouldn't call
    * `setStoredConfigurations` itself.
    */
-  multiInitialize: () => Promise<SavedConfiguration[]>
-
-  /**
-   * Removes data that was previously synced but because configurations changed
-   * is no longer valid. The data should be removed for the ranges specified
-   * in each configuration. It is possible for multiple ranges to share a
-   * configuration id!
-   *
-   * This method can only be called during the initialization of the indexer,
-   * after `multiInitialize` returns.
-   */
-  removeData: (configurations: RemovalConfiguration[]) => Promise<void>
+  abstract multiInitialize(): Promise<SavedConfiguration[]>
 
   /**
    * Implements the main data fetching process. It is up to the indexer to
@@ -63,11 +68,22 @@ export interface IMultiIndexer<T> {
    * to that height. Returning a value less than `currentHeight` or greater than
    * `targetHeight` is not permitted.
    */
-  multiUpdate: (
+  abstract multiUpdate(
     currentHeight: number,
     targetHeight: number,
     configurations: UpdateConfiguration<T>[],
-  ) => Promise<number>
+  ): Promise<number>
+
+  /**
+   * Removes data that was previously synced but because configurations changed
+   * is no longer valid. The data should be removed for the ranges specified
+   * in each configuration. It is possible for multiple ranges to share a
+   * configuration id!
+   *
+   * This method can only be called during the initialization of the indexer,
+   * after `multiInitialize` returns.
+   */
+  abstract removeData(configurations: RemovalConfiguration[]): Promise<void>
 
   /**
    * Saves configurations that the indexer should use to sync data. The
@@ -77,36 +93,6 @@ export interface IMultiIndexer<T> {
    * indexer should save the returned configurations and ensure that no other
    * configurations are persisted.
    */
-  saveConfigurations: (configurations: SavedConfiguration[]) => Promise<void>
-}
-
-export abstract class MultiIndexer<T>
-  extends ChildIndexer
-  implements IChildIndexer, IMultiIndexer<T>
-{
-  private readonly ranges: ConfigurationRange<T>[]
-  private saved: SavedConfiguration[] = []
-
-  constructor(
-    logger: Logger,
-    parents: BaseIndexer[],
-    readonly configurations: Configuration<T>[],
-    opts?: {
-      updateRetryStrategy?: RetryStrategy
-      invalidateRetryStrategy?: RetryStrategy
-    },
-  ) {
-    super(logger, parents, opts)
-    this.ranges = toRanges(configurations)
-  }
-
-  abstract multiInitialize(): Promise<SavedConfiguration[]>
-  abstract multiUpdate(
-    currentHeight: number,
-    targetHeight: number,
-    configurations: UpdateConfiguration<T>[],
-  ): Promise<number>
-  abstract removeData(configurations: RemovalConfiguration[]): Promise<void>
   abstract saveConfigurations(
     configurations: SavedConfiguration[],
   ): Promise<void>
