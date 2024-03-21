@@ -116,7 +116,9 @@ export abstract class MultiIndexer<T>
     targetHeight: number,
   ): Promise<number | null> {
     const range = this.ranges.find(
-      (range) => currentHeight === null || range.from >= currentHeight,
+      (range) =>
+        currentHeight === null ||
+        (range.from <= currentHeight + 1 && range.to > currentHeight),
     )
     if (!range) {
       throw new Error('Programmer error, there should always be a range')

@@ -49,6 +49,21 @@ describe(MultiIndexer.name, () => {
       ])
     })
 
+    it('calls multiUpdate with a two middle matching configurations', async () => {
+      const testIndexer = new TestMultiIndexer(
+        [actual('a', 100, 400), actual('b', 200, 500)],
+        [],
+      )
+
+      const newHeight = await testIndexer.update(300, 600)
+
+      expect(newHeight).toEqual(400)
+      expect(testIndexer.multiUpdate).toHaveBeenOnlyCalledWith(300, 400, [
+        actual('a', 100, 400),
+        actual('b', 200, 500),
+      ])
+    })
+
     it('skips calling multiUpdate if we are too early', async () => {
       const testIndexer = new TestMultiIndexer(
         [actual('a', 100, 200), actual('b', 300, 400)],
@@ -70,6 +85,18 @@ describe(MultiIndexer.name, () => {
       const newHeight = await testIndexer.update(400, 500)
 
       expect(newHeight).toEqual(500)
+      expect(testIndexer.multiUpdate).not.toHaveBeenCalled()
+    })
+
+    it('skips calling multiUpdate between configs', async () => {
+      const testIndexer = new TestMultiIndexer(
+        [actual('a', 100, 200), actual('b', 300, 400)],
+        [],
+      )
+
+      const newHeight = await testIndexer.update(200, 500)
+
+      expect(newHeight).toEqual(299)
       expect(testIndexer.multiUpdate).not.toHaveBeenCalled()
     })
   })
