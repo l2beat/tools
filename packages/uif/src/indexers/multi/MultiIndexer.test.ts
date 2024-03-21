@@ -5,6 +5,39 @@ import { IMultiIndexer, MultiIndexer } from './MultiIndexer'
 import { Configuration, SavedConfiguration } from './types'
 
 describe(MultiIndexer.name, () => {
+  describe(MultiIndexer.prototype.initialize.name, () => {
+    it('calls multiInitialize and saves configurations', async () => {
+      const testIndexer = new TestMultiIndexer(
+        [actual('a', 100, 400), actual('b', 200, 500)],
+        [saved('a', 100, 300), saved('b', 200, 300), saved('c', 100, 300)],
+      )
+
+      const newHeight = await testIndexer.initialize()
+      expect(newHeight).toEqual(300)
+
+      expect(testIndexer.removeData).toHaveBeenOnlyCalledWith([
+        removal('c', 100, 300),
+      ])
+      expect(testIndexer.saveConfigurations).toHaveBeenOnlyCalledWith([
+        saved('a', 100, 300),
+        saved('b', 200, 300),
+      ])
+    })
+
+    it('skips calling removeData if there is nothing to remove', async () => {
+      const testIndexer = new TestMultiIndexer(
+        [actual('a', 100, 400), actual('b', 200, 500)],
+        [saved('a', 100, 400), saved('b', 200, 500)],
+      )
+
+      const newHeight = await testIndexer.initialize()
+      expect(newHeight).toEqual(Infinity)
+
+      expect(testIndexer.removeData).not.toHaveBeenCalled()
+      expect(testIndexer.saveConfigurations).not.toHaveBeenCalled()
+    })
+  })
+
   describe(MultiIndexer.prototype.update.name, () => {
     it('calls multiUpdate with an early matching configuration', async () => {
       const testIndexer = new TestMultiIndexer(
@@ -125,6 +158,84 @@ describe(MultiIndexer.name, () => {
       expect(testIndexer.saveConfigurations).not.toHaveBeenCalled()
     })
   })
+
+  describe('multiUpdate', () => {
+    it('returns the currentHeight', async () => {
+      const testIndexer = new TestMultiIndexer(
+        [actual('a', 100, 300), actual('b', 100, 400)],
+        [saved('a', 100, 200), saved('b', 100, 200)],
+      )
+      await testIndexer.initialize()
+
+      testIndexer.multiUpdate.resolvesTo(200)
+
+      const newHeight = await testIndexer.update(200, 500)
+      expect(newHeight).toEqual(200)
+      expect(testIndexer.saveConfigurations).not.toHaveBeenCalled()
+    })
+
+    it('returns the targetHeight', async () => {
+      const testIndexer = new TestMultiIndexer(
+        [actual('a', 100, 300), actual('b', 100, 400)],
+        [saved('a', 100, 200), saved('b', 100, 200)],
+      )
+      await testIndexer.initialize()
+
+      testIndexer.multiUpdate.resolvesTo(300)
+
+      const newHeight = await testIndexer.update(200, 300)
+      expect(newHeight).toEqual(300)
+      expect(testIndexer.saveConfigurations).toHaveBeenOnlyCalledWith([
+        saved('a', 100, 300),
+        saved('b', 100, 300),
+      ])
+    })
+
+    it('returns something in between', async () => {
+      const testIndexer = new TestMultiIndexer(
+        [actual('a', 100, 300), actual('b', 100, 400)],
+        [saved('a', 100, 200), saved('b', 100, 200)],
+      )
+      await testIndexer.initialize()
+
+      testIndexer.multiUpdate.resolvesTo(250)
+
+      const newHeight = await testIndexer.update(200, 300)
+      expect(newHeight).toEqual(250)
+      expect(testIndexer.saveConfigurations).toHaveBeenOnlyCalledWith([
+        saved('a', 100, 250),
+        saved('b', 100, 250),
+      ])
+    })
+
+    it('cannot return less than currentHeight', async () => {
+      const testIndexer = new TestMultiIndexer(
+        [actual('a', 100, 300), actual('b', 100, 400)],
+        [saved('a', 100, 200), saved('b', 100, 200)],
+      )
+      await testIndexer.initialize()
+
+      testIndexer.multiUpdate.resolvesTo(150)
+
+      await expect(testIndexer.update(200, 300)).toBeRejectedWith(
+        /returned height must be between currentHeight and targetHeight/,
+      )
+    })
+
+    it('cannot return more than targetHeight', async () => {
+      const testIndexer = new TestMultiIndexer(
+        [actual('a', 100, 300), actual('b', 100, 400)],
+        [saved('a', 100, 200), saved('b', 100, 200)],
+      )
+      await testIndexer.initialize()
+
+      testIndexer.multiUpdate.resolvesTo(350)
+
+      await expect(testIndexer.update(200, 300)).toBeRejectedWith(
+        /returned height must be between currentHeight and targetHeight/,
+      )
+    })
+  })
 })
 
 class TestMultiIndexer
@@ -158,4 +269,12 @@ function actual(id: string, minHeight: number, maxHeight: number | null) {
 
 function saved(id: string, minHeight: number, currentHeight: number) {
   return { id, minHeight, currentHeight }
+}
+
+function removal(
+  id: string,
+  fromHeightInclusive: number,
+  toHeightInclusive: number,
+) {
+  return { id, fromHeightInclusive, toHeightInclusive }
 }

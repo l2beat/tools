@@ -31,8 +31,8 @@ export interface IMultiIndexer<T> {
    * in each configuration. It is possible for multiple ranges to share a
    * configuration id!
    *
-   * This method is only called during the initialization of the indexer, after
-   * `multiInitialize` returns.
+   * This method can only be called during the initialization of the indexer,
+   * after `multiInitialize` returns.
    */
   removeData: (configurations: RemovalConfiguration[]) => Promise<void>
 
