@@ -235,7 +235,7 @@ export class TestRootIndexer extends RootIndexer {
   ticking = false
 
   constructor(
-    private safeHeight: number,
+    private testSafeHeight: number,
     name?: string,
     retryStrategy?: { tickRetryStrategy?: RetryStrategy },
   ) {
@@ -250,7 +250,7 @@ export class TestRootIndexer extends RootIndexer {
 
   async doTick(height: number): Promise<void> {
     await waitUntil(() => this.getState().status === 'idle')
-    this.safeHeight = height
+    this.testSafeHeight = height
     const counter = this.dispatchCounter
     this.requestTick()
     await waitUntil(() => this.dispatchCounter > counter)
@@ -267,7 +267,7 @@ export class TestRootIndexer extends RootIndexer {
     await waitUntil(() => this.dispatchCounter > counter)
   }
 
-  override tick(): Promise<number> {
+  override async tick(): Promise<number> {
     this.ticking = true
 
     return new Promise<number>((resolve, reject) => {
@@ -280,9 +280,9 @@ export class TestRootIndexer extends RootIndexer {
 
   override async initialize(): Promise<number> {
     const promise = this.tick()
-    this.resolveTick(this.safeHeight)
+    this.resolveTick(this.testSafeHeight)
     await promise
-    return this.safeHeight
+    return this.testSafeHeight
   }
 }
 
@@ -325,7 +325,7 @@ class TestChildIndexer extends ChildIndexer {
 
   constructor(
     parents: BaseIndexer[],
-    private safeHeight: number,
+    private testSafeHeight: number,
     name?: string,
     retryStrategy?: {
       invalidateRetryStrategy?: RetryStrategy
@@ -342,11 +342,11 @@ class TestChildIndexer extends ChildIndexer {
   }
 
   override initialize(): Promise<number> {
-    return Promise.resolve(this.safeHeight)
+    return Promise.resolve(this.testSafeHeight)
   }
 
   override setSafeHeight(safeHeight: number): Promise<void> {
-    this.safeHeight = safeHeight
+    this.testSafeHeight = safeHeight
     return Promise.resolve()
   }
 

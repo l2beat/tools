@@ -37,6 +37,10 @@ export interface IMultiIndexer<T> {
   removeData: (configurations: RemovalConfiguration<T>[]) => Promise<void>
 
   /**
+   * Implements the main data fetching process. It is up to the indexer to
+   * decide how much data to fetch. For example given `.update(100, 200, [...])`, the
+   * indexer can only fetch data up to 110 and return 110. The next time this
+   * method will be called with `.update(110, 200, [...])`.
    *
    * @param currentHeight The height that the indexer has synced up to previously. Can
    * be `null` if no data was synced. This value is exclusive so the indexer
@@ -45,7 +49,9 @@ export interface IMultiIndexer<T> {
    * @param targetHeight The height that the indexer should sync up to. This value is
    * inclusive so the indexer should eventually fetch data for this height.
    *
-   * @param configurations foo
+   * @param configurations The configurations that the indexer should use to
+   * sync data. The configurations are guaranteed to be in the range of
+   * `currentHeight` and `targetHeight`.
    *
    * @returns The height that the indexer has synced up to. Returning
    * `currentHeight` means that the indexer has not synced any data. Returning
@@ -109,8 +115,8 @@ export abstract class MultiIndexer<T>
     currentHeight: number | null,
     targetHeight: number,
   ): Promise<number | null> {
-    const range = this.ranges.find((range) =>
-      Height.gt(range.from, currentHeight),
+    const range = this.ranges.find(
+      (range) => currentHeight === null || range.from >= currentHeight,
     )
     if (!range) {
       throw new Error('Programmer error, there should always be a range')
