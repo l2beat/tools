@@ -20,7 +20,7 @@ export interface RemovalConfiguration<T> {
 }
 
 export interface ConfigurationRange<T> {
-  from: number | null
-  to: number | null
+  from: number
+  to: number
   configurations: Configuration<T>[]
 }
