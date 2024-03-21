@@ -65,23 +65,23 @@ export abstract class BaseIndexer implements Indexer {
    * `.update(100, 200)`, the indexer can only fetch data up to 110 and return
    * 110. The next time this method will be called with `.update(110, 200)`.
    *
-   * @param from The height that the indexer has synced up to previously. Can
+   * @param currentHeight The height that the indexer has synced up to previously. Can
    * be `null` if no data was synced. This value is exclusive so the indexer
    * should not fetch data for this height.
    *
-   * @param to The height that the indexer should sync up to. This value is
-   * inclusive so the indexer should fetch data for this height.
+   * @param targetHeight The height that the indexer should sync up to. This value is
+   * inclusive so the indexer should eventually fetch data for this height.
    *
-   * @returns The height that the indexer has synced up to. Returning `from`
-   * means that the indexer has not synced any data. Returning a value greater
-   * than `from` means that the indexer has synced up to that height. Returning
-   * a value less than `from` will trigger invalidation down to the returned
-   * value. Returning `null` will invalidate all data. Returning a value
-   * greater than `to` is not permitted.
+   * @returns The height that the indexer has synced up to. Returning
+   * `currentHeight` means that the indexer has not synced any data. Returning
+   * a value greater than `currentHeight` means that the indexer has synced up
+   * to that height. Returning a value less than `currentHeight` will trigger
+   * invalidation down to the returned value. Returning `null` will invalidate
+   * all data. Returning a value greater than `targetHeight` is not permitted.
    */
   protected abstract update(
-    from: number | null,
-    to: number,
+    currentHeight: number | null,
+    targetHeight: number,
   ): Promise<number | null>
 
   /**
