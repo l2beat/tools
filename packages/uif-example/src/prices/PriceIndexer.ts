@@ -1,7 +1,6 @@
 import { Logger } from '@l2beat/backend-tools'
 import {
   Configuration,
-  Indexer,
   IndexerOptions,
   MultiIndexer,
   RemovalConfiguration,
@@ -9,6 +8,7 @@ import {
   UpdateConfiguration,
 } from '@l2beat/uif'
 
+import { HourlyIndexer } from '../HourlyIndexer'
 import { ONE_HOUR_MS } from '../utils'
 import { PriceConfig } from './PriceConfig'
 import { PriceIndexerRepository } from './PriceIndexerRepository'
@@ -23,12 +23,12 @@ export class PriceIndexer extends MultiIndexer<PriceConfig> {
     private readonly priceService: PriceService,
     private readonly priceRepository: PriceRepository,
     private readonly priceIndexerRepository: PriceIndexerRepository,
+    hourlyIndexer: HourlyIndexer,
     logger: Logger,
-    parents: Indexer[],
     configurations: Configuration<PriceConfig>[],
     options?: IndexerOptions,
   ) {
-    super(logger, parents, configurations, options)
+    super(logger, [hourlyIndexer], configurations, options)
     this.apiId = getCommonApiId(configurations)
   }
 

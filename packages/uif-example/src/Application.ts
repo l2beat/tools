@@ -1,5 +1,9 @@
 import { Logger } from '@l2beat/backend-tools'
 
+import { BlockIndexer } from './blocks/BlockIndexer'
+import { BlockIndexerRepository } from './blocks/BlockIndexerRepository'
+import { BlockRepository } from './blocks/BlockRepository'
+import { BlockService } from './blocks/BlockService'
 import { HourlyIndexer } from './HourlyIndexer'
 import { PriceIndexer } from './prices/PriceIndexer'
 import { PriceIndexerRepository } from './prices/PriceIndexerRepository'
@@ -24,8 +28,8 @@ export class Application {
       priceService,
       priceRepository,
       priceIndexerRepository,
+      hourlyIndexer,
       logger,
-      [hourlyIndexer],
       [
         {
           // could be a hash of properties & minHeight instead
@@ -47,8 +51,8 @@ export class Application {
       priceService,
       priceRepository,
       priceIndexerRepository,
+      hourlyIndexer,
       logger,
-      [hourlyIndexer],
       [
         {
           id: 'btc-bitcoin',
@@ -59,12 +63,25 @@ export class Application {
       ],
     )
 
+    const blockService = new BlockService()
+    const blockRepository = new BlockRepository()
+    const blockIndexerRepository = new BlockIndexerRepository()
+    const blockIndexer = new BlockIndexer(
+      blockService,
+      blockRepository,
+      blockIndexerRepository,
+      msToHours(Date.now() - 72 * ONE_HOUR_MS),
+      hourlyIndexer,
+      logger,
+    )
+
     this.start = async (): Promise<void> => {
       logger.for('Application').info('Starting')
 
       await hourlyIndexer.start()
       await ethereumPriceIndexer.start()
       await bitcoinPriceIndexer.start()
+      await blockIndexer.start()
 
       logger.for('Application').info('Started')
     }
