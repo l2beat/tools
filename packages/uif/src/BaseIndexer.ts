@@ -150,6 +150,10 @@ export abstract class BaseIndexer {
       opts?.invalidateRetryStrategy ?? BaseIndexer.GET_DEFAULT_RETRY_STRATEGY()
   }
 
+  get safeHeight(): number | null {
+    return this.state.safeHeight
+  }
+
   async start(): Promise<void> {
     assert(!this.started, 'Indexer already started')
     this.started = true

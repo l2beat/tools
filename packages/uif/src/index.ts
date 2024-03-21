@@ -1,6 +1,7 @@
 export * from './BaseIndexer'
 export * from './height'
 export * from './indexers/ChildIndexer'
+export * from './indexers/multi/MultiIndexer'
+export type { Configuration } from './indexers/multi/types'
 export * from './indexers/RootIndexer'
-export * from './indexers/SliceIndexer'
 export * from './Retries'
