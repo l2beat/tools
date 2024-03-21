@@ -1,8 +1,7 @@
 import { Logger } from '@l2beat/backend-tools'
 
-import { BaseIndexer } from '../../BaseIndexer'
 import { Height } from '../../height'
-import { RetryStrategy } from '../../Retries'
+import { Indexer, IndexerOptions } from '../../Indexer'
 import { ChildIndexer } from '../ChildIndexer'
 import { diffConfigurations } from './diffConfigurations'
 import { toRanges } from './toRanges'
@@ -16,18 +15,15 @@ import {
 
 export abstract class MultiIndexer<T> extends ChildIndexer {
   private readonly ranges: ConfigurationRange<T>[]
-  private saved: SavedConfiguration[] = []
+  private saved: SavedConfiguration<T>[] = []
 
   constructor(
     logger: Logger,
-    parents: BaseIndexer[],
+    parents: Indexer[],
     readonly configurations: Configuration<T>[],
-    opts?: {
-      updateRetryStrategy?: RetryStrategy
-      invalidateRetryStrategy?: RetryStrategy
-    },
+    options?: IndexerOptions,
   ) {
-    super(logger, parents, opts)
+    super(logger, parents, options)
     this.ranges = toRanges(configurations)
   }
 
@@ -40,7 +36,7 @@ export abstract class MultiIndexer<T> extends ChildIndexer {
    * previously with `setStoredConfigurations`. It shouldn't call
    * `setStoredConfigurations` itself.
    */
-  abstract multiInitialize(): Promise<SavedConfiguration[]>
+  abstract multiInitialize(): Promise<SavedConfiguration<T>[]>
 
   /**
    * Implements the main data fetching process. It is up to the indexer to
@@ -83,7 +79,7 @@ export abstract class MultiIndexer<T> extends ChildIndexer {
    * This method can only be called during the initialization of the indexer,
    * after `multiInitialize` returns.
    */
-  abstract removeData(configurations: RemovalConfiguration[]): Promise<void>
+  abstract removeData(configurations: RemovalConfiguration<T>[]): Promise<void>
 
   /**
    * Saves configurations that the indexer should use to sync data. The
@@ -94,7 +90,7 @@ export abstract class MultiIndexer<T> extends ChildIndexer {
    * configurations are persisted.
    */
   abstract saveConfigurations(
-    configurations: SavedConfiguration[],
+    configurations: SavedConfiguration<T>[],
   ): Promise<void>
 
   async initialize(): Promise<number | null> {
@@ -177,7 +173,7 @@ function findRange<T>(
 
 function getConfigurationsInRange<T>(
   range: ConfigurationRange<T>,
-  savedConfigurations: SavedConfiguration[],
+  savedConfigurations: SavedConfiguration<T>[],
   currentHeight: number,
 ): { configurations: UpdateConfiguration<T>[]; minCurrentHeight: number } {
   let minCurrentHeight = Infinity
@@ -195,9 +191,9 @@ function getConfigurationsInRange<T>(
   return { configurations, minCurrentHeight }
 }
 
-function updateSavedConfigurations(
-  savedConfigurations: SavedConfiguration[],
-  updatedConfigurations: UpdateConfiguration<unknown>[],
+function updateSavedConfigurations<T>(
+  savedConfigurations: SavedConfiguration<T>[],
+  updatedConfigurations: UpdateConfiguration<T>[],
   newHeight: number,
 ): void {
   for (const updated of updatedConfigurations) {
@@ -207,6 +203,7 @@ function updateSavedConfigurations(
     } else {
       savedConfigurations.push({
         id: updated.id,
+        properties: updated.properties,
         minHeight: updated.minHeight,
         currentHeight: newHeight,
       })

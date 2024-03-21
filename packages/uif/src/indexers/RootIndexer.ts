@@ -1,10 +1,9 @@
 import { Logger } from '@l2beat/backend-tools'
 
-import { BaseIndexer } from '../BaseIndexer'
-import { RetryStrategy } from '../Retries'
+import { Indexer, IndexerOptions } from '../Indexer'
 
-export abstract class RootIndexer extends BaseIndexer {
-  constructor(logger: Logger, opts?: { tickRetryStrategy?: RetryStrategy }) {
+export abstract class RootIndexer extends Indexer {
+  constructor(logger: Logger, opts?: IndexerOptions) {
     super(logger, [], opts)
   }
 

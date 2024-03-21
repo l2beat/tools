@@ -16,8 +16,14 @@ import {
 import { IndexerState } from './reducer/types/IndexerState'
 import { Retries, RetryStrategy } from './Retries'
 
-export abstract class BaseIndexer {
-  private readonly children: BaseIndexer[] = []
+export interface IndexerOptions {
+  tickRetryStrategy?: RetryStrategy
+  updateRetryStrategy?: RetryStrategy
+  invalidateRetryStrategy?: RetryStrategy
+}
+
+export abstract class Indexer {
+  private readonly children: Indexer[] = []
 
   /**
    * This can be overridden to provide a custom retry strategy. It will be
@@ -123,12 +129,8 @@ export abstract class BaseIndexer {
 
   constructor(
     protected logger: Logger,
-    public readonly parents: BaseIndexer[],
-    opts?: {
-      tickRetryStrategy?: RetryStrategy
-      updateRetryStrategy?: RetryStrategy
-      invalidateRetryStrategy?: RetryStrategy
-    },
+    public readonly parents: Indexer[],
+    options?: IndexerOptions,
   ) {
     this.logger = this.logger.for(this)
     this.state = getInitialState(parents.length)
@@ -140,11 +142,11 @@ export abstract class BaseIndexer {
     })
 
     this.tickRetryStrategy =
-      opts?.tickRetryStrategy ?? BaseIndexer.GET_DEFAULT_RETRY_STRATEGY()
+      options?.tickRetryStrategy ?? Indexer.GET_DEFAULT_RETRY_STRATEGY()
     this.updateRetryStrategy =
-      opts?.updateRetryStrategy ?? BaseIndexer.GET_DEFAULT_RETRY_STRATEGY()
+      options?.updateRetryStrategy ?? Indexer.GET_DEFAULT_RETRY_STRATEGY()
     this.invalidateRetryStrategy =
-      opts?.invalidateRetryStrategy ?? BaseIndexer.GET_DEFAULT_RETRY_STRATEGY()
+      options?.invalidateRetryStrategy ?? Indexer.GET_DEFAULT_RETRY_STRATEGY()
   }
 
   get safeHeight(): number | null {
@@ -162,20 +164,20 @@ export abstract class BaseIndexer {
     })
   }
 
-  subscribe(child: BaseIndexer): void {
+  subscribe(child: Indexer): void {
     assert(!this.started, 'Indexer already started')
     this.logger.debug('Child subscribed', { child: child.constructor.name })
     this.children.push(child)
   }
 
-  notifyReady(child: BaseIndexer): void {
+  notifyReady(child: Indexer): void {
     this.logger.debug('Someone is ready', { child: child.constructor.name })
     const index = this.children.indexOf(child)
     assert(index !== -1, 'Received ready from unknown child')
     this.dispatch({ type: 'ChildReady', index })
   }
 
-  notifyUpdate(parent: BaseIndexer, safeHeight: number | null): void {
+  notifyUpdate(parent: Indexer, safeHeight: number | null): void {
     this.logger.debug('Someone has updated', {
       parent: parent.constructor.name,
     })

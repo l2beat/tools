@@ -300,12 +300,12 @@ describe(MultiIndexer.name, () => {
 class TestMultiIndexer extends MultiIndexer<null> {
   constructor(
     configurations: Configuration<null>[],
-    private readonly _saved: SavedConfiguration[],
+    private readonly _saved: SavedConfiguration<null>[],
   ) {
     super(Logger.SILENT, [], configurations)
   }
 
-  override multiInitialize(): Promise<SavedConfiguration[]> {
+  override multiInitialize(): Promise<SavedConfiguration<null>[]> {
     return Promise.resolve(this._saved)
   }
 
@@ -324,7 +324,7 @@ function actual(id: string, minHeight: number, maxHeight: number | null) {
 }
 
 function saved(id: string, minHeight: number, currentHeight: number) {
-  return { id, minHeight, currentHeight }
+  return { id, properties: null, minHeight, currentHeight }
 }
 
 function update(
@@ -341,5 +341,5 @@ function removal(
   fromHeightInclusive: number,
   toHeightInclusive: number,
 ) {
-  return { id, fromHeightInclusive, toHeightInclusive }
+  return { id, properties: null, fromHeightInclusive, toHeightInclusive }
 }

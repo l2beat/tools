@@ -2,13 +2,13 @@ import { Logger } from '@l2beat/backend-tools'
 import { install } from '@sinonjs/fake-timers'
 import { expect, mockFn } from 'earl'
 
-import { BaseIndexer } from './BaseIndexer'
+import { Indexer } from './Indexer'
 import { ChildIndexer } from './indexers/ChildIndexer'
 import { RootIndexer } from './indexers/RootIndexer'
 import { IndexerAction } from './reducer/types/IndexerAction'
 import { RetryStrategy } from './Retries'
 
-describe(BaseIndexer.name, () => {
+describe(Indexer.name, () => {
   describe('correctly informs about updates', () => {
     it('first invalidate then parent update', async () => {
       const parent = new TestRootIndexer(0)
@@ -324,7 +324,7 @@ class TestChildIndexer extends ChildIndexer {
   public invalidateTo = 0
 
   constructor(
-    parents: BaseIndexer[],
+    parents: Indexer[],
     private testSafeHeight: number,
     name?: string,
     retryStrategy?: {
