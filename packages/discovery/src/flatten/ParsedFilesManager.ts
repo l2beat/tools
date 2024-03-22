@@ -1,7 +1,15 @@
 import { assert } from '@l2beat/backend-tools'
 import { parse } from '@solidity-parser/parser'
 // eslint-disable-next-line import/no-unresolved
-import { ContractDefinition } from '@solidity-parser/parser/dist/src/ast-types'
+import {
+  ASTNode,
+  BaseASTNode,
+  ContractDefinition,
+  EnumDefinition,
+  FunctionDefinition,
+  StructDefinition,
+  TypeDefinition,
+} from '@solidity-parser/parser/dist/src/ast-types'
 import * as posix from 'path'
 
 import { getASTIdentifiers } from './getASTIdentifiers'
@@ -13,17 +21,25 @@ export interface ByteRange {
   end: number
 }
 
-type ContractType = 'contract' | 'interface' | 'library' | 'abstract'
+type DeclarationType =
+  | 'contract'
+  | 'interface'
+  | 'library'
+  | 'abstract'
+  | 'struct'
+  | 'function'
+  | 'typedef'
+  | 'enum'
 
-export interface ContractDeclaration {
+export interface TopLevelDeclaration {
   name: string
-  type: ContractType
+  type: DeclarationType
 
-  ast: ContractDefinition
+  ast: ASTNode
   byteRange: ByteRange
 
   inheritsFrom: string[]
-  referencedContracts: string[]
+  referencedDeclaration: string[]
 }
 
 // If import is:
@@ -54,12 +70,12 @@ export interface Remapping {
 export interface ParsedFile extends FileContent {
   rootASTNode: ParseResult
 
-  contractDeclarations: ContractDeclaration[]
+  topLevelDeclarations: TopLevelDeclaration[]
   importDirectives: ImportDirective[]
 }
 
-export interface ContractFilePair {
-  contract: ContractDeclaration
+export interface DeclarationFilePair {
+  declaration: TopLevelDeclaration
   file: ParsedFile
 }
 
@@ -77,13 +93,13 @@ export class ParsedFilesManager {
       path: resolveRemappings(path, remappings),
       content,
       rootASTNode: parse(content, { range: true }),
-      contractDeclarations: [],
+      topLevelDeclarations: [],
       importDirectives: [],
     }))
 
     // Pass 1: Find all contract declarations
     for (const file of result.files) {
-      file.contractDeclarations = result.resolveContractDeclarations(file)
+      file.topLevelDeclarations = result.resolveTopLevelDeclarations(file)
     }
 
     // Pass 2: Resolve all imports
@@ -91,7 +107,7 @@ export class ParsedFilesManager {
       const alreadyImportedObjects = new Map<string, string[]>()
       alreadyImportedObjects.set(
         file.path,
-        file.contractDeclarations.map((c) => c.name),
+        file.topLevelDeclarations.map((c) => c.name),
       )
 
       file.importDirectives = result.resolveFileImports(
@@ -103,48 +119,130 @@ export class ParsedFilesManager {
 
     // Pass 3: Resolve all references to other contracts
     for (const file of result.files) {
-      for (const contract of file.contractDeclarations) {
-        contract.referencedContracts = result.resolveReferencedLibraries(
+      for (const declaration of file.topLevelDeclarations) {
+        declaration.referencedDeclaration = result.resolveReferencedLibraries(
           file,
-          contract.ast,
+          declaration.ast,
         )
       }
-    }
-
-    // Pass 4: Make sure that there are no top-level function definitions
-    for (const file of result.files) {
-      const areTopLevelPresent =
-        file.rootASTNode.children.filter((n) => n.type === 'FunctionDefinition')
-          .length !== 0
-      assert(!areTopLevelPresent, 'Function definitions are not supported')
     }
 
     return result
   }
 
-  private resolveContractDeclarations(file: ParsedFile): ContractDeclaration[] {
+  private resolveTopLevelDeclarations(file: ParsedFile): TopLevelDeclaration[] {
     const contractDeclarations = file.rootASTNode.children.filter(
       (n) => n.type === 'ContractDefinition',
     )
 
-    return contractDeclarations.map((c) => {
+    const contracts: TopLevelDeclaration[] = contractDeclarations.map((c) => {
       assert(c.range !== undefined, 'Invalid contract definition')
       const declaration = c as ContractDefinition
 
       return {
         ast: declaration,
         name: declaration.name,
-        type: declaration.kind as ContractType,
+        type: declaration.kind as DeclarationType,
         inheritsFrom: declaration.baseContracts.map(
           (bc) => bc.baseName.namePath,
         ),
-        referencedContracts: [],
+        referencedDeclaration: [],
         byteRange: {
           start: c.range[0],
           end: c.range[1],
         },
       }
     })
+
+    const structDeclarations = file.rootASTNode.children.filter(
+      (n) => n.type === 'StructDefinition',
+    )
+
+    const structrues: TopLevelDeclaration[] = structDeclarations.map((c) => {
+      assert(c.range !== undefined, 'Invalid contract definition')
+      const declaration = c as StructDefinition
+
+      return {
+        ast: declaration,
+        name: declaration.name,
+        type: 'struct' as DeclarationType,
+        inheritsFrom: [] as string[],
+        referencedDeclaration: [],
+        byteRange: {
+          start: c.range[0],
+          end: c.range[1],
+        },
+      }
+    })
+
+    const functionDeclaration = file.rootASTNode.children.filter(
+      (n) => n.type === 'FunctionDefinition',
+    )
+
+    const functions: TopLevelDeclaration[] = functionDeclaration.map((c) => {
+      assert(c.range !== undefined, 'Invalid contract definition')
+      const declaration = c as FunctionDefinition
+
+      return {
+        ast: declaration,
+        name: declaration.name ?? '',
+        type: 'function' as DeclarationType,
+        inheritsFrom: [] as string[],
+        referencedDeclaration: [],
+        byteRange: {
+          start: c.range[0],
+          end: c.range[1],
+        },
+      }
+    })
+
+    const typedefDeclaration = file.rootASTNode.children.filter(
+      (n) => n.type === 'TypeDefinition',
+    )
+
+    const typedefs: TopLevelDeclaration[] = typedefDeclaration.map((c) => {
+      assert(c.range !== undefined, 'Invalid contract definition')
+      const declaration = c as TypeDefinition
+
+      return {
+        ast: declaration,
+        name: declaration.name,
+        type: 'typedef' as DeclarationType,
+        inheritsFrom: [] as string[],
+        referencedDeclaration: [],
+        byteRange: {
+          start: c.range[0],
+          end: c.range[1],
+        },
+      }
+    })
+
+    const enumDeclaration = file.rootASTNode.children.filter(
+      (n) => n.type === 'EnumDefinition',
+    )
+
+    const enums: TopLevelDeclaration[] = enumDeclaration.map((c) => {
+      assert(c.range !== undefined, 'Invalid contract definition')
+      const declaration = c as EnumDefinition
+
+      return {
+        ast: declaration,
+        name: declaration.name,
+        type: 'enum' as DeclarationType,
+        inheritsFrom: [] as string[],
+        referencedDeclaration: [],
+        byteRange: {
+          start: c.range[0],
+          end: c.range[1],
+        },
+      }
+    })
+
+    return contracts
+      .concat(structrues)
+      .concat(functions)
+      .concat(typedefs)
+      .concat(enums)
   }
 
   private resolveFileImports(
@@ -172,11 +270,11 @@ export class ParsedFilesManager {
       let alreadyImported = alreadyImportedObjects.get(importedFile.path)
       if (alreadyImported !== undefined) {
         assert(
-          alreadyImported.length <= importedFile.contractDeclarations.length,
+          alreadyImported.length <= importedFile.topLevelDeclarations.length,
           'Already imported more than there are contracts in the file',
         )
         const gotEverything =
-          alreadyImported.length === importedFile.contractDeclarations.length
+          alreadyImported.length === importedFile.topLevelDeclarations.length
         if (gotEverything) {
           return []
         }
@@ -186,11 +284,11 @@ export class ParsedFilesManager {
       const result = []
       const importEverything = i.symbolAliases === null
       if (importEverything) {
-        for (const contract of importedFile.contractDeclarations) {
+        for (const declaration of importedFile.topLevelDeclarations) {
           const object = {
             absolutePath: importedFile.path,
-            originalName: contract.name,
-            importedName: contract.name,
+            originalName: declaration.name,
+            importedName: declaration.name,
           }
 
           if (!alreadyImported.includes(object.originalName)) {
@@ -200,7 +298,7 @@ export class ParsedFilesManager {
 
         alreadyImportedObjects.set(
           importedFile.path,
-          importedFile.contractDeclarations.map((c) => c.name),
+          importedFile.topLevelDeclarations.map((c) => c.name),
         )
 
         const recursiveResult = this.resolveFileImports(
@@ -224,7 +322,7 @@ export class ParsedFilesManager {
           continue
         }
 
-        const isDeclared = importedFile.contractDeclarations.some(
+        const isDeclared = importedFile.topLevelDeclarations.some(
           (c) => c.name === object.originalName,
         )
         let isImported = false
@@ -252,18 +350,42 @@ export class ParsedFilesManager {
     })
   }
 
-  private resolveReferencedLibraries(
-    file: ParsedFile,
-    c: ContractDefinition,
-  ): string[] {
+  private resolveReferencedLibraries(file: ParsedFile, c: ASTNode): string[] {
+    let subNodes: BaseASTNode[] = []
+    if (c.type === 'ContractDefinition') {
+      subNodes = c.subNodes
+    } else if (c.type === 'StructDefinition') {
+      subNodes = c.members
+    } else if (c.type === 'FunctionDefinition') {
+      subNodes = c.body ? [c.body] : []
+    } else if (c.type === 'TypeDefinition') {
+      subNodes = []
+    } else if (c.type === 'EnumDefinition') {
+      subNodes = c.members
+    } else {
+      throw new Error('Invalid node type')
+    }
+
     const identifiers = new Set(
-      c.subNodes.flatMap((n) => getASTIdentifiers(n)).map(extractNamespace),
+      subNodes.flatMap((n) => getASTIdentifiers(n)).map(extractNamespace),
     )
 
     const referenced = []
     for (const identifier of identifiers) {
-      const result = this.tryFindContract(identifier, file)
-      if (result !== undefined && result.contract.type === 'library') {
+      const result = this.tryFindDeclaration(identifier, file)
+      const isLibrary =
+        result !== undefined && result.declaration.type === 'library'
+      const isStruct =
+        result !== undefined && result.declaration.type === 'struct'
+      const isFunction =
+        result !== undefined && result.declaration.type === 'function'
+      const isTypedef =
+        result !== undefined && result.declaration.type === 'typedef'
+      const isEnum = result !== undefined && result.declaration.type === 'enum'
+      if (
+        result !== undefined &&
+        (isLibrary || isStruct || isFunction || isTypedef || isEnum)
+      ) {
         referenced.push(identifier)
       }
     }
@@ -271,29 +393,29 @@ export class ParsedFilesManager {
     return referenced
   }
 
-  tryFindContract(
-    contractName: string,
+  tryFindDeclaration(
+    declarationName: string,
     file: ParsedFile,
-  ): ContractFilePair | undefined {
-    const matchingContract = findOne(
-      file.contractDeclarations,
-      (c) => c.name === contractName,
+  ): DeclarationFilePair | undefined {
+    const matchingDeclaration = findOne(
+      file.topLevelDeclarations,
+      (c) => c.name === declarationName,
     )
 
-    if (matchingContract !== undefined) {
+    if (matchingDeclaration !== undefined) {
       return {
-        contract: matchingContract,
+        declaration: matchingDeclaration,
         file,
       }
     }
 
     const matchingImport = findOne(
       file.importDirectives,
-      (c) => c.importedName === contractName,
+      (c) => c.importedName === declarationName,
     )
 
     if (matchingImport !== undefined) {
-      return this.tryFindContract(
+      return this.tryFindDeclaration(
         matchingImport.originalName,
         this.resolveImportPath(file, matchingImport.absolutePath),
       )
@@ -302,32 +424,32 @@ export class ParsedFilesManager {
     return undefined
   }
 
-  findFileDeclaringContract(contractName: string): ParsedFile {
+  findFileDeclaring(declarationName: string): ParsedFile {
     const matchingFile = findOne(this.files, (f) =>
-      f.contractDeclarations.some((c) => c.name === contractName),
+      f.topLevelDeclarations.some((c) => c.name === declarationName),
     )
     assert(
       matchingFile !== undefined,
-      `Failed to find file declaring contract ${contractName}`,
+      `Failed to find file declaring ${declarationName}`,
     )
 
     return matchingFile
   }
 
-  findContractDeclaration(
-    contractName: string,
+  findDeclaration(
+    declarationName: string,
     file?: ParsedFile,
-  ): ContractFilePair {
-    file ??= this.findFileDeclaringContract(contractName)
+  ): DeclarationFilePair {
+    file ??= this.findFileDeclaring(declarationName)
 
-    const matchingContract = findOne(
-      file.contractDeclarations,
-      (c) => c.name === contractName,
+    const matchingDeclaration = findOne(
+      file.topLevelDeclarations,
+      (c) => c.name === declarationName,
     )
-    assert(matchingContract !== undefined, 'Contract not found')
+    assert(matchingDeclaration !== undefined, 'Declaration not found')
 
     return {
-      contract: matchingContract,
+      declaration: matchingDeclaration,
       file,
     }
   }
