@@ -1,15 +1,7 @@
 import { assert } from '@l2beat/backend-tools'
 import { parse } from '@solidity-parser/parser'
 // eslint-disable-next-line import/no-unresolved
-import {
-  ASTNode,
-  BaseASTNode,
-  ContractDefinition,
-  EnumDefinition,
-  FunctionDefinition,
-  StructDefinition,
-  TypeDefinition,
-} from '@solidity-parser/parser/dist/src/ast-types'
+import type * as AST from '@solidity-parser/parser/dist/src/ast-types'
 import * as posix from 'path'
 
 import { getASTIdentifiers } from './getASTIdentifiers'
@@ -31,11 +23,18 @@ type DeclarationType =
   | 'typedef'
   | 'enum'
 
+type TopLevelDeclarationNode =
+  | AST.StructDefinition
+  | AST.EnumDefinition
+  | AST.FunctionDefinition
+  | AST.TypeDefinition
+  | AST.ContractDefinition
+
 export interface TopLevelDeclaration {
   name: string
   type: DeclarationType
 
-  ast: ASTNode
+  ast: AST.ASTNode
   byteRange: ByteRange
 
   inheritsFrom: string[]
@@ -131,118 +130,52 @@ export class ParsedFilesManager {
   }
 
   private resolveTopLevelDeclarations(file: ParsedFile): TopLevelDeclaration[] {
-    const contractDeclarations = file.rootASTNode.children.filter(
-      (n) => n.type === 'ContractDefinition',
+    const declarationNodes = file.rootASTNode.children.filter(
+      (n): n is TopLevelDeclarationNode =>
+        n.type === 'ContractDefinition' ||
+        n.type === 'StructDefinition' ||
+        n.type === 'FunctionDefinition' ||
+        n.type === 'TypeDefinition' ||
+        n.type === 'EnumDefinition',
     )
 
-    const contracts: TopLevelDeclaration[] = contractDeclarations.map((c) => {
-      assert(c.range !== undefined, 'Invalid contract definition')
-      const declaration = c as ContractDefinition
+    const getDeclarationType = (
+      n: TopLevelDeclarationNode,
+    ): DeclarationType => {
+      switch (n.type) {
+        case 'ContractDefinition':
+          return n.kind as DeclarationType
+        case 'StructDefinition':
+          return 'struct'
+        case 'FunctionDefinition':
+          return 'function'
+        case 'TypeDefinition':
+          return 'typedef'
+        case 'EnumDefinition':
+          return 'enum'
+      }
+    }
+
+    const declarations = declarationNodes.map((d) => {
+      assert(d.range !== undefined, 'Invalid contract definition')
 
       return {
-        ast: declaration,
-        name: declaration.name,
-        type: declaration.kind as DeclarationType,
-        inheritsFrom: declaration.baseContracts.map(
-          (bc) => bc.baseName.namePath,
-        ),
+        ast: d,
+        name: d.name ?? '',
+        type: getDeclarationType(d),
+        inheritsFrom:
+          d.type === 'ContractDefinition'
+            ? d.baseContracts.map((c) => c.baseName.namePath)
+            : [],
         referencedDeclaration: [],
         byteRange: {
-          start: c.range[0],
-          end: c.range[1],
+          start: d.range[0],
+          end: d.range[1],
         },
       }
     })
 
-    const structDeclarations = file.rootASTNode.children.filter(
-      (n) => n.type === 'StructDefinition',
-    )
-
-    const structrues: TopLevelDeclaration[] = structDeclarations.map((c) => {
-      assert(c.range !== undefined, 'Invalid contract definition')
-      const declaration = c as StructDefinition
-
-      return {
-        ast: declaration,
-        name: declaration.name,
-        type: 'struct' as DeclarationType,
-        inheritsFrom: [] as string[],
-        referencedDeclaration: [],
-        byteRange: {
-          start: c.range[0],
-          end: c.range[1],
-        },
-      }
-    })
-
-    const functionDeclaration = file.rootASTNode.children.filter(
-      (n) => n.type === 'FunctionDefinition',
-    )
-
-    const functions: TopLevelDeclaration[] = functionDeclaration.map((c) => {
-      assert(c.range !== undefined, 'Invalid contract definition')
-      const declaration = c as FunctionDefinition
-
-      return {
-        ast: declaration,
-        name: declaration.name ?? '',
-        type: 'function' as DeclarationType,
-        inheritsFrom: [] as string[],
-        referencedDeclaration: [],
-        byteRange: {
-          start: c.range[0],
-          end: c.range[1],
-        },
-      }
-    })
-
-    const typedefDeclaration = file.rootASTNode.children.filter(
-      (n) => n.type === 'TypeDefinition',
-    )
-
-    const typedefs: TopLevelDeclaration[] = typedefDeclaration.map((c) => {
-      assert(c.range !== undefined, 'Invalid contract definition')
-      const declaration = c as TypeDefinition
-
-      return {
-        ast: declaration,
-        name: declaration.name,
-        type: 'typedef' as DeclarationType,
-        inheritsFrom: [] as string[],
-        referencedDeclaration: [],
-        byteRange: {
-          start: c.range[0],
-          end: c.range[1],
-        },
-      }
-    })
-
-    const enumDeclaration = file.rootASTNode.children.filter(
-      (n) => n.type === 'EnumDefinition',
-    )
-
-    const enums: TopLevelDeclaration[] = enumDeclaration.map((c) => {
-      assert(c.range !== undefined, 'Invalid contract definition')
-      const declaration = c as EnumDefinition
-
-      return {
-        ast: declaration,
-        name: declaration.name,
-        type: 'enum' as DeclarationType,
-        inheritsFrom: [] as string[],
-        referencedDeclaration: [],
-        byteRange: {
-          start: c.range[0],
-          end: c.range[1],
-        },
-      }
-    })
-
-    return contracts
-      .concat(structrues)
-      .concat(functions)
-      .concat(typedefs)
-      .concat(enums)
+    return declarations
   }
 
   private resolveFileImports(
@@ -350,8 +283,11 @@ export class ParsedFilesManager {
     })
   }
 
-  private resolveReferencedLibraries(file: ParsedFile, c: ASTNode): string[] {
-    let subNodes: BaseASTNode[] = []
+  private resolveReferencedLibraries(
+    file: ParsedFile,
+    c: AST.ASTNode,
+  ): string[] {
+    let subNodes: AST.BaseASTNode[] = []
     if (c.type === 'ContractDefinition') {
       subNodes = c.subNodes
     } else if (c.type === 'StructDefinition') {
