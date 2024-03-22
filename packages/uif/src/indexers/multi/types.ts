@@ -5,7 +5,11 @@ export interface Configuration<T> {
   maxHeight: number | null
 }
 
-export interface UpdateConfiguration<T> extends Configuration<T> {
+export interface UpdateConfiguration<T> {
+  id: string
+  properties: T
+  minHeight: number
+  maxHeight: number | null
   hasData: boolean
 }
 
@@ -13,6 +17,8 @@ export interface SavedConfiguration<T> {
   id: string
   properties: T
   minHeight: number
+  // TODO: add maxHeight
+  // TODO: add null, save configurations without syncing
   currentHeight: number
 }
 

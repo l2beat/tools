@@ -51,13 +51,17 @@ export class PriceIndexer extends MultiIndexer<PriceConfig> {
       endHour * ONE_HOUR_MS,
     )
 
-    const dataToSave = configurations.flatMap((configuration) => {
-      return prices.map(({ timestamp, price }) => ({
-        tokenSymbol: configuration.properties.tokenSymbol,
-        timestamp,
-        price,
-      }))
-    })
+    const dataToSave = configurations
+      // TODO: don't update currentHeight for configs that have data
+      // TODO: test data downloaded to middle of the range
+      .filter((c) => !c.hasData)
+      .flatMap((configuration) => {
+        return prices.map(({ timestamp, price }) => ({
+          tokenSymbol: configuration.properties.tokenSymbol,
+          timestamp,
+          price,
+        }))
+      })
     await this.priceRepository.save(dataToSave)
 
     return endHour

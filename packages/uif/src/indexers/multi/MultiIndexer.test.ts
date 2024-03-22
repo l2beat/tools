@@ -196,6 +196,7 @@ describe(MultiIndexer.name, () => {
       ])
 
       // The same range. In real life might be a result of a parent reorg
+      // Invalidate is a no-op so we don't need to call it
       expect(await testIndexer.update(100, 500)).toEqual(200)
       expect(testIndexer.multiUpdate).toHaveBeenNthCalledWith(2, 100, 200, [
         update('a', 100, 200, true),

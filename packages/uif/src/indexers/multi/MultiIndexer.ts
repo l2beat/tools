@@ -198,15 +198,16 @@ function updateSavedConfigurations<T>(
 ): void {
   for (const updated of updatedConfigurations) {
     const saved = savedConfigurations.find((c) => c.id === updated.id)
-    if (saved) {
-      saved.currentHeight = newHeight
-    } else {
+    if (!saved) {
       savedConfigurations.push({
         id: updated.id,
         properties: updated.properties,
         minHeight: updated.minHeight,
         currentHeight: newHeight,
       })
+    } else {
+      // TODO: test this
+      saved.currentHeight = Math.max(saved.currentHeight, newHeight)
     }
   }
 }
