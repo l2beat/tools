@@ -5,7 +5,7 @@ export class BlockIndexerRepository {
     return Promise.resolve(this.height)
   }
 
-  async saveHeight(height: number | undefined): Promise<void> {
+  async saveHeight(height: number): Promise<void> {
     this.height = height
     return Promise.resolve()
   }

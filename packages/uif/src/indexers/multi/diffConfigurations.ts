@@ -1,4 +1,3 @@
-import { Height } from '../../height'
 import {
   Configuration,
   RemovalConfiguration,
@@ -11,9 +10,9 @@ export function diffConfigurations<T>(
 ): {
   toRemove: RemovalConfiguration<T>[]
   toSave: SavedConfiguration<T>[]
-  safeHeight: number | null
+  safeHeight: number
 } {
-  let safeHeight: number | null = Infinity
+  let safeHeight = Infinity
 
   const knownIds = new Set<string>()
   const actualMap = new Map(actual.map((c) => [c.id, c]))
@@ -42,12 +41,12 @@ export function diffConfigurations<T>(
 
     const stored = savedMap.get(c.id)
     if (!stored) {
-      safeHeight = Height.min(safeHeight, c.minHeight - 1)
+      safeHeight = Math.min(safeHeight, c.minHeight - 1)
       continue
     }
 
     if (stored.minHeight > c.minHeight) {
-      safeHeight = Height.min(safeHeight, c.minHeight - 1)
+      safeHeight = Math.min(safeHeight, c.minHeight - 1)
       // We remove everything because we cannot have gaps in downloaded data
       // We will re-download everything from the beginning
       toRemove.push({
@@ -72,11 +71,8 @@ export function diffConfigurations<T>(
         fromHeightInclusive: c.maxHeight + 1,
         toHeightInclusive: stored.currentHeight,
       })
-    } else if (
-      c.maxHeight === null ||
-      Height.lt(stored.currentHeight, c.maxHeight)
-    ) {
-      safeHeight = Height.min(safeHeight, stored.currentHeight)
+    } else if (c.maxHeight === null || stored.currentHeight < c.maxHeight) {
+      safeHeight = Math.min(safeHeight, stored.currentHeight)
     }
   }
 

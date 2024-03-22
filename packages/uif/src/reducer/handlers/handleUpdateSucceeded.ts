@@ -1,4 +1,3 @@
-import { Height } from '../../height'
 import { assertStatus } from '../helpers/assertStatus'
 import { continueOperations } from '../helpers/continueOperations'
 import { UpdateSucceededAction } from '../types/IndexerAction'
@@ -10,7 +9,7 @@ export function handleUpdateSucceeded(
   action: UpdateSucceededAction,
 ): IndexerReducerResult {
   assertStatus(state.status, 'updating')
-  if (Height.gte(action.newHeight, state.height)) {
+  if (action.newHeight >= state.height) {
     state = {
       ...state,
       status: 'idle',
@@ -24,10 +23,7 @@ export function handleUpdateSucceeded(
     state = {
       ...state,
       status: 'idle',
-      invalidateToHeight: Height.min(
-        action.newHeight,
-        state.invalidateToHeight,
-      ),
+      invalidateToHeight: Math.min(action.newHeight, state.invalidateToHeight),
       forceInvalidate: true,
     }
   }

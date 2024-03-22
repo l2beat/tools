@@ -15,12 +15,12 @@ export interface UpdateEffect {
 
 export interface InvalidateEffect {
   type: 'Invalidate'
-  targetHeight: number | null
+  targetHeight: number
 }
 
 export interface SetSafeHeightEffect {
   type: 'SetSafeHeight'
-  safeHeight: number | null
+  safeHeight: number
 }
 
 export interface NotifyReadyEffect {

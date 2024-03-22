@@ -1,6 +1,5 @@
 import { Logger } from '@l2beat/backend-tools'
 
-import { Height } from '../../height'
 import { Indexer, IndexerOptions } from '../../Indexer'
 import { ChildIndexer } from '../ChildIndexer'
 import { diffConfigurations } from './diffConfigurations'
@@ -93,7 +92,7 @@ export abstract class MultiIndexer<T> extends ChildIndexer {
     configurations: SavedConfiguration<T>[],
   ): Promise<void>
 
-  async initialize(): Promise<number | null> {
+  async initialize(): Promise<number> {
     const saved = await this.multiInitialize()
     const { toRemove, toSave, safeHeight } = diffConfigurations(
       this.configurations,
@@ -107,18 +106,10 @@ export abstract class MultiIndexer<T> extends ChildIndexer {
     return safeHeight
   }
 
-  async update(
-    currentHeight: number | null,
-    targetHeight: number,
-  ): Promise<number | null> {
+  async update(currentHeight: number, targetHeight: number): Promise<number> {
     const range = findRange(this.ranges, currentHeight)
-    if (
-      range.configurations.length === 0 ||
-      // This check is only necessary for TypeScript. If currentHeight is null
-      // then the first condition will always be true
-      currentHeight === null
-    ) {
-      return Height.min(range.to, targetHeight)
+    if (range.configurations.length === 0) {
+      return Math.min(range.to, targetHeight)
     }
 
     const { configurations, minCurrentHeight } = getConfigurationsInRange(
@@ -147,7 +138,7 @@ export abstract class MultiIndexer<T> extends ChildIndexer {
     return newHeight
   }
 
-  async invalidate(targetHeight: number | null): Promise<number | null> {
+  async invalidate(targetHeight: number): Promise<number> {
     return Promise.resolve(targetHeight)
   }
 
@@ -158,12 +149,10 @@ export abstract class MultiIndexer<T> extends ChildIndexer {
 
 function findRange<T>(
   ranges: ConfigurationRange<T>[],
-  currentHeight: number | null,
+  currentHeight: number,
 ): ConfigurationRange<T> {
   const range = ranges.find(
-    (range) =>
-      currentHeight === null ||
-      (range.from <= currentHeight + 1 && range.to > currentHeight),
+    (range) => range.from <= currentHeight + 1 && range.to > currentHeight,
   )
   if (!range) {
     throw new Error('Programmer error, there should always be a range')

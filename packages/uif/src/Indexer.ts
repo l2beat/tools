@@ -3,7 +3,6 @@ import { assert } from 'node:console'
 import { Logger } from '@l2beat/backend-tools'
 
 import { assertUnreachable } from './assertUnreachable'
-import { Height } from './height'
 import { getInitialState } from './reducer/getInitialState'
 import { indexerReducer } from './reducer/indexerReducer'
 import { IndexerAction } from './reducer/types/IndexerAction'
@@ -40,8 +39,8 @@ export abstract class Indexer {
   /**
    * Initializes the indexer. It should return a height that the indexer has
    * synced up to. If the indexer has not synced any data, it should return
-   * `null`. For root indexers it should return the initial target height for
-   * the entire system.
+   * `minHeight - 1`. For root indexers it should return the initial target
+   * height for the entire system.
    *
    * This method is expected to read the height that was saved previously with
    * `setSafeHeight`. It shouldn't call `setSafeHeight` itself.
@@ -51,19 +50,19 @@ export abstract class Indexer {
    * This method should also schedule a process to request ticks. For example
    * with `setInterval(() => this.requestTick(), 1000)`.
    */
-  abstract initialize(): Promise<number | null>
+  abstract initialize(): Promise<number>
 
   /**
    * Saves the height (most likely to a database). The height given is the
    * smallest height from all parents and what the indexer itself synced to
-   * previously. It can be `null`.
+   * previously.
    *
    * When `initialize` is called it is expected that it will read the same
    * height that was saved here.
    *
    * Optional in root indexers.
    */
-  abstract setSafeHeight(height: number | null): Promise<void>
+  abstract setSafeHeight(height: number): Promise<void>
 
   /**
    * Implements the main data fetching process. It is up to the indexer to
@@ -71,9 +70,9 @@ export abstract class Indexer {
    * indexer can only fetch data up to 110 and return 110. The next time this
    * method will be called with `.update(110, 200)`.
    *
-   * @param currentHeight The height that the indexer has synced up to previously. Can
-   * be `null` if no data was synced. This value is exclusive so the indexer
-   * should not fetch data for this height.
+   * @param currentHeight The height that the indexer has synced up to
+   * previously. This value is exclusive so the indexer should not fetch data
+   * for this height.
    *
    * @param targetHeight The height that the indexer should sync up to. This value is
    * inclusive so the indexer should eventually fetch data for this height.
@@ -82,13 +81,10 @@ export abstract class Indexer {
    * `currentHeight` means that the indexer has not synced any data. Returning
    * a value greater than `currentHeight` means that the indexer has synced up
    * to that height. Returning a value less than `currentHeight` will trigger
-   * invalidation down to the returned value. Returning `null` will invalidate
-   * all data. Returning a value greater than `targetHeight` is not permitted.
+   * invalidation down to the returned value. Returning a value greater than
+   * `targetHeight` is not permitted.
    */
-  abstract update(
-    currentHeight: number | null,
-    targetHeight: number,
-  ): Promise<number | null>
+  abstract update(currentHeight: number, targetHeight: number): Promise<number>
 
   /**
    * Responsible for invalidating data that was synced previously. It is
@@ -102,22 +98,18 @@ export abstract class Indexer {
    * steps, you can return a height that is larger than the target height.
    *
    * @param targetHeight The height that the indexer should invalidate down to.
-   * Can be `null`. If it is `null`, the indexer should invalidate all
-   * data.
    *
    * @returns The height that the indexer has invalidated down to. Returning
    * `targetHeight` means that the indexer has invalidated all the required
    * data. Returning a value greater than `targetHeight` means that the indexer
    * has invalidated down to that height.
    */
-  abstract invalidate(targetHeight: number | null): Promise<number | null>
+  abstract invalidate(targetHeight: number): Promise<number>
 
   /**
    * This method is responsible for providing the target height for the entire
    * system. Some candidates for this are: the current time or the latest block
    * number.
-   *
-   * This method cannot return `null`.
    */
   abstract tick(): Promise<number>
 
@@ -149,7 +141,7 @@ export abstract class Indexer {
       options?.invalidateRetryStrategy ?? Indexer.GET_DEFAULT_RETRY_STRATEGY()
   }
 
-  get safeHeight(): number | null {
+  get safeHeight(): number {
     return this.state.safeHeight
   }
 
@@ -177,7 +169,7 @@ export abstract class Indexer {
     this.dispatch({ type: 'ChildReady', index })
   }
 
-  notifyUpdate(parent: Indexer, safeHeight: number | null): void {
+  notifyUpdate(parent: Indexer, safeHeight: number): void {
     this.logger.debug('Someone has updated', {
       parent: parent.constructor.name,
     })
@@ -228,7 +220,7 @@ export abstract class Indexer {
     this.logger.info('Updating', { from, to: effect.targetHeight })
     try {
       const newHeight = await this.update(from, effect.targetHeight)
-      if (Height.gt(newHeight, effect.targetHeight)) {
+      if (newHeight > effect.targetHeight) {
         this.logger.critical('Update returned invalid height', {
           newHeight,
           max: effect.targetHeight,

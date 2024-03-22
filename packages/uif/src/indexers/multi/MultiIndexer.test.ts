@@ -123,7 +123,7 @@ describe(MultiIndexer.name, () => {
       )
       await testIndexer.initialize()
 
-      const newHeight = await testIndexer.update(null, 500)
+      const newHeight = await testIndexer.update(0, 500)
 
       expect(newHeight).toEqual(99)
       expect(testIndexer.multiUpdate).not.toHaveBeenCalled()

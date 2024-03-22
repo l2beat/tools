@@ -1,4 +1,3 @@
-export * from './height'
 export * from './Indexer'
 export * from './indexers/ChildIndexer'
 export * from './indexers/multi/MultiIndexer'
