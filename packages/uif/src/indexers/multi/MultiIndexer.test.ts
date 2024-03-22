@@ -36,6 +36,19 @@ describe(MultiIndexer.name, () => {
       expect(testIndexer.removeData).not.toHaveBeenCalled()
       expect(testIndexer.saveConfigurations).not.toHaveBeenCalled()
     })
+
+    it('no synced data', async () => {
+      const testIndexer = new TestMultiIndexer(
+        [actual('a', 100, 400), actual('b', 200, 500)],
+        [],
+      )
+
+      const newHeight = await testIndexer.initialize()
+      expect(newHeight).toEqual(99)
+
+      expect(testIndexer.removeData).not.toHaveBeenCalled()
+      expect(testIndexer.saveConfigurations).not.toHaveBeenCalled()
+    })
   })
 
   describe(MultiIndexer.prototype.update.name, () => {
@@ -103,10 +116,10 @@ describe(MultiIndexer.name, () => {
       )
       await testIndexer.initialize()
 
-      const newHeight = await testIndexer.update(300, 600)
+      const newHeight = await testIndexer.update(301, 600)
 
       expect(newHeight).toEqual(400)
-      expect(testIndexer.multiUpdate).toHaveBeenOnlyCalledWith(300, 400, [
+      expect(testIndexer.multiUpdate).toHaveBeenOnlyCalledWith(301, 400, [
         update('a', 100, 400, false),
         update('b', 200, 500, false),
       ])
@@ -137,7 +150,7 @@ describe(MultiIndexer.name, () => {
       )
       await testIndexer.initialize()
 
-      const newHeight = await testIndexer.update(400, 500)
+      const newHeight = await testIndexer.update(401, 500)
 
       expect(newHeight).toEqual(500)
       expect(testIndexer.multiUpdate).not.toHaveBeenCalled()
@@ -151,7 +164,7 @@ describe(MultiIndexer.name, () => {
       )
       await testIndexer.initialize()
 
-      const newHeight = await testIndexer.update(200, 500)
+      const newHeight = await testIndexer.update(201, 500)
 
       expect(newHeight).toEqual(299)
       expect(testIndexer.multiUpdate).not.toHaveBeenCalled()
@@ -208,8 +221,8 @@ describe(MultiIndexer.name, () => {
       ])
 
       // Next range
-      expect(await testIndexer.update(200, 500)).toEqual(400)
-      expect(testIndexer.multiUpdate).toHaveBeenNthCalledWith(3, 200, 400, [
+      expect(await testIndexer.update(201, 500)).toEqual(400)
+      expect(testIndexer.multiUpdate).toHaveBeenNthCalledWith(3, 201, 400, [
         update('b', 100, 400, false),
       ])
       expect(testIndexer.saveConfigurations).toHaveBeenNthCalledWith(3, [
@@ -278,7 +291,7 @@ describe(MultiIndexer.name, () => {
       testIndexer.multiUpdate.resolvesTo(150)
 
       await expect(testIndexer.update(200, 300)).toBeRejectedWith(
-        /returned height must be between currentHeight and targetHeight/,
+        /returned height must be between from and to/,
       )
     })
 
@@ -292,7 +305,7 @@ describe(MultiIndexer.name, () => {
       testIndexer.multiUpdate.resolvesTo(350)
 
       await expect(testIndexer.update(200, 300)).toBeRejectedWith(
-        /returned height must be between currentHeight and targetHeight/,
+        /returned height must be between from and to/,
       )
     })
   })

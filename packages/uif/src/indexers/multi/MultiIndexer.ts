@@ -43,29 +43,29 @@ export abstract class MultiIndexer<T> extends ChildIndexer {
    * indexer can only fetch data up to 110 and return 110. The next time this
    * method will be called with `.update(110, 200, [...])`.
    *
-   * @param currentHeight The height that the indexer has synced up to
-   * previously. This value is exclusive so the indexer should not fetch data
-   * for this height. If the indexer hasn't synced anything previously this
-   * will equal the minimum height of all configurations - 1.
+   * @param from The height for which the indexer should start syncing data.
+   * This value is inclusive. If the indexer hasn't synced anything previously
+   * this will equal the minimum height of all configurations.
    *
-   * @param targetHeight The height that the indexer should sync up to. This value is
-   * inclusive so the indexer should eventually fetch data for this height.
+   * @param to The height at which the indexer should end syncing data. This
+   * value is also inclusive so the indexer should eventually sync data for this
+   * height.
    *
    * @param configurations The configurations that the indexer should use to
    * sync data. The configurations are guaranteed to be in the range of
-   * `currentHeight` and `targetHeight`. Some of those configurations might
-   * have been synced previously for this range. Those configurations
-   * will include the `hasData` flag set to `true`.
+   * `from` and `to`. Some of those configurations might have been synced
+   * previously for this range. Those configurations will include the `hasData`
+   * flag set to `true`.
    *
    * @returns The height that the indexer has synced up to. Returning
-   * `currentHeight` means that the indexer has not synced any data. Returning
-   * a value greater than `currentHeight` means that the indexer has synced up
-   * to that height. Returning a value less than `currentHeight` or greater than
-   * `targetHeight` is not permitted.
+   * `from` means that the indexer has synced a single data point. Returning
+   * a value greater than `from` means that the indexer has synced up
+   * to that height. Returning a value less than `from` or greater than
+   * `to` is not permitted.
    */
   abstract multiUpdate(
-    currentHeight: number,
-    targetHeight: number,
+    from: number,
+    to: number,
     configurations: UpdateConfiguration<T>[],
   ): Promise<number>
 
@@ -106,31 +106,32 @@ export abstract class MultiIndexer<T> extends ChildIndexer {
     return safeHeight
   }
 
-  async update(currentHeight: number, targetHeight: number): Promise<number> {
-    const range = findRange(this.ranges, currentHeight)
+  async update(from: number, to: number): Promise<number> {
+    const range = findRange(this.ranges, from)
     if (range.configurations.length === 0) {
-      return Math.min(range.to, targetHeight)
+      return Math.min(range.to, to)
     }
 
     const { configurations, minCurrentHeight } = getConfigurationsInRange(
       range,
       this.saved,
-      currentHeight,
+      from,
     )
-    const minTargetHeight = Math.min(range.to, targetHeight, minCurrentHeight)
+    const adjustedTo = Math.min(range.to, to, minCurrentHeight)
 
-    const newHeight = await this.multiUpdate(
-      currentHeight,
-      minTargetHeight,
-      configurations,
-    )
-    if (newHeight < currentHeight || newHeight > minTargetHeight) {
+    this.logger.info('Calling multiUpdate', {
+      from,
+      to: adjustedTo,
+      configurations: configurations.length,
+    })
+    const newHeight = await this.multiUpdate(from, adjustedTo, configurations)
+    if (newHeight < from || newHeight > adjustedTo) {
       throw new Error(
-        'Programmer error, returned height must be between currentHeight and targetHeight.',
+        'Programmer error, returned height must be between from and to (both inclusive).',
       )
     }
 
-    if (newHeight > currentHeight) {
+    if (newHeight > from) {
       updateSavedConfigurations(this.saved, configurations, newHeight)
       await this.saveConfigurations(this.saved)
     }
@@ -147,13 +148,12 @@ export abstract class MultiIndexer<T> extends ChildIndexer {
   }
 }
 
+// TODO: test this function!
 function findRange<T>(
   ranges: ConfigurationRange<T>[],
-  currentHeight: number,
+  from: number,
 ): ConfigurationRange<T> {
-  const range = ranges.find(
-    (range) => range.from <= currentHeight + 1 && range.to > currentHeight,
-  )
+  const range = ranges.find((range) => range.from <= from && range.to >= from)
   if (!range) {
     throw new Error('Programmer error, there should always be a range')
   }

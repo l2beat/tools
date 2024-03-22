@@ -37,18 +37,17 @@ export class PriceIndexer extends MultiIndexer<PriceConfig> {
   }
 
   override async multiUpdate(
-    currentHeight: number,
-    targetHeight: number,
+    from: number,
+    to: number,
     configurations: UpdateConfiguration<PriceConfig>[],
   ): Promise<number> {
-    const startHour = currentHeight + 1
     // we only query 24 hours at a time
-    const endHour = Math.min(targetHeight, startHour + 23)
+    const adjustedTo = Math.min(to, from + 23)
 
     const prices = await this.priceService.getHourlyPrices(
       this.apiId,
-      startHour * ONE_HOUR_MS,
-      endHour * ONE_HOUR_MS,
+      from * ONE_HOUR_MS,
+      adjustedTo * ONE_HOUR_MS,
     )
 
     const dataToSave = configurations
@@ -64,7 +63,7 @@ export class PriceIndexer extends MultiIndexer<PriceConfig> {
       })
     await this.priceRepository.save(dataToSave)
 
-    return endHour
+    return adjustedTo
   }
 
   override async removeData(

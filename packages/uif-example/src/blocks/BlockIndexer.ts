@@ -29,14 +29,13 @@ export class BlockIndexer extends ChildIndexer {
     await this.blockIndexerRepository.saveHeight(height)
   }
 
-  override async update(currentHeight: number): Promise<number> {
-    const nextHeight = currentHeight + 1
-    const timestamp = nextHeight * ONE_HOUR_MS
+  override async update(from: number): Promise<number> {
+    const timestamp = from * ONE_HOUR_MS
 
     const block = await this.blockService.getBlockNumberBefore(timestamp)
     await this.blockRepository.save({ number: block, timestamp })
 
-    return nextHeight
+    return from
   }
 
   override async invalidate(targetHeight: number): Promise<number> {

@@ -68,23 +68,23 @@ export abstract class Indexer {
    * Implements the main data fetching process. It is up to the indexer to
    * decide how much data to fetch. For example given `.update(100, 200)`, the
    * indexer can only fetch data up to 110 and return 110. The next time this
-   * method will be called with `.update(110, 200)`.
+   * method will be called with `.update(111, 200)`.
    *
-   * @param currentHeight The height that the indexer has synced up to
-   * previously. This value is exclusive so the indexer should not fetch data
-   * for this height.
+   * @param from The height for which the indexer should start syncing data.
+   * This value is inclusive.
    *
-   * @param targetHeight The height that the indexer should sync up to. This value is
-   * inclusive so the indexer should eventually fetch data for this height.
+   * @param to The height at which the indexer should end syncing data. This
+   * value is also inclusive so the indexer should eventually sync data for this
+   * height.
    *
    * @returns The height that the indexer has synced up to. Returning
-   * `currentHeight` means that the indexer has not synced any data. Returning
-   * a value greater than `currentHeight` means that the indexer has synced up
-   * to that height. Returning a value less than `currentHeight` will trigger
+   * `from` means that the indexer has synced a single data point. Returning
+   * a value greater than `from` means that the indexer has synced up
+   * to that height. Returning a value less than `from` will trigger
    * invalidation down to the returned value. Returning a value greater than
-   * `targetHeight` is not permitted.
+   * `to` is not permitted.
    */
-  abstract update(currentHeight: number, targetHeight: number): Promise<number>
+  abstract update(from: number, to: number): Promise<number>
 
   /**
    * Responsible for invalidating data that was synced previously. It is
@@ -216,7 +216,7 @@ export abstract class Indexer {
   // #region Child methods
 
   private async executeUpdate(effect: UpdateEffect): Promise<void> {
-    const from = this.state.height
+    const from = this.state.height + 1
     this.logger.info('Updating', { from, to: effect.targetHeight })
     try {
       const newHeight = await this.update(from, effect.targetHeight)
