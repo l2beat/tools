@@ -148,7 +148,6 @@ export abstract class MultiIndexer<T> extends ChildIndexer {
   }
 }
 
-// TODO: test this function!
 function findRange<T>(
   ranges: ConfigurationRange<T>[],
   from: number,
@@ -169,7 +168,12 @@ function getConfigurationsInRange<T>(
   const configurations = range.configurations.map(
     (configuration): UpdateConfiguration<T> => {
       const saved = savedConfigurations.find((c) => c.id === configuration.id)
-      if (saved?.currentHeight != null && saved.currentHeight > currentHeight) {
+      if (
+        // eslint-disable-next-line @typescript-eslint/prefer-optional-chain
+        saved &&
+        saved.currentHeight !== null &&
+        saved.currentHeight > currentHeight
+      ) {
         minCurrentHeight = Math.min(minCurrentHeight, saved.currentHeight)
         return { ...configuration, hasData: true }
       } else {
@@ -196,7 +200,6 @@ function updateSavedConfigurations<T>(
         currentHeight: newHeight,
       })
     } else {
-      // TODO: test this
       if (saved.currentHeight === null || saved.currentHeight < newHeight) {
         saved.currentHeight = newHeight
       }

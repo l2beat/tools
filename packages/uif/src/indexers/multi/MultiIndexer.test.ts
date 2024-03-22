@@ -242,7 +242,7 @@ describe(MultiIndexer.name, () => {
         update('a', 100, 200, true),
         update('b', 100, 400, false),
       ])
-      expect(testIndexer.saveConfigurations).toHaveBeenNthCalledWith(1, [
+      expect(testIndexer.saveConfigurations).toHaveBeenNthCalledWith(2, [
         saved('a', 100, 200, 200),
         saved('b', 100, 400, 200),
       ])
@@ -254,7 +254,7 @@ describe(MultiIndexer.name, () => {
         update('a', 100, 200, true),
         update('b', 100, 400, true),
       ])
-      expect(testIndexer.saveConfigurations).toHaveBeenNthCalledWith(2, [
+      expect(testIndexer.saveConfigurations).toHaveBeenNthCalledWith(3, [
         saved('a', 100, 200, 200),
         saved('b', 100, 400, 200),
       ])
@@ -264,9 +264,45 @@ describe(MultiIndexer.name, () => {
       expect(testIndexer.multiUpdate).toHaveBeenNthCalledWith(3, 201, 400, [
         update('b', 100, 400, false),
       ])
-      expect(testIndexer.saveConfigurations).toHaveBeenNthCalledWith(3, [
+      expect(testIndexer.saveConfigurations).toHaveBeenNthCalledWith(4, [
         saved('a', 100, 200, 200),
         saved('b', 100, 400, 400),
+      ])
+    })
+
+    it('correctly updates currentHeight in saved configurations', async () => {
+      const testIndexer = new TestMultiIndexer(
+        [actual('a', 100, 500), actual('b', 100, 500), actual('c', 100, 500)],
+        [
+          saved('a', 100, 500, null),
+          saved('b', 100, 500, 250),
+          saved('c', 100, 500, 500),
+        ],
+      )
+      expect(await testIndexer.initialize()).toEqual(99)
+
+      expect(await testIndexer.update(100, 500)).toEqual(250)
+      expect(testIndexer.multiUpdate).toHaveBeenNthCalledWith(1, 100, 250, [
+        update('a', 100, 500, false),
+        update('b', 100, 500, true),
+        update('c', 100, 500, true),
+      ])
+      expect(testIndexer.saveConfigurations).toHaveBeenNthCalledWith(2, [
+        saved('a', 100, 500, 250),
+        saved('b', 100, 500, 250),
+        saved('c', 100, 500, 500),
+      ])
+
+      expect(await testIndexer.update(251, 500)).toEqual(500)
+      expect(testIndexer.multiUpdate).toHaveBeenNthCalledWith(2, 251, 500, [
+        update('a', 100, 500, false),
+        update('b', 100, 500, false),
+        update('c', 100, 500, true),
+      ])
+      expect(testIndexer.saveConfigurations).toHaveBeenNthCalledWith(3, [
+        saved('a', 100, 500, 500),
+        saved('b', 100, 500, 500),
+        saved('c', 100, 500, 500),
       ])
     })
   })
