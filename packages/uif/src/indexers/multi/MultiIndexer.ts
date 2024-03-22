@@ -101,8 +101,8 @@ export abstract class MultiIndexer<T> extends ChildIndexer {
     this.saved = toSave
     if (toRemove.length > 0) {
       await this.removeData(toRemove)
-      await this.saveConfigurations(toSave)
     }
+    await this.saveConfigurations(toSave)
     return safeHeight
   }
 
@@ -169,7 +169,7 @@ function getConfigurationsInRange<T>(
   const configurations = range.configurations.map(
     (configuration): UpdateConfiguration<T> => {
       const saved = savedConfigurations.find((c) => c.id === configuration.id)
-      if (saved && saved.currentHeight > currentHeight) {
+      if (saved?.currentHeight != null && saved.currentHeight > currentHeight) {
         minCurrentHeight = Math.min(minCurrentHeight, saved.currentHeight)
         return { ...configuration, hasData: true }
       } else {
@@ -192,11 +192,14 @@ function updateSavedConfigurations<T>(
         id: updated.id,
         properties: updated.properties,
         minHeight: updated.minHeight,
+        maxHeight: updated.maxHeight,
         currentHeight: newHeight,
       })
     } else {
       // TODO: test this
-      saved.currentHeight = Math.max(saved.currentHeight, newHeight)
+      if (saved.currentHeight === null || saved.currentHeight < newHeight) {
+        saved.currentHeight = newHeight
+      }
     }
   }
 }

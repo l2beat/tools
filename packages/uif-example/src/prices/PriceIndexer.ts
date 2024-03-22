@@ -72,8 +72,8 @@ export class PriceIndexer extends MultiIndexer<PriceConfig> {
     for (const c of configurations) {
       await this.priceRepository.deletePrices(
         c.properties.tokenSymbol,
-        c.fromHeightInclusive,
-        c.toHeightInclusive,
+        c.from,
+        c.to,
       )
     }
   }
