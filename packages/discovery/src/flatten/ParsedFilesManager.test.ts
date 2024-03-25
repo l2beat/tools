@@ -260,5 +260,40 @@ describe(ParsedFilesManager.name, () => {
         ['L1', 'L2'].sort(),
       )
     })
+
+    it('finds non obvious top-level declaration usage', () => {
+      const files = [
+        {
+          path: 'ImportedAsAll.sol',
+          content: `
+          type T1 is uint256;
+          function f1() public {}
+          struct S1 { bytes data; }
+          library L1 { struct S1 { bytes data; } }
+          library L2 { function f1() public {} }
+          `,
+        },
+        {
+          path: 'Importing.sol',
+          content: `
+          import "./ImportedAsAll.sol";
+          contract R1 { function r1() public {
+              L1.S1 memory s;
+              L2.f1();
+              f1();
+              T1 t;
+              S1 memory s1;
+          } }
+          `,
+        },
+      ]
+
+      const manager = ParsedFilesManager.parseFiles(files, EMPTY_REMAPPINGS)
+      const root = manager.findDeclaration('R1')
+
+      expect(root.declaration.referencedDeclaration.sort()).toEqual(
+        ['L1', 'L2', 'S1', 'T1', 'f1'].sort(),
+      )
+    })
   })
 })
