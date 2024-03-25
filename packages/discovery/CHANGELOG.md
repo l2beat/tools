@@ -1,5 +1,23 @@
 # @l2beat/discovery
 
+## 0.46.5
+
+### Patch Changes
+
+- Extend the flattener to include other top-level declarations
+
+## 0.46.4
+
+### Patch Changes
+
+- Fix Mantle flattener errors
+
+## 0.46.3
+
+### Patch Changes
+
+- Fix PolygonZKEVM flattener errors
+
 ## 0.46.2
 
 ### Patch Changes
