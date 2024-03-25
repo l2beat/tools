@@ -150,6 +150,18 @@ describe(diffConfigurations.name, () => {
       })
     })
 
+    it('maxHeight removed', () => {
+      const result = diffConfigurations(
+        [actual('a', 100, null)],
+        [saved('a', 100, 300, 300)],
+      )
+      expect(result).toEqual({
+        toRemove: [],
+        toSave: [saved('a', 100, null, 300)],
+        safeHeight: 300,
+      })
+    })
+
     it('minHeight updated up', () => {
       const result = diffConfigurations(
         [actual('a', 200, 400)],
