@@ -214,6 +214,23 @@ describe(Indexer.name, () => {
       clock.uninstall()
     })
   })
+
+  it('calls update with correct heights', async () => {
+    const parent = new TestRootIndexer(100)
+    const child = new TestChildIndexer([parent], 100)
+
+    await parent.start()
+    await child.start()
+    await child.finishInvalidate(100)
+
+    await parent.doTick(200)
+    await parent.finishTick(200)
+
+    expect(child.updateFrom).toEqual(101) // inclusive
+    expect(child.updateTo).toEqual(200) // inclusive
+
+    await child.finishUpdate(200)
+  })
 })
 
 export async function waitUntil(predicate: () => boolean): Promise<void> {
