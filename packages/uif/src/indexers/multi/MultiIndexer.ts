@@ -132,11 +132,26 @@ export abstract class MultiIndexer<T> extends ChildIndexer {
     }
 
     if (newHeight > from) {
-      updateSavedConfigurations(this.saved, configurations, newHeight)
+      this.updateSavedConfigurations(configurations, newHeight)
       await this.saveConfigurations(this.saved)
     }
 
     return newHeight
+  }
+
+  private updateSavedConfigurations(
+    updatedConfigurations: UpdateConfiguration<T>[],
+    newHeight: number,
+  ): void {
+    for (const updated of updatedConfigurations) {
+      const saved = this.saved.find((c) => c.id === updated.id)
+      if (!saved) {
+        throw new Error('Programmer error, saved configuration not found')
+      }
+      if (saved.currentHeight === null || saved.currentHeight < newHeight) {
+        saved.currentHeight = newHeight
+      }
+    }
   }
 
   async invalidate(targetHeight: number): Promise<number> {
@@ -182,27 +197,4 @@ function getConfigurationsInRange<T>(
     },
   )
   return { configurations, minCurrentHeight }
-}
-
-function updateSavedConfigurations<T>(
-  savedConfigurations: SavedConfiguration<T>[],
-  updatedConfigurations: UpdateConfiguration<T>[],
-  newHeight: number,
-): void {
-  for (const updated of updatedConfigurations) {
-    const saved = savedConfigurations.find((c) => c.id === updated.id)
-    if (!saved) {
-      savedConfigurations.push({
-        id: updated.id,
-        properties: updated.properties,
-        minHeight: updated.minHeight,
-        maxHeight: updated.maxHeight,
-        currentHeight: newHeight,
-      })
-    } else {
-      if (saved.currentHeight === null || saved.currentHeight < newHeight) {
-        saved.currentHeight = newHeight
-      }
-    }
-  }
 }
