@@ -202,12 +202,8 @@ export class ParsedFilesManager {
 
       let alreadyImported = alreadyImportedObjects.get(importedFile.path)
       if (alreadyImported !== undefined) {
-        assert(
-          alreadyImported.length <= importedFile.topLevelDeclarations.length,
-          'Already imported more than there are contracts in the file',
-        )
         const gotEverything =
-          alreadyImported.length === importedFile.topLevelDeclarations.length
+          alreadyImported.length >= importedFile.topLevelDeclarations.length
         if (gotEverything) {
           return []
         }
@@ -239,7 +235,11 @@ export class ParsedFilesManager {
           remappings,
           alreadyImportedObjects,
         )
-        return result.concat(recursiveResult)
+
+        const filteredRecursiveResult = recursiveResult.filter(
+          (r) => alreadyImported?.includes(r.originalName) === false,
+        )
+        return result.concat(filteredRecursiveResult)
       }
 
       assert(i.symbolAliases !== null, 'Invalid import directive')
@@ -260,10 +260,13 @@ export class ParsedFilesManager {
         )
         let isImported = false
         if (!isDeclared) {
+          const copiedAlreadyImportedMap = structuredClone(
+            alreadyImportedObjects,
+          )
           const recursiveResult = this.resolveFileImports(
             importedFile,
             remappings,
-            alreadyImportedObjects,
+            copiedAlreadyImportedMap,
           )
 
           isImported = recursiveResult.some(
