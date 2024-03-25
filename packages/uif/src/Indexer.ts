@@ -49,6 +49,9 @@ export abstract class Indexer {
    * height that was saved previously. If not it can `return this.tick()`.
    * This method should also schedule a process to request ticks. For example
    * with `setInterval(() => this.requestTick(), 1000)`.
+   *
+   * @returns The height that the indexer has synced up to or the target height
+   * for the entire system if this is a root indexer.
    */
   abstract initialize(): Promise<number>
 

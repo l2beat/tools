@@ -34,6 +34,8 @@ export abstract class MultiIndexer<T> extends ChildIndexer {
    * This method is expected to read the configurations that was saved
    * previously with `setStoredConfigurations`. It shouldn't call
    * `setStoredConfigurations` itself.
+   *
+   * @returns The configurations that were saved previously.
    */
   abstract multiInitialize(): Promise<SavedConfiguration<T>[]>
 
