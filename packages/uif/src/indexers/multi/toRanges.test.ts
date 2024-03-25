@@ -28,6 +28,21 @@ describe(toRanges.name, () => {
     ])
   })
 
+  it('multiple overlapping configurations on the edges', () => {
+    const ranges = toRanges([actual('a', 100, 300), actual('b', 300, 500)])
+    expect(ranges).toEqual([
+      { from: -Infinity, to: 99, configurations: [] },
+      { from: 100, to: 299, configurations: [actual('a', 100, 300)] },
+      {
+        from: 300,
+        to: 300,
+        configurations: [actual('a', 100, 300), actual('b', 300, 500)],
+      },
+      { from: 301, to: 500, configurations: [actual('b', 300, 500)] },
+      { from: 501, to: Infinity, configurations: [] },
+    ])
+  })
+
   it('multiple overlapping configurations', () => {
     const ranges = toRanges([
       actual('a', 100, 300),
