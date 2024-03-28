@@ -50,6 +50,20 @@ describe(DiscoveryProvider.name, () => {
         ])
       })
 
+      it('handles ranges while using the maxRange override', async () => {
+        await discoveryProviderMock.getLogs(address, topics, 5000, 35000, { maxRange: 5000 })
+        const ranges = rangesFromCalls(providerMock)
+        expect(ranges).toEqual([
+          [35000, 35000],
+          [30000, 34999],
+          [25000, 29999],
+          [20000, 24999],
+          [15000, 19999],
+          [10000, 14999],
+          [5000, 9999],
+        ])
+      })
+
       it('handles range at boundaries', async () => {
         await discoveryProviderMock.getLogs(address, topics, 10000, 39999)
         const ranges = rangesFromCalls(providerMock)
