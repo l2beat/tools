@@ -75,7 +75,10 @@ export async function detectGnosisSafe(
   const threshold = await getThreshold(provider, address, blockNumber)
   let thresholdString = 'Cannot retrieve threshold'
   if (ownerCount !== undefined && threshold !== undefined) {
-    thresholdString = `${threshold} of ${ownerCount} (${((threshold / ownerCount) * 100).toFixed()}%)`
+    thresholdString = `${threshold} of ${ownerCount} (${(
+      (threshold / ownerCount) *
+      100
+    ).toFixed()}%)`
   }
 
   return {
