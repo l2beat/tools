@@ -13,17 +13,27 @@ import {
 } from './types'
 
 export abstract class MultiIndexer<T> extends ChildIndexer {
-  private readonly ranges: ConfigurationRange<T>[]
+  private ranges: ConfigurationRange<T>[] = []
+  private configurations: Configuration<T>[] = []
   private saved: SavedConfiguration<T>[] = []
 
   constructor(
     logger: Logger,
     parents: Indexer[],
-    readonly configurations: Configuration<T>[],
+    configurations?: Configuration<T>[],
     options?: IndexerOptions,
   ) {
     super(logger, parents, options)
-    this.ranges = toRanges(configurations)
+    if (configurations) {
+      this.configurations = configurations
+    }
+  }
+
+  /**
+   * Allow overriding to provide configurations from a different source.
+   */
+  getConfigurations(): Promise<Configuration<T>[]> | Configuration<T>[] {
+    return this.configurations
   }
 
   /**
@@ -95,11 +105,16 @@ export abstract class MultiIndexer<T> extends ChildIndexer {
   ): Promise<void>
 
   async initialize(): Promise<number> {
+    this.configurations = await this.getConfigurations()
+    this.ranges = toRanges(this.configurations)
+
     const saved = await this.multiInitialize()
+
     const { toRemove, toSave, safeHeight } = diffConfigurations(
       this.configurations,
       saved,
     )
+
     this.saved = toSave
     if (toRemove.length > 0) {
       await this.removeData(toRemove)
