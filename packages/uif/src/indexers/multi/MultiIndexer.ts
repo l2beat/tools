@@ -37,9 +37,7 @@ export abstract class MultiIndexer<T> extends ChildIndexer {
    * configuration has a unique id)
    * @returns The configurations that the indexer should use to sync data.
    */
-  getConfigurationsForInitialize():
-    | Promise<Configuration<T>[]>
-    | Configuration<T>[] {
+  getInitialConfigurations(): Promise<Configuration<T>[]> | Configuration<T>[] {
     return this.configurations
   }
 
@@ -112,7 +110,7 @@ export abstract class MultiIndexer<T> extends ChildIndexer {
   ): Promise<void>
 
   async initialize(): Promise<number> {
-    this.configurations = await this.getConfigurationsForInitialize()
+    this.configurations = await this.getInitialConfigurations()
     this.ranges = toRanges(this.configurations)
 
     const saved = await this.multiInitialize()
