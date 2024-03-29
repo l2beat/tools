@@ -1,4 +1,4 @@
-import { Logger } from '@l2beat/backend-tools'
+import { assert, Logger } from '@l2beat/backend-tools'
 import { expect, mockFn } from 'earl'
 
 import { MultiIndexer } from './MultiIndexer'
@@ -11,6 +11,19 @@ import {
 
 describe(MultiIndexer.name, () => {
   describe(MultiIndexer.prototype.initialize.name, () => {
+    it('gets configurations from different source', async () => {
+      const initialConfigurations = undefined
+
+      const testIndexer = new TestMultiIndexer(
+        initialConfigurations,
+        [],
+        [saved('a', 100, null, null), saved('b', 100, null, null)],
+      )
+
+      const newHeight = await testIndexer.initialize()
+      expect(newHeight).toEqual(99)
+    })
+
     it('calls multiInitialize and saves configurations', async () => {
       const testIndexer = new TestMultiIndexer(
         [actual('a', 100, 400), actual('b', 200, 500)],
@@ -388,10 +401,19 @@ describe(MultiIndexer.name, () => {
 
 class TestMultiIndexer extends MultiIndexer<null> {
   constructor(
-    configurations: Configuration<null>[],
+    configurations: Configuration<null>[] | undefined,
     private readonly _saved: SavedConfiguration<null>[],
+    private readonly _configurationsFromOtherSource?: SavedConfiguration<null>[],
   ) {
     super(Logger.SILENT, [], configurations)
+
+    this.getConfigurationsForInitialize = () => {
+      if (_configurationsFromOtherSource) {
+        return _configurationsFromOtherSource
+      }
+      assert(configurations)
+      return configurations
+    }
   }
 
   override multiInitialize(): Promise<SavedConfiguration<null>[]> {
