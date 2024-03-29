@@ -1,8 +1,8 @@
 # @l2beat/uif
 
-## 0.4.0
+## 0.3.1
 
-### Minor Changes
+### Patch Changes
 
 - Add ability to provide configurations from different source to MultiIndexer
 
