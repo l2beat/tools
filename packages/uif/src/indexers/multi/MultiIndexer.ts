@@ -121,14 +121,14 @@ export abstract class MultiIndexer<T> extends ChildIndexer {
   abstract getSafeHeight(): Promise<number | undefined>
 
   async initialize(): Promise<number> {
-    const saved = await this.multiInitialize()
+    const previouslySaved = await this.multiInitialize()
 
     this.configurations = await this.getInitialConfigurations()
     this.ranges = toRanges(this.configurations)
 
     const { toRemove, toSave, safeHeight } = diffConfigurations(
       this.configurations,
-      saved,
+      previouslySaved,
     )
     const oldSafeHeight = (await this.getSafeHeight()) ?? safeHeight
 
