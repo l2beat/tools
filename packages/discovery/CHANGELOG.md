@@ -1,5 +1,11 @@
 # @l2beat/discovery
 
+## 0.47.0
+
+### Minor Changes
+
+- Add enableCache flag to ChainConfig
+
 ## 0.46.6
 
 ### Patch Changes
