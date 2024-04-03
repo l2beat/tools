@@ -42,6 +42,10 @@ export function decodeMethodResult(
   pickFields?: (string | number)[],
 ) {
   const decoded = abi.decodeFunctionResult(fragment, result.toString())
+  if (decoded.length === 1 && pickFields !== undefined) {
+    throw new Error('Cannot pick fields from a single return value')
+  }
+
   const filtered = pickFields
     ? pickFields.map((i) => decoded[i] as utils.Result)
     : decoded
