@@ -16,7 +16,7 @@ export async function callMethod(
   fragment: utils.FunctionFragment,
   parameters: unknown[],
   blockNumber: number,
-  filter?: (string | number)[],
+  pickFields?: (string | number)[],
 ) {
   const abi = new utils.Interface([fragment])
 
@@ -25,7 +25,7 @@ export async function callMethod(
     const result = await provider.call(address, callData, blockNumber)
 
     return {
-      value: decodeMethodResult(abi, fragment, result, filter),
+      value: decodeMethodResult(abi, fragment, result, pickFields),
     }
   } catch (e) {
     return {
@@ -39,11 +39,11 @@ export function decodeMethodResult(
   abi: utils.Interface,
   fragment: utils.FunctionFragment,
   result: Bytes,
-  filter?: (string | number)[],
+  pickFields?: (string | number)[],
 ) {
   const decoded = abi.decodeFunctionResult(fragment, result.toString())
-  const filtered = filter
-    ? filter.map((i) => decoded[i] as utils.Result)
+  const filtered = pickFields
+    ? pickFields.map((i) => decoded[i] as utils.Result)
     : decoded
   const mapped = filtered.map(toContractValue)
   return mapped.length === 1 ? mapped[0] : mapped
