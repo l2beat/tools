@@ -61,6 +61,7 @@ export function getChainConfig(chain: string): DiscoveryChainConfig {
   return {
     name: chainConfig.name,
     rpcUrl: env.string(`DISCOVERY_${ENV_NAME}_RPC_URL`),
+    enableCache: env.optionalBoolean(`DISCOVERY_${ENV_NAME}_ENABLE_CACHE`),
     rpcGetLogsMaxRange: env.optionalInteger(
       `DISCOVERY_${ENV_NAME}_RPC_GETLOGS_MAX_RANGE`,
     ),

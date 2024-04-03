@@ -28,6 +28,7 @@ export interface SingleDiscoveryModuleConfig {
 export interface DiscoveryChainConfig {
   name: string
   rpcUrl: string
+  enableCache?: boolean
   rpcGetLogsMaxRange?: number
   multicall: MulticallConfig
   etherscanApiKey: string
