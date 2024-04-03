@@ -13,17 +13,32 @@ import {
 } from './types'
 
 export abstract class MultiIndexer<T> extends ChildIndexer {
-  private readonly ranges: ConfigurationRange<T>[]
+  private ranges: ConfigurationRange<T>[] = []
+  private configurations: Configuration<T>[] = []
   private saved: SavedConfiguration<T>[] = []
 
   constructor(
     logger: Logger,
     parents: Indexer[],
-    readonly configurations: Configuration<T>[],
+    configurations?: Configuration<T>[],
     options?: IndexerOptions,
   ) {
     super(logger, parents, options)
-    this.ranges = toRanges(configurations)
+    if (configurations) {
+      this.configurations = configurations
+    }
+  }
+
+  /**
+   * This will run as the first step of initialize() function.
+   * Allow overriding to provide configurations from a different source.
+   * Example: your configurations have autoincrement id, so you need to
+   * first add them to the database to get the MultiIndexer logic to work (it assumes every
+   * configuration has a unique id)
+   * @returns The configurations that the indexer should use to sync data.
+   */
+  getInitialConfigurations(): Promise<Configuration<T>[]> | Configuration<T>[] {
+    return this.configurations
   }
 
   /**
@@ -94,18 +109,36 @@ export abstract class MultiIndexer<T> extends ChildIndexer {
     configurations: SavedConfiguration<T>[],
   ): Promise<void>
 
+  /**
+   * It should return a height that the indexer has synced up to. If the indexer
+   * has not synced any data, it should return `undefined`.
+   *
+   * This method is expected to read the height that was saved previously with
+   * `setSafeHeight`. It shouldn't call `setSafeHeight` itself.
+   *
+   * @returns The height that the indexer has synced up to.
+   */
+  abstract getSafeHeight(): Promise<number | undefined>
+
   async initialize(): Promise<number> {
-    const saved = await this.multiInitialize()
+    const previouslySaved = await this.multiInitialize()
+
+    this.configurations = await this.getInitialConfigurations()
+    this.ranges = toRanges(this.configurations)
+
     const { toRemove, toSave, safeHeight } = diffConfigurations(
       this.configurations,
-      saved,
+      previouslySaved,
     )
+    const oldSafeHeight = (await this.getSafeHeight()) ?? safeHeight
+
     this.saved = toSave
     if (toRemove.length > 0) {
       await this.removeData(toRemove)
     }
     await this.saveConfigurations(toSave)
-    return safeHeight
+
+    return Math.min(safeHeight, oldSafeHeight)
   }
 
   async update(from: number, to: number): Promise<number> {
@@ -158,10 +191,6 @@ export abstract class MultiIndexer<T> extends ChildIndexer {
 
   async invalidate(targetHeight: number): Promise<number> {
     return Promise.resolve(targetHeight)
-  }
-
-  async setSafeHeight(): Promise<void> {
-    return Promise.resolve()
   }
 }
 
