@@ -41,9 +41,14 @@ export function decodeMethodResult(
   result: Bytes,
   pickFields?: (string | number)[],
 ) {
-  const decoded = abi.decodeFunctionResult(fragment, result.toString())
+  let decoded = abi.decodeFunctionResult(fragment, result.toString())
+
+  if(decoded.length === 1 && Array.isArray(decoded[0])) {
+    decoded = decoded[0]
+  }
+
   if (decoded.length === 1 && pickFields !== undefined) {
-    throw new Error('Cannot pick fields from a single return value')
+    throw new Error('Cannot pick fields from a non-struct-like return value')
   }
 
   const filtered = pickFields
