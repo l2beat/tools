@@ -43,7 +43,7 @@ export function decodeMethodResult(
 ) {
   let decoded = abi.decodeFunctionResult(fragment, result.toString())
 
-  if(decoded.length === 1 && Array.isArray(decoded[0])) {
+  if (decoded.length === 1 && Array.isArray(decoded[0])) {
     decoded = decoded[0]
   }
 

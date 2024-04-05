@@ -1,204 +1,196 @@
-import { expect, mockObject } from "earl"
-import { callMethod } from "./callMethod"
-import { DiscoveryProvider } from "../../provider/DiscoveryProvider"
-import { EthereumAddress } from "../../../utils/EthereumAddress"
-import { utils } from "ethers"
-import { Bytes } from "../../../utils/Bytes"
+import { expect, mockObject } from 'earl'
+import { utils } from 'ethers'
+
+import { Bytes } from '../../../utils/Bytes'
+import { EthereumAddress } from '../../../utils/EthereumAddress'
+import { DiscoveryProvider } from '../../provider/DiscoveryProvider'
+import { callMethod } from './callMethod'
 
 describe('callMethod', () => {
-    const ADDRESS = EthereumAddress.random()
-    const BLOCK_NUMBER = 1234
-    const encoder = utils.defaultAbiCoder
+  const ADDRESS = EthereumAddress.random()
+  const BLOCK_NUMBER = 1234
+  const encoder = utils.defaultAbiCoder
 
-    it('decodes struct returns', async () => {
-        const RESULT_VALUE = EthereumAddress.random().toString()
+  it('decodes struct returns', async () => {
+    const RESULT_VALUE = EthereumAddress.random().toString()
 
-        const abi = new utils.Interface([
-            'function testFunction() view returns (tuple(address r1, uint64 r2, address r3, uint64 r4))',
-        ])
+    const abi = new utils.Interface([
+      'function testFunction() view returns (tuple(address r1, uint64 r2, address r3, uint64 r4))',
+    ])
 
-        const provider = mockObject<DiscoveryProvider>(
-            {
-                call: async () => Bytes.fromHex(encoder.encode(
-                    ['tuple(address r1, uint64 r2, address r3, uint64 r4)'],
-                    [[RESULT_VALUE, 1234, RESULT_VALUE, 5678]])),
-            }
-        )
-
-        const result = await callMethod(
-            provider,
-            ADDRESS,
-            abi.getFunction('testFunction'),
-            [],
-            BLOCK_NUMBER,
-            ['r1', 'r4'],
-        )
-
-        expect(result.value).toEqual([
-            RESULT_VALUE,
-            5678,
-        ])
+    const provider = mockObject<DiscoveryProvider>({
+      call: async () =>
+        Bytes.fromHex(
+          encoder.encode(
+            ['tuple(address r1, uint64 r2, address r3, uint64 r4)'],
+            [[RESULT_VALUE, 1234, RESULT_VALUE, 5678]],
+          ),
+        ),
     })
 
-    it('picks from multiple return values', async () => {
-        const RESULT_VALUE = EthereumAddress.random().toString()
+    const result = await callMethod(
+      provider,
+      ADDRESS,
+      abi.getFunction('testFunction'),
+      [],
+      BLOCK_NUMBER,
+      ['r1', 'r4'],
+    )
 
-        const abi = new utils.Interface([
-            'function testFunction() view returns (address r1, uint64 r2, address r3, uint64 r4)',
-        ])
+    expect(result.value).toEqual([RESULT_VALUE, 5678])
+  })
 
-        const provider = mockObject<DiscoveryProvider>(
-            {
-                call: async () => Bytes.fromHex(encoder.encode(
-                    ['address r1', 'uint64 r2', 'address r3', 'uint64 r4'],
-                    [RESULT_VALUE, 1234, RESULT_VALUE, 5678])),
-            }
-        )
+  it('picks from multiple return values', async () => {
+    const RESULT_VALUE = EthereumAddress.random().toString()
 
-        const result = await callMethod(
-            provider,
-            ADDRESS,
-            abi.getFunction('testFunction'),
-            [],
-            BLOCK_NUMBER,
-            ['r1', 'r4'],
-        )
+    const abi = new utils.Interface([
+      'function testFunction() view returns (address r1, uint64 r2, address r3, uint64 r4)',
+    ])
 
-        expect(result.value).toEqual([
-            RESULT_VALUE,
-            5678,
-        ])
+    const provider = mockObject<DiscoveryProvider>({
+      call: async () =>
+        Bytes.fromHex(
+          encoder.encode(
+            ['address r1', 'uint64 r2', 'address r3', 'uint64 r4'],
+            [RESULT_VALUE, 1234, RESULT_VALUE, 5678],
+          ),
+        ),
     })
 
-    it('decodes multiple return values', async () => {
-        const RESULT_VALUE = EthereumAddress.random().toString()
+    const result = await callMethod(
+      provider,
+      ADDRESS,
+      abi.getFunction('testFunction'),
+      [],
+      BLOCK_NUMBER,
+      ['r1', 'r4'],
+    )
 
-        const abi = new utils.Interface([
-            'function testFunction() view returns (address r1, uint64 r2, address r3, uint64 r4)',
-        ])
+    expect(result.value).toEqual([RESULT_VALUE, 5678])
+  })
 
-        const provider = mockObject<DiscoveryProvider>(
-            {
-                call: async () => Bytes.fromHex(encoder.encode(
-                    ['address r1', 'uint64 r2', 'address r3', 'uint64 r4'],
-                    [RESULT_VALUE, 1234, RESULT_VALUE, 5678])),
-            }
-        )
+  it('decodes multiple return values', async () => {
+    const RESULT_VALUE = EthereumAddress.random().toString()
 
-        const result = await callMethod(
-            provider,
-            ADDRESS,
-            abi.getFunction('testFunction'),
-            [],
-            BLOCK_NUMBER,
-        )
+    const abi = new utils.Interface([
+      'function testFunction() view returns (address r1, uint64 r2, address r3, uint64 r4)',
+    ])
 
-        expect(result.value).toEqual([
-            RESULT_VALUE,
-            1234,
-            RESULT_VALUE,
-            5678,
-        ])
+    const provider = mockObject<DiscoveryProvider>({
+      call: async () =>
+        Bytes.fromHex(
+          encoder.encode(
+            ['address r1', 'uint64 r2', 'address r3', 'uint64 r4'],
+            [RESULT_VALUE, 1234, RESULT_VALUE, 5678],
+          ),
+        ),
     })
 
-    it('picks from array return value', async () => {
-        const RESULT_VALUES = [
-            EthereumAddress.random().toString(),
-            EthereumAddress.random().toString(),
-        ]
+    const result = await callMethod(
+      provider,
+      ADDRESS,
+      abi.getFunction('testFunction'),
+      [],
+      BLOCK_NUMBER,
+    )
 
-        const abi = new utils.Interface([
-            'function testFunction() view returns (address[])',
-        ])
+    expect(result.value).toEqual([RESULT_VALUE, 1234, RESULT_VALUE, 5678])
+  })
 
-        const provider = mockObject<DiscoveryProvider>(
-            {
-                call: async () => Bytes.fromHex(encoder.encode(['address[]'], [RESULT_VALUES])),
-            }
-        )
+  it('picks from array return value', async () => {
+    const RESULT_VALUES = [
+      EthereumAddress.random().toString(),
+      EthereumAddress.random().toString(),
+    ]
 
-        const result = await callMethod(
-            provider,
-            ADDRESS,
-            abi.getFunction('testFunction'),
-            [],
-            BLOCK_NUMBER,
-            [1],
-        )
+    const abi = new utils.Interface([
+      'function testFunction() view returns (address[])',
+    ])
 
-        expect(result.value).toEqual(RESULT_VALUES[1])
+    const provider = mockObject<DiscoveryProvider>({
+      call: async () =>
+        Bytes.fromHex(encoder.encode(['address[]'], [RESULT_VALUES])),
     })
 
-    it('decodes an array return value', async () => {
-        const RESULT_VALUES = [
-            EthereumAddress.random().toString(),
-            EthereumAddress.random().toString(),
-        ]
+    const result = await callMethod(
+      provider,
+      ADDRESS,
+      abi.getFunction('testFunction'),
+      [],
+      BLOCK_NUMBER,
+      [1],
+    )
 
-        const abi = new utils.Interface([
-            'function testFunction() view returns (address[])',
-        ])
+    expect(result.value).toEqual(RESULT_VALUES[1])
+  })
 
-        const provider = mockObject<DiscoveryProvider>(
-            {
-                call: async () => Bytes.fromHex(encoder.encode(['address[]'], [RESULT_VALUES])),
-            }
-        )
+  it('decodes an array return value', async () => {
+    const RESULT_VALUES = [
+      EthereumAddress.random().toString(),
+      EthereumAddress.random().toString(),
+    ]
 
-        const result = await callMethod(
-            provider,
-            ADDRESS,
-            abi.getFunction('testFunction'),
-            [],
-            BLOCK_NUMBER,
-        )
+    const abi = new utils.Interface([
+      'function testFunction() view returns (address[])',
+    ])
 
-        expect(result.value).toEqual(RESULT_VALUES)
+    const provider = mockObject<DiscoveryProvider>({
+      call: async () =>
+        Bytes.fromHex(encoder.encode(['address[]'], [RESULT_VALUES])),
     })
 
-    it('throws on trying to pick from scalar return value', async () => {
-        const abi = new utils.Interface([
-            'function testFunction() view returns (uint256)',
-        ])
+    const result = await callMethod(
+      provider,
+      ADDRESS,
+      abi.getFunction('testFunction'),
+      [],
+      BLOCK_NUMBER,
+    )
 
-        const provider = mockObject<DiscoveryProvider>(
-            {
-                call: async () => Bytes.randomOfLength(32),
-            }
-        )
+    expect(result.value).toEqual(RESULT_VALUES)
+  })
 
-        const result = await callMethod(
-            provider,
-            ADDRESS,
-            abi.getFunction('testFunction'),
-            [],
-            BLOCK_NUMBER,
-            ['field']
-        )
+  it('throws on trying to pick from scalar return value', async () => {
+    const abi = new utils.Interface([
+      'function testFunction() view returns (uint256)',
+    ])
 
-        expect(result.error).toEqual('Cannot pick fields from a non-struct-like return value')
+    const provider = mockObject<DiscoveryProvider>({
+      call: async () => Bytes.randomOfLength(32),
     })
 
-    it('decodes a scalar return value', async () => {
-        const RETURN_VALUE = EthereumAddress.random()
-        const abi = new utils.Interface([
-            'function testFunction() view returns (address)',
-        ])
+    const result = await callMethod(
+      provider,
+      ADDRESS,
+      abi.getFunction('testFunction'),
+      [],
+      BLOCK_NUMBER,
+      ['field'],
+    )
 
-        const provider = mockObject<DiscoveryProvider>(
-            {
-                call: async () => Bytes.fromHex(RETURN_VALUE.toString()).padStart(32),
-            }
-        )
+    expect(result.error).toEqual(
+      'Cannot pick fields from a non-struct-like return value',
+    )
+  })
 
-        const result = await callMethod(
-            provider,
-            ADDRESS,
-            abi.getFunction('testFunction'),
-            [],
-            BLOCK_NUMBER,
-        )
+  it('decodes a scalar return value', async () => {
+    const RETURN_VALUE = EthereumAddress.random()
+    const abi = new utils.Interface([
+      'function testFunction() view returns (address)',
+    ])
 
-        expect(result.value).toEqual(RETURN_VALUE.toString())
+    const provider = mockObject<DiscoveryProvider>({
+      call: async () => Bytes.fromHex(RETURN_VALUE.toString()).padStart(32),
     })
+
+    const result = await callMethod(
+      provider,
+      ADDRESS,
+      abi.getFunction('testFunction'),
+      [],
+      BLOCK_NUMBER,
+    )
+
+    expect(result.value).toEqual(RETURN_VALUE.toString())
+  })
 })
