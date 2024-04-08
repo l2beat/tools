@@ -1,5 +1,5 @@
 import { assert } from '@l2beat/backend-tools'
-import { providers, utils } from 'ethers'
+import { utils } from 'ethers'
 import * as z from 'zod'
 
 import { Bytes } from '../../../utils/Bytes'
@@ -50,22 +50,22 @@ export class ArbitrumSequencerVersionHandler implements ClassicHandler {
     ])
 
     const lastEvents = await provider.getLogs(
-        address,
-        [[abi.getEventTopic('SequencerBatchDelivered')]],
-        0,
-        blockNumber,
-        {
-            howManyEvents: 1,
-            filter: (log): boolean => {
-                const decoded = abi.parseLog(log)
-                assert(
-                    decoded.name === 'SequencerBatchDelivered',
-                    'Unexpected event name',
-                )
-                return decoded.args.dataLocation === 0
-            },
-            maxRange: 1000,
-        }
+      address,
+      [[abi.getEventTopic('SequencerBatchDelivered')]],
+      0,
+      blockNumber,
+      {
+        howManyEvents: 1,
+        filter: (log): boolean => {
+          const decoded = abi.parseLog(log)
+          assert(
+            decoded.name === 'SequencerBatchDelivered',
+            'Unexpected event name',
+          )
+          return decoded.args.dataLocation === 0
+        },
+        maxRange: 1000,
+      },
     )
     const lastEvent = lastEvents[0]
     assert(lastEvent !== undefined, 'No event found')

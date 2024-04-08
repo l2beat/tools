@@ -91,7 +91,10 @@ export class DiscoveryProvider {
       (await this.getDeploymentInfo(address)) ?? { blockNumber: 0 } // for cases where API to get deployment info is not available
 
     let allLogs: providers.Log[] = []
-    const maxRange = Math.min(this.getLogsMaxRange ?? Number.MAX_SAFE_INTEGER, options.maxRange ?? Number.MAX_SAFE_INTEGER)
+    const maxRange = Math.min(
+      this.getLogsMaxRange ?? Number.MAX_SAFE_INTEGER,
+      options.maxRange ?? Number.MAX_SAFE_INTEGER,
+    )
     const howManyEvents = options.howManyEvents ?? Number.MAX_SAFE_INTEGER
     const lowerLimitBlock = Math.max(fromBlock, deploymentBlockNumber)
     let end = toBlock
