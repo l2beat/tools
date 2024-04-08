@@ -1,5 +1,11 @@
 # @l2beat/discovery
 
+## 0.46.7
+
+### Patch Changes
+
+- Unify var names for discovery config
+
 ## 0.46.6
 
 ### Patch Changes
