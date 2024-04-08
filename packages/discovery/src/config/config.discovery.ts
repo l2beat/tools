@@ -60,12 +60,22 @@ export function getChainConfig(chain: string): DiscoveryChainConfig {
   const ENV_NAME = chainConfig.name.toUpperCase()
   return {
     name: chainConfig.name,
-    rpcUrl: env.string(`DISCOVERY_${ENV_NAME}_RPC_URL`),
-    rpcGetLogsMaxRange: env.optionalInteger(
+    rpcUrl: env.string([
+      `${ENV_NAME}_RPC_URL_FOR_DISCOVERY`,
+      `${ENV_NAME}_RPC_URL`,
+      `DISCOVERY_${ENV_NAME}_RPC_URL`
+    ]),
+    rpcGetLogsMaxRange: env.optionalInteger([
+      `${ENV_NAME}_RPC_GETLOGS_MAX_RANGE_FOR_DISCOVERY`,
+      `${ENV_NAME}_RPC_GETLOGS_MAX_RANGE`,
       `DISCOVERY_${ENV_NAME}_RPC_GETLOGS_MAX_RANGE`,
-    ),
+    ]),
     multicall: chainConfig.multicall,
-    etherscanApiKey: env.string(`DISCOVERY_${ENV_NAME}_ETHERSCAN_API_KEY`),
+    etherscanApiKey: env.string([
+      `${ENV_NAME}_ETHERSCAN_API_KEY_FOR_DISCOVERY`,
+      `${ENV_NAME}_ETHERSCAN_API_KEY`,
+      `DISCOVERY_${ENV_NAME}_ETHERSCAN_API_KEY`,
+    ]),
     etherscanUrl: chainConfig.etherscanUrl,
     etherscanUnsupported: chainConfig.etherscanUnsupported,
   }
