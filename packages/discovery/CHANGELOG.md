@@ -1,10 +1,16 @@
 # @l2beat/discovery
 
-## 0.46.7
+## 0.46.8
 
 ### Patch Changes
 
 - Unify var names for discovery config
+
+## 0.46.7
+
+### Patch Changes
+
+- Allow to pick fields from struct returns in CallHandler
 
 ## 0.46.6
 
