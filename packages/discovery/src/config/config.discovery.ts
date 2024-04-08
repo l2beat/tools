@@ -63,7 +63,7 @@ export function getChainConfig(chain: string): DiscoveryChainConfig {
     rpcUrl: env.string([
       `${ENV_NAME}_RPC_URL_FOR_DISCOVERY`,
       `${ENV_NAME}_RPC_URL`,
-      `DISCOVERY_${ENV_NAME}_RPC_URL`
+      `DISCOVERY_${ENV_NAME}_RPC_URL`,
     ]),
     rpcGetLogsMaxRange: env.optionalInteger([
       `${ENV_NAME}_RPC_GETLOGS_MAX_RANGE_FOR_DISCOVERY`,
