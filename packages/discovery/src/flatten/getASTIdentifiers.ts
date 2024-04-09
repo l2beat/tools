@@ -1,7 +1,7 @@
 // TODO(radomski): The parser does not expose the AST types for SOME reason.
 // Either we ignore this error or we fork the parser and expose the types.
 /* eslint-disable import/no-unresolved */
-import type * as AST from '@solidity-parser/parser/dist/src/ast-types'
+import type * as AST from '@mradomski/fast-solidity-parser'
 /* eslint-enable */
 
 export function getASTIdentifiers(baseNode: AST.BaseASTNode | null): string[] {

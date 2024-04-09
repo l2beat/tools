@@ -821,6 +821,11 @@
     semver "^7.3.5"
     tar "^6.1.11"
 
+"@mradomski/fast-solidity-parser@0.1.0":
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/@mradomski/fast-solidity-parser/-/fast-solidity-parser-0.1.0.tgz#dfd8526c8856afeed5c3180f0719e27b85185e5a"
+  integrity sha512-ll13oXT69c3nfrpoCWs+3twnxVwcMb9SbdUfoot9s1a4hQJPzBlxK116OKyd58KNJ4B3QQWOeBjRV4wuhctCog==
+
 "@nodelib/fs.scandir@2.1.5":
   version "2.1.5"
   resolved "https://registry.npmjs.org/@nodelib/fs.scandir/-/fs.scandir-2.1.5.tgz"
@@ -876,11 +881,6 @@
   integrity sha512-pUBaWhXoa9N0R/LeYKLqkrN9mqN3jwKBeMfbvlRtHUzLmk55o+0swncIuZBcSH/PpXDttRf/AcPF22pknAzORQ==
   dependencies:
     "@sinonjs/commons" "^3.0.0"
-
-"@solidity-parser/parser@^0.18.0":
-  version "0.18.0"
-  resolved "https://registry.yarnpkg.com/@solidity-parser/parser/-/parser-0.18.0.tgz#8e77a02a09ecce957255a2f48c9a7178ec191908"
-  integrity sha512-yfORGUIPgLck41qyN7nbwJRAx17/jAIXCTanHOJZhB6PJ1iAk/84b/xlsVKFSyNyLXIj0dhppoE0+CRws7wlzA==
 
 "@tootallnate/once@1":
   version "1.1.2"

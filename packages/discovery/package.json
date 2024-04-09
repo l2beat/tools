@@ -21,7 +21,7 @@
   "dependencies": {
     "@l2beat/backend-tools": "^0.5.1",
     "@l2beat/discovery-types": "^0.8.1",
-    "@solidity-parser/parser": "^0.18.0",
+    "@mradomski/fast-solidity-parser": "0.1.0",
     "chalk": "^4.1.2",
     "deep-diff": "^1.0.2",
     "dotenv": "^16.0.3",
