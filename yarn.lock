@@ -821,10 +821,10 @@
     semver "^7.3.5"
     tar "^6.1.11"
 
-"@mradomski/fast-solidity-parser@0.1.0":
-  version "0.1.0"
-  resolved "https://registry.yarnpkg.com/@mradomski/fast-solidity-parser/-/fast-solidity-parser-0.1.0.tgz#dfd8526c8856afeed5c3180f0719e27b85185e5a"
-  integrity sha512-ll13oXT69c3nfrpoCWs+3twnxVwcMb9SbdUfoot9s1a4hQJPzBlxK116OKyd58KNJ4B3QQWOeBjRV4wuhctCog==
+"@mradomski/fast-solidity-parser@0.1.1":
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/@mradomski/fast-solidity-parser/-/fast-solidity-parser-0.1.1.tgz#9c38003731bec09c473f54d2677a82e548a00c0b"
+  integrity sha512-BnX+UKswinYed/yFgH9zwYNNBvUXJu32vJkxwnkZuPcV/YR9TDzMgjAOhiq8Vj77wDcfHHhyA0/MdIMhkd92PQ==
 
 "@nodelib/fs.scandir@2.1.5":
   version "2.1.5"

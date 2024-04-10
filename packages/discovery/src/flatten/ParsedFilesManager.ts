@@ -1,7 +1,6 @@
 import { assert } from '@l2beat/backend-tools'
-import { parse } from '@mradomski/fast-solidity-parser'
-// eslint-disable-next-line import/no-unresolved
 import type * as AST from '@mradomski/fast-solidity-parser'
+import { parse } from '@mradomski/fast-solidity-parser'
 import * as posix from 'path'
 
 import { getASTIdentifiers } from './getASTIdentifiers'
