@@ -20,6 +20,7 @@ export interface DiscoverCliParameters {
   project: string
   chain: string
   dryRun: boolean
+  interactive: boolean
   dev: boolean
   sourcesFolder?: string
   flatSourcesFolder?: string
@@ -72,6 +73,7 @@ export function getCliParameters(args = process.argv.slice(2)): CliParameters {
 
     let dryRun = false
     let dev = false
+    let interactive = false
     let blockNumber: number | undefined
     let sourcesFolder: string | undefined
     let flatSourcesFolder: string | undefined
@@ -80,6 +82,11 @@ export function getCliParameters(args = process.argv.slice(2)): CliParameters {
     if (remaining.includes('--dry-run')) {
       dryRun = true
       remaining.splice(remaining.indexOf('--dry-run'), 1)
+    }
+
+    if (remaining.includes('--interactive')) {
+      interactive = true
+      remaining.splice(remaining.indexOf('--interactive'), 1)
     }
 
     if (remaining.includes('--dev')) {
@@ -143,6 +150,7 @@ export function getCliParameters(args = process.argv.slice(2)): CliParameters {
       mode: 'discover',
       chain,
       project,
+      interactive,
       dryRun,
       dev,
       sourcesFolder,
