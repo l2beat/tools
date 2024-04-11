@@ -1,5 +1,29 @@
 # @l2beat/discovery
 
+## 0.47.1
+
+### Patch Changes
+
+- Check for values smaller than MIN_SAFE_INTEGER
+
+## 0.47.0
+
+### Minor Changes
+
+- Use fast-solidity-parser
+
+## 0.46.11
+
+### Patch Changes
+
+- Use cache for L2 calls in ArbitrumScheduledTransactionsHandler
+
+## 0.46.10
+
+### Patch Changes
+
+- Read reorgSafeDepth from environment variable
+
 ## 0.46.9
 
 ### Patch Changes
