@@ -78,6 +78,8 @@ export class ElasticSearchBackend implements LoggerBackend {
       if (bulkResponse.errors) {
         throw new Error('Failed to push liogs to Elastic Search node')
       }
+
+      this.buffer.splice(0)
     } catch (error) {
       console.log(error)
     }
