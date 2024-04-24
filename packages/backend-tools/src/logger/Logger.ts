@@ -28,11 +28,13 @@ export class Logger {
       utc: options.utc ?? false,
       cwd: options.cwd ?? process.cwd(),
       getTime: options.getTime ?? (() => new Date()),
-      reportError: options.reportError ?? (() => { }),
-      backends: options.backends ?? [{
-        backend: console,
-        formatter: new LogFormatterJson()
-      }],
+      reportError: options.reportError ?? (() => {}),
+      backends: options.backends ?? [
+        {
+          backend: console,
+          formatter: new LogFormatterJson(),
+        },
+      ],
     }
     this.cwd = join(this.options.cwd, '/')
     this.logLevel = LEVEL[this.options.logLevel]
@@ -42,50 +44,62 @@ export class Logger {
 
   static CRITICAL = new Logger({
     logLevel: 'CRITICAL',
-    backends: [{
-      backend: console,
-      formatter: new LogFormatterPretty(true, false)
-    }]
+    backends: [
+      {
+        backend: console,
+        formatter: new LogFormatterPretty(true, false),
+      },
+    ],
   })
 
   static ERROR = new Logger({
     logLevel: 'ERROR',
-    backends: [{
-      backend: console,
-      formatter: new LogFormatterPretty(true, false)
-    }]
+    backends: [
+      {
+        backend: console,
+        formatter: new LogFormatterPretty(true, false),
+      },
+    ],
   })
 
   static WARN = new Logger({
     logLevel: 'WARN',
-    backends: [{
-      backend: console,
-      formatter: new LogFormatterPretty(true, false)
-    }]
+    backends: [
+      {
+        backend: console,
+        formatter: new LogFormatterPretty(true, false),
+      },
+    ],
   })
 
   static INFO = new Logger({
     logLevel: 'INFO',
-    backends: [{
-      backend: console,
-      formatter: new LogFormatterPretty(true, false)
-    }]
+    backends: [
+      {
+        backend: console,
+        formatter: new LogFormatterPretty(true, false),
+      },
+    ],
   })
 
   static DEBUG = new Logger({
     logLevel: 'DEBUG',
-    backends: [{
-      backend: console,
-      formatter: new LogFormatterPretty(true, false)
-    }]
+    backends: [
+      {
+        backend: console,
+        formatter: new LogFormatterPretty(true, false),
+      },
+    ],
   })
 
   static TRACE = new Logger({
     logLevel: 'TRACE',
-    backends: [{
-      backend: console,
-      formatter: new LogFormatterPretty(true, false)
-    }]
+    backends: [
+      {
+        backend: console,
+        formatter: new LogFormatterPretty(true, false),
+      },
+    ],
   })
 
   configure(options: Partial<LoggerOptions>): Logger {

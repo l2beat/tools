@@ -8,10 +8,15 @@ import { Logger } from './Logger'
 describe(Logger.name, () => {
   it('calls correct backend', () => {
     const backend = createTestBackend()
-    const logger = new Logger({ backends: [{
-      backend,
-      formatter: new LogFormatterJson()
-    }], logLevel: 'TRACE' })
+    const logger = new Logger({
+      backends: [
+        {
+          backend,
+          formatter: new LogFormatterJson(),
+        },
+      ],
+      logLevel: 'TRACE',
+    })
 
     logger.trace('foo')
     logger.debug('foo')
@@ -31,10 +36,12 @@ describe(Logger.name, () => {
   it('supports bigint values in json output', () => {
     const backend = createTestBackend()
     const logger = new Logger({
-      backends: [{
-        backend,
-        formatter: new LogFormatterJson()
-      }],
+      backends: [
+        {
+          backend,
+          formatter: new LogFormatterJson(),
+        },
+      ],
       logLevel: 'TRACE',
       getTime: () => new Date(0),
       utc: true,
@@ -56,10 +63,12 @@ describe(Logger.name, () => {
   it('supports bigint values in pretty output', () => {
     const backend = createTestBackend()
     const logger = new Logger({
-      backends: [{
-        backend,
-        formatter: new LogFormatterPretty(false, true)
-      }],
+      backends: [
+        {
+          backend,
+          formatter: new LogFormatterPretty(false, true),
+        },
+      ],
       logLevel: 'TRACE',
       getTime: () => new Date(0),
       utc: true,
@@ -78,10 +87,12 @@ describe(Logger.name, () => {
     function setup() {
       const backend = createTestBackend()
       const baseLogger = new Logger({
-        backends: [{
-          backend,
-          formatter: new LogFormatterPretty(false, true)
-        }],
+        backends: [
+          {
+            backend,
+            formatter: new LogFormatterPretty(false, true),
+          },
+        ],
         logLevel: 'TRACE',
         getTime: () => new Date(0),
         utc: true,
@@ -104,7 +115,7 @@ describe(Logger.name, () => {
       const { backend, baseLogger } = setup()
 
       // eslint-disable-next-line @typescript-eslint/no-extraneous-class
-      class FooService { }
+      class FooService {}
       const instance = new FooService()
       const logger = baseLogger.for(instance)
       logger.info('hello')
@@ -162,14 +173,14 @@ describe(Logger.name, () => {
   describe('error reporting', () => {
     const oldConsoleError = console.error
     beforeEach(() => {
-      console.error = () => { }
+      console.error = () => {}
     })
     afterEach(() => {
       console.error = oldConsoleError
     })
 
     it('reports error and critical error', () => {
-      const mockReportError = mockFn((_: unknown) => { })
+      const mockReportError = mockFn((_: unknown) => {})
       const logger = new Logger({
         reportError: mockReportError,
       })
@@ -311,7 +322,7 @@ describe(Logger.name, () => {
 
       for (const [args, expected] of patterns) {
         it(`supports ${formatCompact(args, 60)}`, () => {
-          const mockReportError = mockFn((_: unknown) => { })
+          const mockReportError = mockFn((_: unknown) => {})
           const logger = new Logger({ reportError: mockReportError })
 
           logger.error(...args)
@@ -324,9 +335,9 @@ describe(Logger.name, () => {
 
 function createTestBackend() {
   return {
-    debug: mockFn((_: string): void => { }),
-    log: mockFn((_: string): void => { }),
-    warn: mockFn((_: string): void => { }),
-    error: mockFn((_: string): void => { }),
+    debug: mockFn((_: string): void => {}),
+    log: mockFn((_: string): void => {}),
+    warn: mockFn((_: string): void => {}),
+    error: mockFn((_: string): void => {}),
   }
 }
