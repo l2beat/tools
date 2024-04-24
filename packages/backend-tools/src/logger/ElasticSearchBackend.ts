@@ -57,8 +57,18 @@ export class ElasticSearchBackend implements LoggerBackend {
   }
 
   private async flushLogs(): Promise<void> {
+    if (!this.buffer.length) {
+      return
+    }
+
     try {
       const index = await this.createIndex()
+
+      // copy buffer contents as it may change during async operations below
+      const batch = [...this.buffer]
+
+      //clear buffer
+      this.buffer.splice(0)
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       const documents = this.buffer.map((message) => ({
@@ -78,8 +88,6 @@ export class ElasticSearchBackend implements LoggerBackend {
       if (bulkResponse.errors) {
         throw new Error('Failed to push liogs to Elastic Search node')
       }
-
-      this.buffer.splice(0)
     } catch (error) {
       console.log(error)
     }
