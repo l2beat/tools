@@ -1,5 +1,5 @@
+export * from './elastic-search/ElasticSearchBackend'
 export * from './env'
-export * from './logger/ElasticSearchBackend'
 export * from './logger/interfaces'
 export * from './logger/LogFormatterEcs'
 export * from './logger/LogFormatterJson'
