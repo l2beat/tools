@@ -1,4 +1,5 @@
-import { MockObject, expect, mockFn, mockObject } from 'earl'
+import { expect, mockFn, MockObject, mockObject } from 'earl'
+
 import {
   ElasticSearchBackend,
   ElasticSearchBackendOptions,
@@ -34,6 +35,7 @@ describe(ElasticSearchBackend.name, () => {
 
   it('does nothing if buffer is empty', async () => {
     const clientMock = createClienMock(false)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const backendMock = createBackendMock(clientMock)
 
     // wait for log flush
@@ -58,7 +60,7 @@ describe(ElasticSearchBackend.name, () => {
   })
 })
 
-function createClienMock(indextExist: boolean = true) {
+function createClienMock(indextExist = true) {
   return mockObject<ElasticSearchClient>({
     indexExist: mockFn(async (_: string): Promise<boolean> => indextExist),
     indexCreate: mockFn(async (_: string): Promise<void> => {}),
@@ -81,9 +83,7 @@ function createBackendMock(clientMock: MockObject<ElasticSearchClient>) {
 
 function createIndexName() {
   const now = new Date()
-  return `${
-    indexPrefix ?? 'logs-'
-  }-${now.getFullYear()}.${now.getMonth()}.${now.getDay()}`
+  return `${indexPrefix}-${now.getFullYear()}.${now.getMonth()}.${now.getDay()}`
 }
 
 async function delay(ms: number) {
