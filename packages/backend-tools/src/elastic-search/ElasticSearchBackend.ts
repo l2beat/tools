@@ -46,9 +46,13 @@ export class ElasticSearchBackend implements LoggerBackend {
 
   private start(): void {
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
-    setInterval(async () => {
+    const interval = setInterval(async () => {
       await this.flushLogs()
     }, this.options.flushInterval ?? 10000)
+
+    // object will not require the Node.js event loop to remain active
+    // nodejs.org/api/timers.html#timers_timeout_unref
+    interval.unref()
   }
 
   private async flushLogs(): Promise<void> {
@@ -70,7 +74,7 @@ export class ElasticSearchBackend implements LoggerBackend {
           ({
             id: this.uuidProvider(),
             ...JSON.parse(log),
-          } as object),
+          }) as object,
       )
 
       const success = await this.client.bulk(documents, index)
