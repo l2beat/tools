@@ -74,7 +74,7 @@ export class ElasticSearchBackend implements LoggerBackend {
           ({
             id: this.uuidProvider(),
             ...JSON.parse(log),
-          }) as object,
+          } as object),
       )
 
       const success = await this.client.bulk(documents, index)
