@@ -1,5 +1,11 @@
 # @l2beat/backend-tools
 
+## 0.6.0
+
+### Minor Changes
+
+- Refactor logger to allow for multiple backends and formatters
+
 ## 0.5.2
 
 ### Patch Changes
